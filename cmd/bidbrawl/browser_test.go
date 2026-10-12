@@ -4,16 +4,20 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"bidbrawl/internal/game"
 	"bidbrawl/internal/server"
+	bolt "go.etcd.io/bbolt"
 )
 
 func TestBrowserAddress(t *testing.T) {
@@ -66,6 +70,41 @@ func TestHostAutomaticallyLaunchesAuthorizedUI(t *testing.T) {
 	default:
 		t.Fatal("host did not open browser by default")
 	}
+}
+
+func TestHostReportsLockedDatabase(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "accounts.db")
+	g, _ := game.New(2)
+	s, err := server.Open(g.GameConfig(), g.CardConfig(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = s.Close() })
+	called := false
+	err = runWithBrowser(context.Background(), []string{"host", "-webui", "-listen", "127.0.0.1:0", "-data-dir", dir}, func(string) error {
+		called = true
+		return nil
+	})
+	if !errors.Is(err, bolt.ErrTimeout) {
+		t.Fatalf("expected database lock timeout, got %v", err)
+	}
+	for _, want := range []string{fmt.Sprintf("%q", path), "其他进程占用", "先停止原宿主", "更换监听端口不会释放数据库锁"} {
+		if !strings.Contains(err.Error(), want) {
+			t.Fatalf("missing %q in error: %v", want, err)
+		}
+	}
+	if called {
+		t.Fatal("failed host opened browser")
+	}
+	if err := s.Close(); err != nil {
+		t.Fatal(err)
+	}
+	reopened, err := server.Open(g.GameConfig(), g.CardConfig(), path)
+	if err != nil {
+		t.Fatalf("database lock was not released after closing host: %v", err)
+	}
+	defer reopened.Close()
 }
 
 func TestUICommandRequiresHostAndOpensReadOnlySession(t *testing.T) {

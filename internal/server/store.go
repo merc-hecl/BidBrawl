@@ -45,7 +45,10 @@ func Open(geometry game.Config, cfg cards.Config, path string) (*Server, error) 
 	}
 	db, err := bolt.Open(path, 0600, &bolt.Options{Timeout: time.Second})
 	if err != nil {
-		return nil, fmt.Errorf("open identity database: %w", err)
+		if errors.Is(err, bolt.ErrTimeout) {
+			return nil, fmt.Errorf("身份数据库 %q 正被其他进程占用（等待文件锁超时）；同一数据目录只能运行一个宿主，请使用已运行的宿主，或先停止原宿主再重试。更换监听端口不会释放数据库锁: %w", path, err)
+		}
+		return nil, fmt.Errorf("open identity database %q: %w", path, err)
 	}
 	s := New(geometry, cfg)
 	s.store = &persistentStore{db: db}
