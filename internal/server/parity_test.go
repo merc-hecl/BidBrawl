@@ -1,0 +1,134 @@
+package server
+
+import (
+	"bidbrawl/internal/game"
+	"encoding/json"
+	"fmt"
+	"strings"
+	"testing"
+)
+
+func TestStatisticsEconomics(t *testing.T) {
+	results := []roomResult{
+		{Players: []resultPlayer{{"p1", "A", "account:a"}, {"p2", "B", "account:b"}}, Settlement: resultSettlement{WinnerID: "p1", Paid: 100, Profit: 20, Payoffs: map[string]int64{"p1": 20, "p2": 0}}},
+		{Players: []resultPlayer{{"p2", "A", "account:a"}, {"p1", "C", "account:c"}}, Settlement: resultSettlement{WinnerID: "p2", Paid: 300, Profit: -10, Payoffs: map[string]int64{"p2": -10, "p1": 0}}},
+		{Players: []resultPlayer{{"p1", "A", "account:a"}, {"p2", "B", "account:b"}}, Settlement: resultSettlement{WinnerID: "p2", Paid: 0, Profit: 50, Payoffs: map[string]int64{"p1": 0, "p2": 50}}},
+	}
+	stats := calculateStatistics(results)
+	if stats.Games != 3 || stats.Profit != 60 || stats.Paid != 400 || *stats.Rate != 15 {
+		t.Fatal(stats)
+	}
+	records := map[string]agentMetrics{}
+	for _, a := range stats.Agents {
+		records[a.ID] = a
+	}
+	a := records["account:a"]
+	if a.Games != 3 || a.Average != float64(10)/3 || a.Profit != 10 || *a.Rate != 2.5 || a.MaxProfit != 20 || a.MaxLoss != -10 {
+		t.Fatal(a)
+	}
+	b := records["account:b"]
+	if b.Games != 2 || b.Rate != nil || b.MaxProfit != 50 || b.Average != 25 {
+		t.Fatal(b)
+	}
+	if sortAgents(stats.Agents, "max_loss") != nil || stats.Agents[0].ID != "account:a" {
+		t.Fatal(stats.Agents)
+	}
+	if sortAgents(stats.Agents, "rate") != nil || stats.Agents[0].ID != "account:a" {
+		t.Fatal(stats.Agents)
+	}
+	if sortAgents(stats.Agents, "wins") == nil {
+		t.Fatal("invalid sort accepted")
+	}
+	empty := calculateStatistics(nil)
+	if empty.Rate != nil || len(empty.Agents) != 0 {
+		t.Fatal(empty)
+	}
+}
+func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
+	g, _ := game.New(2)
+	s := testTable(g)
+	s.webUI = false
+	a, _ := accountSession(t, s, "A")
+	accountID := s.sessions[a].ID
+	b, _ := accountSession(t, s, "B")
+	checkedRequest(t, s, "POST", "/api/observer/login", a, "", 403)
+	var credential map[string]string
+	json.Unmarshal(checkedRequest(t, s, "POST", "/api/observer/login", s.HostToken, "", 200), &credential)
+	observer := credential["observer_token"]
+	if observer == "" || observer == s.HostToken {
+		t.Fatal("invalid observer credential")
+	}
+	checkedRequest(t, s, "POST", "/api/create", observer, `{"name":"No","players":2}`, 401)
+	checkedRequest(t, s, "POST", "/api/observer/login", observer, "", 403)
+	checkedRequest(t, s, "GET", "/api/observer/replay?room=table", a, "", 401)
+	checkedRequest(t, s, "GET", "/api/agents/"+accountID, "", "", 200)
+	checkedRequest(t, s, "GET", "/api/agents/missing", "", "", 404)
+	checkedRequest(t, s, "GET", "/api/stats?sort=wins", "", "", 400)
+	checkedRequest(t, s, "POST", "/api/join?room=table", a, `{"cards":["item_count"]}`, 201)
+	checkedRequest(t, s, "POST", "/api/join?room=table", b, `{"cards":[]}`, 201)
+	checkedRequest(t, s, "POST", "/api/start?room=table", s.HostToken, "", 200)
+	checkedRequest(t, s, "POST", "/api/card?room=table", a, `{"round":1,"card":"item_count","reason":"secret first decision"}`, 200)
+	for round := 1; round <= 5; round++ {
+		for _, token := range []string{a, b} {
+			checkedRequest(t, s, "POST", "/api/bid?room=table", token, fmt.Sprintf(`{"round":%d,"amount":100,"reason":"secret round %d"}`, round, round), 200)
+		}
+	}
+	public := checkedRequest(t, s, "GET", "/api/replay?room=table", a, "", 200)
+	if strings.Contains(string(public), "secret") || strings.Contains(string(public), `"self"`) {
+		t.Fatal("private replay leaked")
+	}
+	var full map[string]any
+	json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table", observer, "", 200), &full)
+	if _, exists := full["self"]; exists || len(full["decisions"].([]any)) != 11 || len(full["frames"].([]any)) != 7 {
+		t.Fatal("wrong observer projection")
+	}
+	var fourth game.View
+	json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table&frame=4", observer, "", 200), &fourth)
+	if fourth.Settlement != nil || len(fourth.History) != 4 || len(fourth.Decisions) != 9 || fourth.Self != nil {
+		t.Fatal("future replay leaked")
+	}
+	var opening game.View
+	json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table&frame=0", observer, "", 200), &opening)
+	if opening.Settlement != nil || len(opening.Decisions) != 0 || len(opening.History) != 0 {
+		t.Fatal("opening leaked")
+	}
+	var final game.View
+	json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table&frame=5", observer, "", 200), &final)
+	if final.Settlement == nil || len(final.History) != 5 {
+		t.Fatal("final reveal incomplete")
+	}
+	for _, frame := range []string{"-1", "8", "x", "1&frame=2"} {
+		checkedRequest(t, s, "GET", "/api/replay?room=table&frame="+frame, "", "", 400)
+	}
+	var summary statistics
+	json.Unmarshal(checkedRequest(t, s, "GET", "/api/stats?sort=rate", b, "", 200), &summary)
+	var profile agentMetrics
+	json.Unmarshal(checkedRequest(t, s, "GET", "/api/agents/"+accountID, b, "", 200), &profile)
+	if summary.Games != 1 || len(summary.Agents) != 2 || profile.Games != 1 {
+		t.Fatal("statistics missing game")
+	}
+	for _, record := range summary.Agents {
+		if record.ID == profile.ID && (record.Profit != profile.Profit || record.Average != profile.Average) {
+			t.Fatal("agent metrics diverged")
+		}
+	}
+}
+func TestInstantReplayFinalAtomic(t *testing.T) {
+	g, _ := game.New(2)
+	s := testTable(g)
+	a, _ := accountSession(t, s, "A")
+	b, _ := accountSession(t, s, "B")
+	for _, token := range []string{a, b} {
+		checkedRequest(t, s, "POST", "/api/join?room=table", token, `{"cards":[]}`, 201)
+	}
+	checkedRequest(t, s, "POST", "/api/start?room=table", s.HostToken, "", 200)
+	checkedRequest(t, s, "POST", "/api/bid?room=table", a, `{"round":1,"amount":1000,"reason":"early"}`, 200)
+	checkedRequest(t, s, "POST", "/api/bid?room=table", b, `{"round":1,"amount":1,"reason":"low"}`, 200)
+	for frame := 0; frame <= 2; frame++ {
+		var view game.View
+		json.Unmarshal(checkedRequest(t, s, "GET", fmt.Sprintf("/api/replay?room=table&frame=%d", frame), "", "", 200), &view)
+		if (view.Settlement != nil) != (frame >= 1) {
+			t.Fatal("instant reveal not atomic")
+		}
+	}
+}

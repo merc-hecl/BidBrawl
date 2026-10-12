@@ -1,0 +1,92 @@
+package main
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"fmt"
+	"net"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"testing"
+	"time"
+
+	"bidbrawl/internal/game"
+	"bidbrawl/internal/server"
+)
+
+func TestBrowserAddress(t *testing.T) {
+	for _, address := range []string{"0.0.0.0:8787", "[::]:8787", "127.0.0.1:8787"} {
+		a, _ := net.ResolveTCPAddr("tcp", address)
+		if got := browserAddress(a); got != "http://127.0.0.1:8787" {
+			t.Fatal(got)
+		}
+	}
+}
+
+func claimLaunch(address string) error {
+	u, err := url.Parse(address)
+	if err != nil {
+		return err
+	}
+	fragment, _ := url.ParseQuery(u.Fragment)
+	u.Fragment = ""
+	u.Path = "/api/observer/bootstrap"
+	body, _ := json.Marshal(map[string]string{"code": fragment.Get("launch")})
+	response, err := http.Post(u.String(), "application/json", bytes.NewReader(body))
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+	if response.StatusCode != 200 || len(response.Cookies()) != 2 {
+		return fmt.Errorf("launch bootstrap: %d", response.StatusCode)
+	}
+	return nil
+}
+
+func TestHostAutomaticallyLaunchesAuthorizedUI(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	launched := make(chan error, 1)
+	err := runWithBrowser(ctx, []string{"host", "-webui", "-listen", "127.0.0.1:0", "-data-dir", t.TempDir()}, func(address string) error {
+		err := claimLaunch(address)
+		launched <- err
+		cancel()
+		return err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	select {
+	case err := <-launched:
+		if err != nil {
+			t.Fatal(err)
+		}
+	default:
+		t.Fatal("host did not open browser by default")
+	}
+}
+
+func TestUICommandRequiresHostAndOpensReadOnlySession(t *testing.T) {
+	g, _ := game.New(2)
+	s := server.New(g.GameConfig(), g.CardConfig())
+	s.EnableWebUI()
+	h := httptest.NewServer(s)
+	defer h.Close()
+	called := false
+	opener := func(address string) error {
+		called = true
+		u, _ := url.Parse(address)
+		if u.Query().Get("room") != "" {
+			t.Fatal("unexpected default room")
+		}
+		return claimLaunch(address)
+	}
+	if err := runWithBrowser(context.Background(), []string{"ui", "-url", h.URL, "-token", "player"}, opener); err == nil || called {
+		t.Fatal("unauthorized UI launch")
+	}
+	if err := runWithBrowser(context.Background(), []string{"ui", "-url", h.URL, "-token", s.HostToken}, opener); err != nil || !called {
+		t.Fatal("UI launch failed", err)
+	}
+}

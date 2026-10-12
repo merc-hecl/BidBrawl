@@ -1,0 +1,5 @@
+{
+  "schema_version": 1,
+  "box": {"width": 20, "height": 30},
+  "items": {"max_width": 4, "max_height": 4}
+}

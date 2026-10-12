@@ -1,0 +1,34 @@
+# Build and test artifacts
+/bin/
+/bidbrawl
+*.exe
+*.test
+/coverage.out
+*.prof
+
+# Local runtime data and credentials
+/data/
+/database/
+/identities/
+/sessions/
+/runtime.json
+*.db
+*.db-*
+.env
+.env.*
+!.env.example
+*.log
+
+# Local design experiments and generated screenshots
+/prototypes/
+/outputs/
+
+# Installed development skills; retain skills-lock.json and skills/bidbrawl
+/.agents/
+
+# Editor and operating system files
+/.idea/
+/.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
