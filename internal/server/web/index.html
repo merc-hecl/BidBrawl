@@ -16,7 +16,14 @@
         <button data-page="stats" data-i18n-aria="stats"><span class="icon icon-stats" aria-hidden="true"></span><span data-i18n="stats"></span></button>
         <button data-page="replay" data-i18n-aria="replay"><span class="icon icon-replay" aria-hidden="true"></span><span data-i18n="replay"></span></button>
       </nav>
-      <div class="side-rooms"><p><span data-i18n="rooms"></span> <span id="room-count">0</span></p><div id="rooms"></div></div>
+      <div class="side-rooms">
+        <p><span data-i18n="rooms"></span></p>
+        <div class="room-tabs" role="group" data-i18n-aria="roomGroups">
+          <button data-room-group="active" aria-pressed="true" aria-controls="rooms"><span data-i18n="roomsActive"></span><span id="active-room-count" class="room-tab-count">0</span></button>
+          <button data-room-group="completed" aria-pressed="false" aria-controls="rooms"><span data-i18n="roomsCompleted"></span><span id="completed-room-count" class="room-tab-count">0</span></button>
+        </div>
+        <div id="rooms"></div>
+      </div>
     </aside>
     <div class="workspace">
       <header>

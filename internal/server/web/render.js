@@ -17,10 +17,11 @@ export function status(source) {
   return source.phase === 'lobby' ? t('lobby') : source.phase === 'settled' ? t('settled') :
     t('bidding',{round:source.round,total:source.rules.rounds,count:source.players.filter(p=>p.submitted).length,players:source.players.length});
 }
-export function roomButtons(rooms, selected) {
-  return rooms.map(room => button(`<span class="room-dot ${esc(room.phase)}"></span><span>${esc(room.name)}<small>${tr('roomSeats',
+export const roomGroup = room => room?.phase === 'settled' ? 'completed' : 'active';
+export function roomButtons(rooms, selected, group) {
+  return rooms.filter(room => roomGroup(room) === group).map(room => button(`<span class="room-dot ${esc(room.phase)}"></span><span>${esc(room.name)}<small>${tr('roomSeats',
     {count:room.players,total:room.player_count,phase:t({lobby:'phaseLobby',bidding:'phaseBidding',settled:'phaseSettled'}[room.phase])})}</small></span>`,
-    'room:'+room.room_id, selected === room.room_id ? 'selected' : '', selected === room.room_id ? 'aria-current="true"' : '')).join('');
+    'room:'+room.room_id, selected === room.room_id ? 'selected' : '', selected === room.room_id ? 'aria-current="true"' : '')).join('') || `<p class="side-empty">${tr(group === 'completed' ? 'noCompletedRooms' : 'noActiveRooms')}</p>`;
 }
 function timeline(source, view, cursor) {
   const finalFrame=source.settlement?source.history.length+1:source.rules.rounds+1;

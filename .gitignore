@@ -23,8 +23,9 @@
 /prototypes/
 /outputs/
 
-# Installed development skills; retain skills-lock.json and skills/bidbrawl
+# Local development skills and their lock file; retain skills/bidbrawl
 /.agents/
+/skills-lock.json
 
 # Editor and operating system files
 /.idea/

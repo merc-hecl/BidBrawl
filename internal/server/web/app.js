@@ -1,6 +1,6 @@
 import {initialLocale,setLocale,getLocale,t,translateDOM} from './i18n.js';
 import {normalizeView} from './model.js';
-import {esc,renderContent,roomDirectory,roomButtons,maxFrame,dialogContent} from './render.js';
+import {esc,renderContent,roomDirectory,roomButtons,roomGroup,maxFrame,dialogContent} from './render.js';
 import {observe} from './live.js';
 import {patchContent} from './patch.js';
 import {restoreSession} from './session.js';
@@ -8,14 +8,16 @@ import {restoreSession} from './session.js';
 const $=id=>document.getElementById(id);
 const text=(id,value)=>{const node=$(id),next=String(value);if(node.textContent!==next)node.textContent=next;};
 const initialRoom=new URLSearchParams(location.search).get('room')||'';
-const ui={room:initialRoom,page:initialRoom?'watch':'rooms',cursor:null,sort:'profit',quality:'all',search:'',observer:false,manage:false};
+const ui={room:initialRoom,roomGroup:null,page:initialRoom?'watch':'rooms',cursor:null,sort:'profit',quality:'all',search:'',observer:false,manage:false};
 let source=null,rooms=[],results={games:0,profit:0,paid:0,rate:null,agents:[]},connection='connecting',resultsFailed=false;
-let lastContent='',lastRooms='',lastOptions='';
+let lastContent='',lastRooms='',lastOptions='',lastContentObserver=false;
 let managing=false,activeDialog=null;
 const dialog=document.querySelector('dialog');
 setLocale(initialLocale(),false);
 
 function redraw() {
+  const roomPending=!!source && source.room_id!==ui.room;
+  const contentPending=roomPending && ['watch','replay'].includes(ui.page);
   translateDOM();
   $('language-select').value=getLocale();
   text('page-name',t(ui.page));
@@ -29,19 +31,27 @@ function redraw() {
   $('connection').classList.toggle('offline',connection==='disconnected');
   $('error').hidden=connection!=='disconnected' && !(ui.page==='stats' && resultsFailed);
   text('error',t(connection==='disconnected'?'loadError':'resultsError'));
-  text('room-count',rooms.length);
+  const completedCount=rooms.filter(room=>roomGroup(room)==='completed').length;
+  text('active-room-count',rooms.length-completedCount);
+  text('completed-room-count',completedCount);
+  document.querySelectorAll('[data-room-group]').forEach(button=>{
+    button.setAttribute('aria-pressed',String(button.dataset.roomGroup===(ui.roomGroup||'active')));
+  });
   const options=rooms.map(room=>`<option value="${esc(room.room_id)}">${esc(room.name)}</option>`).join('');
   if(lastOptions!==options){$('room-select').innerHTML=options;lastOptions=options;}
   $('room-select').value=ui.room;
   $('room-select').parentElement.hidden=ui.page==='stats'||ui.page==='rooms';
-  $('rules-button').hidden=!source||ui.page==='stats'||ui.page==='rooms';
-  const side=roomButtons(rooms,ui.room);
-  if(lastRooms!==side){$('rooms').innerHTML=side;lastRooms=side;}
-  const html=ui.page==='rooms'?roomDirectory(rooms,ui):renderContent(source,results,ui);
+  $('rules-button').hidden=!source||roomPending||ui.page==='stats'||ui.page==='rooms';
+  const side=roomButtons(rooms,ui.room,ui.roomGroup||'active');
+  if(lastRooms!==side){patchContent($('rooms'),side);lastRooms=side;}
+  // Keep the rendered room intact until its replacement snapshot arrives.
+  const html=contentPending&&lastContentObserver===ui.observer?lastContent:ui.page==='rooms'?roomDirectory(rooms,ui):renderContent(source,results,ui);
   if(lastContent!==html){
     patchContent($('content'),html);lastContent=html;
   }
-  $('content').setAttribute('aria-busy',connection==='connecting'?'true':'false');
+  lastContentObserver=ui.observer;
+  $('content').inert=contentPending;
+  $('content').setAttribute('aria-busy',contentPending||connection==='connecting'?'true':'false');
 }
 function updateDialog() {
   if(!activeDialog)return;
@@ -63,13 +73,17 @@ function showDialog(kind,id) {
 dialog.addEventListener('close',()=>{activeDialog=null;});
 function chooseRoom(id) {
   ui.page='watch';
+  ui.roomGroup=roomGroup(rooms.find(room=>room.room_id===id));
   if(id===ui.room){redraw();return;}
   ui.room=id;ui.cursor=ui.page==='replay'?0:null;ui.quality='all';ui.search='';
-  source=null;connection='connecting';
+  connection='connecting';
+  dialog.close();
   const url=new URL(location.href);url.searchParams.set('room',id);history.replaceState(null,'',url);
   redraw();live.changeRoom();
 }
 document.addEventListener('click',event=>{
+  const group=event.target.closest('[data-room-group]')?.dataset.roomGroup;
+  if(group){ui.roomGroup=group;$('rooms').scrollTop=0;redraw();return;}
   const page=event.target.closest('[data-page]')?.dataset.page;
   if(page){ui.page=!ui.room&&['watch','replay'].includes(page)?'rooms':page;ui.cursor=page==='replay'?(source?.history.length?1:0):null;redraw();return;}
   const item=event.target.closest('[data-item]')?.dataset.item;
@@ -121,10 +135,16 @@ const live=observe({getRoom:()=>ui.room,getObserver:()=>ui.observer,getSort:()=>
   onObserverExpired(){ui.manage=false;setObserver(false);},
   onData(data){
     if(data.state){
-      const firstLoad=!source;source=normalizeView(data.state);
+      const firstLoad=!source||source.room_id!==data.state.room_id;source=normalizeView(data.state);
       if(firstLoad && ui.page==='replay')ui.cursor=source.history.length?1:0;
     }
-    if(data.rooms)rooms=data.rooms.rooms;
+    if(data.rooms){
+      const previous=rooms.find(room=>room.room_id===ui.room);
+      rooms=data.rooms.rooms;
+      const selected=rooms.find(room=>room.room_id===ui.room);
+      if(ui.roomGroup===null)ui.roomGroup=selected?roomGroup(selected):rooms.some(room=>roomGroup(room)==='active')?'active':'completed';
+      else if(selected&&previous&&roomGroup(selected)!==roomGroup(previous)&&ui.roomGroup===roomGroup(previous))ui.roomGroup=roomGroup(selected);
+    }
     if(data.results){
       results=data.results;
       if(ui.agentProfile)ui.agentProfile=results.agents.find(agent=>agent.id===ui.agentProfile.id)||ui.agentProfile;
