@@ -1,0 +1,10 @@
+{
+  "schema_version": 1,
+  "plugins": [
+    {"id": "random_shape", "builtin": "random_shape"},
+    {"id": "random_quality", "builtin": "random_quality"},
+    {"id": "quality_count", "builtin": "quality_count"},
+    {"id": "quality_average", "builtin": "quality_average"},
+    {"id": "random_quality_price", "builtin": "random_quality_price"}
+  ]
+}

@@ -11,6 +11,7 @@ import (
 
 	"bidbrawl/internal/cards"
 	"bidbrawl/internal/game"
+	"bidbrawl/internal/hints"
 	bolt "go.etcd.io/bbolt"
 )
 
@@ -31,10 +32,17 @@ var identityBucket = []byte("accounts")
 // Open restores identities and rooms from a local database, failing rather than silently
 // starting with an empty account set if it is locked, damaged or unsupported.
 func Open(geometry game.Config, cfg cards.Config, path string) (*Server, error) {
+	return OpenWithHints(geometry, cfg, hints.Default(), path)
+}
+
+func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Config, path string) (*Server, error) {
 	if err := geometry.Validate(); err != nil {
 		return nil, err
 	}
 	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	if err := hintConfig.Validate(); err != nil {
 		return nil, err
 	}
 	if path == "" {
@@ -50,7 +58,7 @@ func Open(geometry game.Config, cfg cards.Config, path string) (*Server, error) 
 		}
 		return nil, fmt.Errorf("open identity database %q: %w", path, err)
 	}
-	s := New(geometry, cfg)
+	s := NewWithHints(geometry, cfg, hintConfig)
 	s.store = &persistentStore{db: db}
 	err = db.Update(func(tx *bolt.Tx) error {
 		if meta := tx.Bucket([]byte("metadata")); meta != nil {

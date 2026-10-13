@@ -3,6 +3,7 @@ package server
 import (
 	"bidbrawl/internal/cards"
 	"bidbrawl/internal/game"
+	"bidbrawl/internal/hints"
 	"crypto/rand"
 	"crypto/subtle"
 	"embed"
@@ -52,6 +53,7 @@ type Server struct {
 	rooms               map[string]*room
 	cardConfig          cards.Config
 	gameConfig          game.Config
+	hintConfig          hints.Config
 	handler             http.Handler
 	subscribers         map[chan roomEvent]struct{}
 	observerSubscribers map[chan roomEvent]struct{}
@@ -68,7 +70,11 @@ func secret() string {
 
 // New creates an ephemeral server for isolated protocol tests. Hosts use Open.
 func New(geometry game.Config, cfg cards.Config) *Server {
-	s := &Server{HostToken: secret(), UIToken: secret(), accounts: map[string]*account{}, accountsByID: map[string]*account{}, credentials: map[[32]byte]*account{}, credentialHashes: map[string][32]byte{}, sessions: map[string]*account{}, rooms: map[string]*room{}, cardConfig: cfg, gameConfig: geometry}
+	return NewWithHints(geometry, cfg, hints.Default())
+}
+
+func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Config) *Server {
+	s := &Server{HostToken: secret(), UIToken: secret(), accounts: map[string]*account{}, accountsByID: map[string]*account{}, credentials: map[[32]byte]*account{}, credentialHashes: map[string][32]byte{}, sessions: map[string]*account{}, rooms: map[string]*room{}, cardConfig: cfg, gameConfig: geometry, hintConfig: hintConfig.Clone()}
 	s.subscribers = make(map[chan roomEvent]struct{})
 	s.ObserverToken = secret()
 	s.observerSubscribers = make(map[chan roomEvent]struct{})
@@ -86,7 +92,7 @@ func New(geometry game.Config, cfg cards.Config) *Server {
 	mux.HandleFunc("GET /api/replay", s.replay)
 	mux.HandleFunc("GET /api/events", s.events)
 	mux.HandleFunc("GET /api/config", func(w http.ResponseWriter, r *http.Request) {
-		reply(w, 200, map[string]any{"game": s.gameConfig, "cards": s.cardConfig})
+		reply(w, 200, map[string]any{"game": s.gameConfig, "cards": s.cardConfig, "public_hint_plugins": s.hintConfig.IDs()})
 	})
 	mux.HandleFunc("POST /api/invite", s.invite)
 	mux.HandleFunc("POST /api/observer/launch", s.observerLaunch)
@@ -255,7 +261,7 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, errors.New("room name must contain 1 to 32 non-control characters"))
 		return
 	}
-	g, e := game.NewWithConfig(v.Players, s.gameConfig, s.cardConfig)
+	g, e := game.NewWithHints(v.Players, s.gameConfig, s.cardConfig, s.hintConfig)
 	if e != nil {
 		fail(w, 400, e)
 		return

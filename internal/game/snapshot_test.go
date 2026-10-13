@@ -85,14 +85,19 @@ func TestRestoreRejectsInconsistentSnapshots(t *testing.T) {
 	_ = g.UseCard(tokens[0], 1, "item_count", "protocol test")
 	data, _ := g.Snapshot()
 	for name, corrupt := range map[string]func(*gameSnapshot){
-		"schema":   func(s *gameSnapshot) { s.SchemaVersion = 99 },
-		"phase":    func(s *gameSnapshot) { s.Phase = "unknown" },
-		"price":    func(s *gameSnapshot) { s.Items[0].Price = -1 },
-		"identity": func(s *gameSnapshot) { s.Players[1].Token = s.Players[0].Token },
-		"bid":      func(s *gameSnapshot) { bid := int64(-1); s.Players[0].Bid = &bid },
-		"card":     func(s *gameSnapshot) { s.Players[0].Used[0] = "missing" },
-		"history":  func(s *gameSnapshot) { s.History = []RoundResult{{Round: 1}} },
-		"version":  func(s *gameSnapshot) { s.Version++ },
+		"schema":            func(s *gameSnapshot) { s.SchemaVersion = 99 },
+		"phase":             func(s *gameSnapshot) { s.Phase = "unknown" },
+		"price":             func(s *gameSnapshot) { s.Items[0].Price = -1 },
+		"identity":          func(s *gameSnapshot) { s.Players[1].Token = s.Players[0].Token },
+		"bid":               func(s *gameSnapshot) { bid := int64(-1); s.Players[0].Bid = &bid },
+		"card":              func(s *gameSnapshot) { s.Players[0].Used[0] = "missing" },
+		"history":           func(s *gameSnapshot) { s.History = []RoundResult{{Round: 1}} },
+		"version":           func(s *gameSnapshot) { s.Version++ },
+		"planned hints":     func(s *gameSnapshot) { s.PlannedHints = s.PlannedHints[:1] },
+		"future hint round": func(s *gameSnapshot) { s.PlannedHints[1].Round = 2 },
+		"hint plugin":       func(s *gameSnapshot) { s.PlannedHints[1].Kind = "unknown" },
+		"hint raw data":     func(s *gameSnapshot) { s.PlannedHints[1].Data["price"] = 300 },
+		"published hint":    func(s *gameSnapshot) { s.Hints[0].Data["message"] = "changed" },
 		"geometry": func(s *gameSnapshot) {
 			s.Items[0].TopLeft.X = -1
 		},

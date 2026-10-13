@@ -3,6 +3,8 @@ package game
 
 import (
 	"bidbrawl/internal/cards"
+	"bidbrawl/internal/hints"
+	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"encoding/json"
@@ -108,6 +110,7 @@ type Rules struct {
 	Cards              []cards.Definition `json:"cards"`
 	CardsSchemaVersion int                `json:"cards_schema_version"`
 	DefaultDeck        []string           `json:"default_deck"`
+	PublicHintPlugins  []string           `json:"public_hint_plugins"`
 	Description        string             `json:"description"`
 	EarlyMultipliers   []float64          `json:"early_settlement_multipliers"`
 }
@@ -144,6 +147,8 @@ type Game struct {
 	settlement                                *Settlement
 	cardConfig                                cards.Config
 	gameConfig                                Config
+	hintConfig                                hints.Config
+	plannedHints                              []Hint
 }
 
 var ErrUnauthorized = errors.New("invalid player token")
@@ -157,6 +162,10 @@ func NewWithCards(maxPlayers int, cfg cards.Config) (*Game, error) {
 }
 
 func NewWithConfig(maxPlayers int, geometry Config, cfg cards.Config) (*Game, error) {
+	return NewWithHints(maxPlayers, geometry, cfg, hints.Default())
+}
+
+func NewWithHints(maxPlayers int, geometry Config, cfg cards.Config, hintConfig hints.Config) (*Game, error) {
 	if maxPlayers < 2 || maxPlayers > 7 {
 		return nil, errors.New("players must be between 2 and 7")
 	}
@@ -166,7 +175,10 @@ func NewWithConfig(maxPlayers int, geometry Config, cfg cards.Config) (*Game, er
 	if err := geometry.Validate(); err != nil {
 		return nil, err
 	}
-	return &Game{maxPlayers: maxPlayers, width: geometry.Box.Width, height: geometry.Box.Height, phase: "lobby", version: 1, players: []*player{}, hints: []Hint{}, history: []RoundResult{}, decisions: []Decision{}, cardConfig: cfg.Clone(), gameConfig: geometry}, nil
+	if err := hintConfig.Validate(); err != nil {
+		return nil, err
+	}
+	return &Game{maxPlayers: maxPlayers, width: geometry.Box.Width, height: geometry.Box.Height, phase: "lobby", version: 1, players: []*player{}, hints: []Hint{}, history: []RoundResult{}, decisions: []Decision{}, cardConfig: cfg.Clone(), gameConfig: geometry, hintConfig: hintConfig.Clone()}, nil
 }
 
 func (g *Game) GameConfig() Config {
@@ -239,6 +251,13 @@ func (g *Game) Start() error {
 	if len(g.players) != g.maxPlayers {
 		return fmt.Errorf("waiting for all %d configured players", g.maxPlayers)
 	}
+	// Generate both clues before changing live state. Plugin failure leaves the
+	// lobby untouched; future clues remain private until their scheduled round.
+	items := g.generate()
+	planned, err := g.planHints(items)
+	if err != nil {
+		return err
+	}
 	avatars := []int{0, 1, 2, 3, 4, 5, 6}
 	for i := len(avatars) - 1; i > 0; i-- {
 		j := random(i + 1)
@@ -248,10 +267,10 @@ func (g *Game) Start() error {
 		value := avatars[i]
 		p.avatar = &value
 	}
-	g.items = g.generate()
+	g.items, g.plannedHints = items, planned
 	g.phase = "bidding"
 	g.round = 1
-	g.hints = append(g.hints, g.publicHint())
+	g.hints = append(g.hints, g.plannedHints[0])
 	g.version++
 	return nil
 }
@@ -275,24 +294,56 @@ func (g *Game) generate() []Item {
 	}
 	return items
 }
-func (g *Game) publicHint() Hint {
-	// Each reveal picks a distinct kind; random shapes may refer to the same item.
-	kinds := []string{"quality_average", "random_shape", "random_quality", "item_count"}
-	available := []string{}
-	for _, k := range kinds {
-		used := false
-		for _, h := range g.hints {
-			if h.Kind == k {
-				used = true
-			}
-		}
-		if !used {
-			available = append(available, k)
-		}
+func (g *Game) planHints(items []Item) ([]Hint, error) {
+	request := hints.Request{ProtocolVersion: 1, BoxWidth: g.width, BoxHeight: g.height, Items: []hints.Item{}}
+	for _, i := range items {
+		request.Items = append(request.Items, hints.Item{ID: i.ID, Quality: i.Quality, Price: i.Price,
+			TopLeft: hints.Point{X: i.TopLeft.X, Y: i.TopLeft.Y}, BottomRight: hints.Point{X: i.BottomRight.X, Y: i.BottomRight.Y}})
 	}
-	k := available[random(len(available))]
-	data := g.publicFact(k)
-	return Hint{Round: g.round, Kind: k, Source: "public", Data: data}
+	available := append([]hints.Plugin{}, g.hintConfig.Plugins...)
+	result := []Hint{}
+	priceUsed := false
+	for _, round := range []int{1, 3} {
+		var clue hints.Clue
+		var plugin hints.Plugin
+		for {
+			if len(available) == 0 {
+				return nil, errors.New("not enough applicable public hint plugins")
+			}
+			index := hints.Random(len(available))
+			plugin = available[index]
+			available = append(available[:index], available[index+1:]...)
+			if priceUsed && (plugin.Builtin == "quality_average" || plugin.Builtin == "random_quality_price") {
+				continue
+			}
+			request.Round = round
+			var err error
+			clue, err = plugin.Generate(context.Background(), request)
+			if errors.Is(err, hints.ErrNotApplicable) {
+				continue
+			}
+			if err != nil {
+				return nil, err
+			}
+			if clue.Fact != nil && clue.Fact.IsPrice() {
+				if priceUsed {
+					continue
+				}
+				priceUsed = true
+			}
+			break
+		}
+		encoded, err := json.Marshal(clue)
+		if err != nil {
+			return nil, err
+		}
+		var data map[string]any
+		if err := json.Unmarshal(encoded, &data); err != nil {
+			return nil, err
+		}
+		result = append(result, Hint{Round: round, Kind: plugin.ID, Source: "public", Data: data})
+	}
+	return result, nil
 }
 func (g *Game) total() int64 {
 	var n int64
@@ -300,28 +351,6 @@ func (g *Game) total() int64 {
 		n += i.Price
 	}
 	return n
-}
-func (g *Game) publicFact(kind string) map[string]any {
-	switch kind {
-	case "random_shape":
-		return g.cardEffect(cards.Effect{Type: "reveal", Selector: "random", Fields: []string{"shape"}})
-	case "random_quality":
-		return g.cardEffect(cards.Effect{Type: "reveal", Selector: "random", Fields: []string{"quality"}})
-	case "item_count":
-		return g.cardEffect(cards.Effect{Type: "count"})
-	case "quality_average":
-		q := g.items[random(len(g.items))].Quality
-		var sum int64
-		count := 0
-		for _, j := range g.items {
-			if j.Quality == q {
-				sum += j.Price
-				count++
-			}
-		}
-		return map[string]any{"quality": q, "average_price": float64(sum) / float64(count)}
-	}
-	panic("unrecognized hint kind")
 }
 
 // Evaluate approved primitives, never card IDs or executable configuration.
@@ -468,7 +497,7 @@ func (g *Game) Submit(token string, round int, amount int64, reason string) erro
 		other.bid = nil
 	}
 	if g.round == 3 {
-		g.hints = append(g.hints, g.publicHint())
+		g.hints = append(g.hints, g.plannedHints[1])
 	}
 	return nil
 }
@@ -531,8 +560,8 @@ func (g *Game) ObserveObserver() ([]byte, error) {
 }
 func (g *Game) observe(token string, observer bool) ([]byte, error) {
 	v := View{Version: g.version, Phase: g.phase, Round: g.round, Players: []PlayerInfo{}, PublicHints: g.hints, History: g.history, Settlement: g.settlement,
-		Rules: Rules{Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig, PlayerCount: g.maxPlayers, MaxBid: MaxBid, Qualities: qualities, Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck,
-			Description: "2–7 players; up to 5 rounds. All players submit before a round is revealed. A unique positive highest bid settles immediately at >= 2x/1.7x/1.5x the second-highest in rounds 1/2/3. Round 4 never settles early. Round 5 always settles at the highest bid, with uniform random choice among tied highest bidders including all-zero bids. Only the receiving player pays and receives total value minus price; others have payoff 0. Each card/bid requires a private reason, visible only to that player and authorized human observers. Later bids may decrease. One distinct single-use card per round before bidding. Shapes and prices are hidden unless revealed; coordinates are integer half-open grid bounds. Occupied rows are filled without gaps or overlaps; empty rows are only at the bottom. Item count and occupied row count are hidden. Quality is weighted independently of size; price is a uniform integer within its quality range. Public hints appear before rounds 1 and 3. Max bid is a technical limit, not a budget. Objective: maximize expected monetary payoff across games."}}
+		Rules: Rules{Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig, PlayerCount: g.maxPlayers, MaxBid: MaxBid, Qualities: qualities, Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck, PublicHintPlugins: g.hintConfig.IDs(),
+			Description: "2–7 players; up to 5 rounds. All players submit before a round is revealed. A unique positive highest bid settles immediately at >= 2x/1.7x/1.5x the second-highest in rounds 1/2/3. Round 4 never settles early. Round 5 always settles at the highest bid, with uniform random choice among tied highest bidders including all-zero bids. Only the receiving player pays and receives total value minus price; others have payoff 0. Each card/bid requires a private reason, visible only to that player and authorized human observers. Later bids may decrease. One distinct single-use card per round before bidding. Shapes and prices are hidden unless revealed; coordinates are integer half-open grid bounds. Occupied rows are filled without gaps or overlaps; empty rows are only at the bottom. Item count and occupied row count are hidden. Quality is weighted independently of size; price is a uniform integer within its quality range. Public plugin hints appear before rounds 1 and 3. Default clues reveal accurate limited facts, never the total item count, whole-box value or whole-box average. Quality averages cover at most half the items; at most one price clue appears per game. Custom plugin semantics depend on the host. Max bid is a technical limit, not a budget. Objective: maximize expected monetary payoff across games."}}
 	v.Rules.EarlyMultipliers = []float64{2, 1.7, 1.5, 0, 0}
 	if observer {
 		v.Decisions = g.observerDecisions()

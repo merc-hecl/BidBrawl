@@ -18,6 +18,7 @@ import (
 	"bidbrawl/internal/cards"
 	"bidbrawl/internal/client"
 	"bidbrawl/internal/game"
+	"bidbrawl/internal/hints"
 	"bidbrawl/internal/server"
 )
 
@@ -45,6 +46,34 @@ func cli(t *testing.T, args ...string) map[string]any {
 		t.Fatal(args[0], err)
 	}
 	return result
+}
+
+func TestCLIHintConfigurationAndPublicCatalog(t *testing.T) {
+	exported := cli(t, "hints", "-defaults", "-url", "http://127.0.0.1:1")
+	if len(exported["plugins"].([]any)) != 5 {
+		t.Fatal("missing offline default hints")
+	}
+	cfg := hints.Config{SchemaVersion: 1, Plugins: []hints.Plugin{
+		{ID: "custom_a", Command: []string{"private-program", "private-argument"}},
+		{ID: "custom_b", Builtin: "random_quality"},
+	}}
+	s := server.NewWithHints(game.DefaultConfig(), cards.Default(), cfg)
+	host := httptest.NewServer(s)
+	defer host.Close()
+	room := cli(t, "create", "-url", host.URL, "-token", s.HostToken, "-name", "Hints", "-players", "2")["room_id"].(string)
+	for _, args := range [][]string{
+		{"hints", "-url", host.URL}, {"hints", "-url", host.URL, "-room", room},
+	} {
+		catalog := cli(t, args...)
+		b, _ := json.Marshal(catalog)
+		if strings.Contains(string(b), "private-program") || strings.Contains(string(b), "private-argument") {
+			t.Fatal("plugin command leaked")
+		}
+		ids := catalog["public_hint_plugins"].([]any)
+		if len(ids) != 2 || ids[0] != "custom_a" || ids[1] != "custom_b" {
+			t.Fatal("wrong plugin catalog", catalog)
+		}
+	}
 }
 
 func TestCLIProtocolGameFlow(t *testing.T) {

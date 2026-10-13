@@ -19,6 +19,7 @@ import (
 	"bidbrawl/internal/cards"
 	"bidbrawl/internal/client"
 	"bidbrawl/internal/game"
+	"bidbrawl/internal/hints"
 	"bidbrawl/internal/manual"
 	"bidbrawl/internal/server"
 )
@@ -53,12 +54,12 @@ func run(ctx context.Context, args []string) error {
 }
 func runWithBrowser(ctx context.Context, args []string, launchBrowser func(string) error) error {
 	if len(args) == 0 {
-		fmt.Println("BidBrawl — 外部 Agent 驱动的暗拍\n命令: host | ui | register | accounts | rotate-credential | login | logout | me | rooms | create | invite | join | start | state | watch | results | stats | agent | replay | observer-login | config | cards | card | bid | handbook\n用法: bidbrawl <命令> -h")
+		fmt.Println("BidBrawl — 外部 Agent 驱动的暗拍\n命令: host | ui | register | accounts | rotate-credential | login | logout | me | rooms | create | invite | join | start | state | watch | results | stats | agent | replay | observer-login | config | cards | hints | card | bid | handbook\n用法: bidbrawl <命令> -h")
 		return nil
 	}
 	command := args[0]
 	switch command {
-	case "host", "ui", "register", "accounts", "rotate-credential", "login", "logout", "me", "rooms", "create", "invite", "join", "start", "state", "watch", "results", "stats", "agent", "replay", "observer-login", "config", "cards", "card", "bid", "handbook":
+	case "host", "ui", "register", "accounts", "rotate-credential", "login", "logout", "me", "rooms", "create", "invite", "join", "start", "state", "watch", "results", "stats", "agent", "replay", "observer-login", "config", "cards", "hints", "card", "bid", "handbook":
 	default:
 		return fmt.Errorf("unknown command: %s", command)
 	}
@@ -67,6 +68,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		listen := f.String("listen", "127.0.0.1:8787", "监听地址；局域网用 0.0.0.0:8787")
 		configPath := f.String("cards-config", "", "技能卡 JSON 配置路径；省略时使用内置配置")
 		gameConfigPath := f.String("game-config", "", "箱体行列数与物品占格上限 JSON 配置路径；省略时使用内置配置")
+		hintsPath := f.String("hints-config", "", "公共提示插件 JSON 配置；省略时使用内置局部事实线索")
 		dataDir := f.String("data-dir", os.Getenv("BIDBRAWL_DATA_DIR"), "账号 / 房间 / 对局数据目录；默认用户配置目录下的 BidBrawl")
 		webUI := f.Bool("webui", false, "启用 WebUI 并自动打开浏览器；默认仅运行后端")
 		if e := parseFlags(f, args[1:]); e != nil {
@@ -92,7 +94,15 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		if e != nil {
 			return e
 		}
-		s, e := server.Open(geometry, cfg, databasePath)
+		hintConfig := hints.Default()
+		if *hintsPath != "" {
+			loaded, err := hints.Load(*hintsPath)
+			if err != nil {
+				return err
+			}
+			hintConfig = loaded
+		}
+		s, e := server.OpenWithHints(geometry, cfg, hintConfig, databasePath)
 		if e != nil {
 			return e
 		}
@@ -158,7 +168,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	card := f.String("card", "", "技能卡 ID")
 	amount := f.Int64("amount", 0, "整数报价")
 	reason := f.String("reason", "", "报价 / 用卡的私有决策理由，必填，1–2000 字符")
-	defaults := f.Bool("defaults", false, "config / cards 命令：离线导出内置默认配置")
+	defaults := f.Bool("defaults", false, "config / cards / hints 命令：离线导出内置默认配置")
 	live := f.Bool("live", false, "handbook 命令：读取指定房间的实际游戏与卡牌配置")
 	events := f.String("event", "", "watch：逗号分隔的事件名；省略接收当前房间全部事件")
 	once := f.Bool("once", false, "watch：收到首个匹配事件后退出")
@@ -199,6 +209,9 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	}
 	if command == "cards" && *defaults {
 		return printJSON(cards.Default())
+	}
+	if command == "hints" && *defaults {
+		return printJSON(hints.Default())
 	}
 	if command == "config" && *defaults {
 		return printJSON(game.DefaultConfig())
@@ -269,17 +282,21 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		}
 		return err
 	}
-	if command == "cards" || command == "handbook" || command == "config" {
+	if command == "cards" || command == "handbook" || command == "config" || command == "hints" {
 		if *room == "" {
 			var configuration struct {
-				Game  game.Config  `json:"game"`
-				Cards cards.Config `json:"cards"`
+				Game        game.Config  `json:"game"`
+				Cards       cards.Config `json:"cards"`
+				HintPlugins []string     `json:"public_hint_plugins"`
 			}
 			if err := c.Request(ctx, "GET", "/api/config", nil, &configuration); err != nil {
 				return err
 			}
 			if command == "config" {
 				return printJSON(configuration.Game)
+			}
+			if command == "hints" {
+				return printJSON(map[string]any{"public_hint_plugins": configuration.HintPlugins})
 			}
 			if command == "cards" {
 				return printJSON(configuration.Cards)
@@ -293,6 +310,9 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		}
 		if command == "config" {
 			return printJSON(observation.Rules.GameConfig)
+		}
+		if command == "hints" {
+			return printJSON(map[string]any{"public_hint_plugins": observation.Rules.PublicHintPlugins})
 		}
 		cfg := cards.Config{SchemaVersion: observation.Rules.CardsSchemaVersion, DefaultDeck: observation.Rules.DefaultDeck, Cards: observation.Rules.Cards}
 		if command == "handbook" {

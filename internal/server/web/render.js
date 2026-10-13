@@ -1,4 +1,4 @@
-import {t, money, signed, localizeCard} from './i18n.js';
+import {t, money, signed, localizeCard, getLocale} from './i18n.js';
 import {knownItems, observation} from './model.js';
 import {esc,icon,button} from './html.js';
 import {roomView,avatarGallery} from './room-ui.js';
@@ -30,18 +30,9 @@ function bids(view) {
 }
 function hints(view) {
   return `<section class="intel-panel"><div class="intel-list">${view.public_hints.map(hint=>{
-    const d=hint.data;let title,body;
-    if(hint.kind==='random_shape'){
-      title=tr('shape');body=`<p><b>${d.bottom_right.x-d.top_left.x} × ${d.bottom_right.y-d.top_left.y}</b> <span>${tr('cells')} · ${esc(d.item_id)}</span></p><small class="mono">(${d.top_left.x}, ${d.top_left.y}) → (${d.bottom_right.x}, ${d.bottom_right.y})</small>`;
-    }else if(hint.kind==='quality_average'){
-      title=tr('qualityAverage',{quality:t(d.quality)});body=`<p class="intel-value">${money(d.average_price)}<small>${tr('coins')}</small></p>`;
-    }else if(hint.kind==='random_quality'){
-      title=tr('randomQuality');body=`<p>${esc(d.item_id)} · ${quality(d.quality)}</p>`;
-    }else if(hint.kind==='item_count'){
-      title=tr('itemCount');body=`<p class="intel-value">${money(d.count)}</p>`;
-    }else{title=esc(hint.kind);body=`<p>${esc(JSON.stringify(d))}</p>`;}
-    return `<article><div class="intel-marker">${icon(hint.kind==='random_shape'?'shape':'coin')}</div><div class="intel-copy"><span class="eyebrow">${tr('round',{round:hint.round})}</span><h3>${title}</h3>${body}</div></article>`;
-  }).join('')||empty('noHints')}</div></section>`;
+    const text=hint.data.translations?.[getLocale()]||hint.data;
+    return `<article><div class="intel-marker">${icon('scan')}</div><div class="intel-copy"><span class="eyebrow">${tr('round',{round:hint.round})}</span><h3>${esc(text.title)}</h3><p>${esc(text.message)}</p></div></article>`;
+  }).join('')||empty('noHints')}</div><p class="empty compact">${tr('hintScope')}</p></section>`;
 }
 function settlement(view) {
   if(!view.settlement)return `<div class="pending-settlement"><span>${tr('pending')}</span></div>`;

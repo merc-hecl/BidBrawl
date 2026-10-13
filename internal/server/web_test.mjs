@@ -9,7 +9,7 @@ const emptyStats={games:0,profit:0,paid:0,rate:null,agents:[]};
 // Fixture frames represent the server projection consumed by the renderer.
 function withFrames(s){return {...s,frames:Array.from({length:s.history.length+(s.settlement?2:1)},(_,i)=>({...s,phase:s.settlement&&i>=s.history.length?'settled':'bidding',round:Math.min(i+1,s.round),history:s.history.slice(0,i),public_hints:s.public_hints.filter(h=>h.round<=i+1),decisions:s.decisions.filter(d=>d.round<=i),settlement:i>=s.history.length?s.settlement:undefined}))};}
 const ui={room:'r',page:'room',cursor:2,sort:'profit',quality:'all',search:'',focusPlayer:'p1'};
-let source={room_id:'r',room_name:'<Room>',phase:'settled',round:5,rules:{rounds:5,box_width:20,box_height:30,player_count:2},players:[{id:'p1',name:'<Atlas>',avatar:5,submitted:true},{id:'p2',name:'Echo',avatar:1,submitted:true}],history:Array.from({length:5},(_,i)=>({round:i+1,bids:[{player_id:'p1',amount:100+i},{player_id:'p2',amount:200+i}]})),public_hints:[{round:1,kind:'random_shape',data:{item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}}},{round:3,kind:'item_count',data:{count:2}}],settlement:{winner_id:'p2',paid:204,total_value:300,profit:96,tied_players:['p2'],items:[{id:'known',quality:'rare',price:100,top_left:{x:0,y:0},bottom_right:{x:1,y:1}},{id:'hidden-item',quality:'common',price:200,top_left:{x:1,y:0},bottom_right:{x:2,y:1}}],round:5,method:'final',payoffs:{p1:0,p2:96}},decisions:[]};
+let source={room_id:'r',room_name:'<Room>',phase:'settled',round:5,rules:{rounds:5,box_width:20,box_height:30,player_count:2},players:[{id:'p1',name:'<Atlas>',avatar:5,submitted:true},{id:'p2',name:'Echo',avatar:1,submitted:true}],history:Array.from({length:5},(_,i)=>({round:i+1,bids:[{player_id:'p1',amount:100+i},{player_id:'p2',amount:200+i}]})),public_hints:[{round:1,kind:'random_shape',data:{title:'随机物品轮廓',message:'物品 known 占 1 × 1 格。',fact:{type:'random_shape',item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}},translations:{en:{title:'Random item shape',message:'Item known occupies 1 × 1 cells.'}}}},{round:3,kind:'quality_count',data:{title:'指定品质数量',message:'箱内稀有品质物品共有 2 件。',fact:{type:'quality_count',quality:'rare',count:2}}}],settlement:{winner_id:'p2',paid:204,total_value:300,profit:96,tied_players:['p2'],items:[{id:'known',quality:'rare',price:100,top_left:{x:0,y:0},bottom_right:{x:1,y:1}},{id:'hidden-item',quality:'common',price:200,top_left:{x:1,y:0},bottom_right:{x:2,y:1}}],round:5,method:'final',payoffs:{p1:0,p2:96}},decisions:[]};
 
 source=withFrames(source);
 
@@ -34,6 +34,31 @@ test('statistics and agent profile work without a selected room and never filter
   assert.ok(!profile.content.includes('account:')&&!profile.content.includes('<dl>'));
 });
 source.rules.cards=JSON.parse(await readFile(new URL('../cards/default.json',import.meta.url),'utf8')).cards;
+
+test('approved public facts reveal shapes and merge same-item quality and price',()=>{
+  const view={...source,settlement:undefined,public_hints:[
+    {round:1,data:{fact:{type:'random_shape',item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}}}},
+    {round:3,data:{fact:{type:'random_quality_price',item_id:'known',quality:'rare',price:456}}},
+    {round:3,data:{fact:{type:'quality_count',quality:'common',count:5}}},
+    {round:3,data:{fact:{type:'random_quality_price',item_id:'unlocated',quality:'epic',price:999}}},
+  ]};
+  assert.deepEqual(knownItems(view),[{id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1},quality:'rare',price:456}]);
+});
+
+test('custom clue text is escaped, localized and cannot reveal item geometry',()=>{
+  const data={title:'<script>title</script>',message:'<img src=x onerror=alert(1)>',translations:{en:{title:'Custom clue',message:'Perhaps a surprise.'}},item_id:'injected-item',top_left:{x:0,y:0},bottom_right:{x:1,y:1}};
+  const view={...source,settlement:undefined,public_hints:[{round:1,kind:'unknown_custom_plugin',data}]};
+  setLocale('zh-CN',false);
+  const zh=dialogContent('hints',null,view,emptyStats,{...ui,cursor:null}).content;
+  assert.ok(zh.includes('&lt;script&gt;')&&zh.includes('&lt;img'));
+  assert.ok(!zh.includes('<script>')&&!zh.includes('<img'));
+  assert.equal(knownItems(view).length,0);
+  setLocale('en',false);
+  const en=dialogContent('hints',null,view,emptyStats,{...ui,cursor:null}).content;
+  assert.ok(en.includes('Custom clue')&&en.includes('Perhaps a surprise.'));
+  assert.ok(en.includes('total item count'));
+  setLocale('zh-CN',false);
+});
 
 test('locales have matching keys, placeholders and no untranslated renderer text',async()=>{
   assert.deepEqual(Object.keys(catalogs.en).sort(),Object.keys(catalogs['zh-CN']).sort());

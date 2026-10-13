@@ -11,6 +11,7 @@ import (
 	"unicode/utf8"
 
 	"bidbrawl/internal/cards"
+	"bidbrawl/internal/hints"
 )
 
 // Snapshots are private storage records, never public observations. They retain
@@ -21,6 +22,8 @@ type gameSnapshot struct {
 	PlayerCount   int              `json:"player_count"`
 	Config        Config           `json:"game_config"`
 	Cards         cards.Config     `json:"card_config"`
+	HintConfig    hints.Config     `json:"hint_config"`
+	PlannedHints  []Hint           `json:"planned_hints"`
 	Phase         string           `json:"phase"`
 	Round         int              `json:"round"`
 	Version       int              `json:"version"`
@@ -48,7 +51,7 @@ type playerSnapshot struct {
 func (g *Game) Snapshot() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := gameSnapshot{SchemaVersion: 3, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig,
+	s := gameSnapshot{SchemaVersion: 4, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
 		Phase: g.phase, Round: g.round, Version: g.version, Players: []playerSnapshot{}, Items: g.items,
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
@@ -70,10 +73,10 @@ func Restore(data []byte) (*Game, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return nil, errors.New("expected exactly one game snapshot")
 	}
-	if s.SchemaVersion != 3 {
+	if s.SchemaVersion != 4 {
 		return nil, errors.New("unsupported game snapshot schema")
 	}
-	g, err := NewWithConfig(s.PlayerCount, s.Config, s.Cards)
+	g, err := NewWithHints(s.PlayerCount, s.Config, s.Cards, s.HintConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -82,6 +85,7 @@ func Restore(data []byte) (*Game, error) {
 	}
 	g.phase, g.round, g.version = s.Phase, s.Round, s.Version
 	g.items, g.hints, g.history = s.Items, s.Hints, s.History
+	g.plannedHints = s.PlannedHints
 	g.decisions, g.settlement = s.Decisions, s.Settlement
 	for _, p := range s.Players {
 		g.players = append(g.players, &player{p.ID, p.Name, p.Token, p.Deck, p.Used, p.Hints, p.Bid, p.CardRound, p.Revision, p.Avatar})
@@ -153,6 +157,9 @@ func (s gameSnapshot) validate() error {
 		}
 	}
 	if s.Phase == "lobby" {
+		if len(s.PlannedHints) != 0 {
+			return errors.New("clues generated before start")
+		}
 		if s.Round != 0 || len(s.Items) != 0 || len(s.Hints) != 0 || len(s.History) != 0 || len(s.Decisions) != 0 || s.Settlement != nil || pending != 0 || s.Version != 1+len(s.Players) {
 			return errors.New("invalid lobby state")
 		}
@@ -171,10 +178,35 @@ func (s gameSnapshot) validate() error {
 	if len(s.Hints) != hintCount {
 		return errors.New("invalid public hint count")
 	}
-	for i, h := range s.Hints {
-		if h.Round != 1+2*i || h.Source != "public" || h.Data == nil || !contains([]string{"quality_average", "random_shape", "random_quality", "item_count"}, h.Kind) || i == 1 && h.Kind == s.Hints[0].Kind {
+	if len(s.PlannedHints) != 2 {
+		return errors.New("invalid planned hint count")
+	}
+	priceHints := 0
+	for i, h := range s.PlannedHints {
+		if h.Round != 1+2*i || h.Source != "public" || h.Data == nil || !contains(s.HintConfig.IDs(), h.Kind) || i == 1 && h.Kind == s.PlannedHints[0].Kind {
 			return errors.New("invalid public hint")
 		}
+		data, err := json.Marshal(h.Data)
+		if err != nil {
+			return err
+		}
+		clue, err := hints.ParseClue(bytes.NewReader(data))
+		if err != nil {
+			return err
+		}
+		if clue.Fact != nil && clue.Fact.IsPrice() {
+			priceHints++
+		}
+		if i < hintCount {
+			planned, _ := json.Marshal(h)
+			published, _ := json.Marshal(s.Hints[i])
+			if !bytes.Equal(planned, published) {
+				return errors.New("public hint differs from planned hint")
+			}
+		}
+	}
+	if priceHints > 1 {
+		return errors.New("too many public price clues")
 	}
 	historyCount := s.Round - 1
 	if s.Phase == "settled" {
