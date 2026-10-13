@@ -183,7 +183,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .crate-lid{display:flex;align-items:center;justify-content:space-between}
 .crate-window{position:relative;overflow:hidden}
 .crate-grid.fitted-grid{position:relative;width:100%;height:100%;overflow:hidden;background:var(--box-bg)}
-.fit-item{position:absolute;display:block;padding:0;border:0;border-radius:0;background:none;min-width:0;min-height:0}
+.fit-item{position:absolute;z-index:1;display:block;padding:0;border:0;border-radius:0;background:none;min-width:0;min-height:0}
 .fit-item .item-tile{position:absolute;inset:1px;display:flex;align-items:center;justify-content:center;background:var(--lot-neutral);border-radius:2px}
 .fit-item[data-quality=common] .item-tile{background:var(--lot-common)}
 .fit-item[data-quality=uncommon] .item-tile{background:var(--lot-uncommon)}
@@ -191,7 +191,7 @@ main{flex:1;min-height:0;display:flex;flex-direction:column}
 .fit-item[data-quality=epic] .item-tile{background:var(--lot-epic)}
 .fit-item[data-quality=legendary] .item-tile{background:var(--lot-legendary)}
 .fit-item .item-number{font:11px var(--numbers);color:var(--lot-ink);opacity:.8}
-.canvas-grid-lines{position:absolute;inset:0;pointer-events:none;z-index:2;background-image:linear-gradient(to right,var(--grid-line) 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 1px,transparent 1px);background-size:calc(100% / var(--columns)) calc(100% / var(--rows));border-right:1px solid var(--grid-line);border-bottom:1px solid var(--grid-line)}
+.canvas-grid-lines{position:absolute;inset:0;pointer-events:none;z-index:0;background-image:linear-gradient(to right,var(--grid-line) 1px,transparent 1px),linear-gradient(to bottom,var(--grid-line) 1px,transparent 1px);background-size:calc(100% / var(--columns)) calc(100% / var(--rows));border-right:1px solid var(--grid-line);border-bottom:1px solid var(--grid-line)}
 .fit-item:is(.is-selected,:focus-visible){z-index:4;outline:2px solid var(--accent);outline-offset:-2px}
 .fit-item.is-selected .item-tile{box-shadow:inset 0 0 0 1px var(--accent)}
 .fit-item:hover .item-tile{filter:brightness(1.07)}
