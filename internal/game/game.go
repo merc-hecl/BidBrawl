@@ -62,6 +62,7 @@ type PlayerInfo struct {
 	ID        string `json:"id"`
 	Name      string `json:"name"`
 	Submitted bool   `json:"submitted"`
+	Avatar    *int   `json:"avatar,omitempty"`
 }
 type Self struct {
 	ID                string     `json:"id"`
@@ -129,6 +130,7 @@ type player struct {
 	bid             *int64
 	cardRound       int
 	revision        int
+	avatar          *int
 }
 type Game struct {
 	mu                                        sync.Mutex
@@ -236,6 +238,15 @@ func (g *Game) Start() error {
 	}
 	if len(g.players) != g.maxPlayers {
 		return fmt.Errorf("waiting for all %d configured players", g.maxPlayers)
+	}
+	avatars := []int{0, 1, 2, 3, 4, 5, 6}
+	for i := len(avatars) - 1; i > 0; i-- {
+		j := random(i + 1)
+		avatars[i], avatars[j] = avatars[j], avatars[i]
+	}
+	for i, p := range g.players {
+		value := avatars[i]
+		p.avatar = &value
 	}
 	g.items = g.generate()
 	g.phase = "bidding"
@@ -530,7 +541,7 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 		}
 	}
 	for _, p := range g.players {
-		v.Players = append(v.Players, PlayerInfo{p.id, p.name, p.bid != nil})
+		v.Players = append(v.Players, PlayerInfo{p.id, p.name, p.bid != nil, p.avatar})
 	}
 	if token != "" {
 		p := g.find(token)

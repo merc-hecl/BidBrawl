@@ -20,6 +20,7 @@
 - `bidbrawl create -name 首局 -players 4`：登录玩家创建房间，返回 `room_id`。支持 2～7 人，默认 4。创建者是本房间房主，但不会自动加入。
 - `bidbrawl cards -room <room_id>`：读取当前宿主的卡牌 ID、名称、说明、声明式 effect 和 default_deck。卡牌由房主配置，不能假设内置卡 ID 一定存在。
 - `bidbrawl join -room <room_id> -cards <卡ID列表>`：以当前身份占一个席位，开局前选择最多 5 张不同卡，多个 ID 用逗号分隔。`-cards ''` 不带卡；省略时从宿主读取 default_deck，不在 CLI 中预设卡组。
+- 开局时，后端从七种动态头像中随机分配，每局内不重复。`players[].avatar` 为 0～6 的头像编号，开局前不返回；分配随对局保存，服务重启与复盘保持一致，新一局重新分配。WebUI 点击玩家头像可查看轮次与公开报价，授权人类观察者还可查看决策理由。
 - 人数到齐后，创建者运行 `bidbrawl start -room <room_id>`。其他玩家不能开始该房间。后台管理员也能使用管理员 Token 开始。
 - 宿主默认仅启动后端，不创建房间；`host -webui` 才启用网页。人类可在 WebUI 手动建房、生成邀请并开局；管理员可通过 CLI 完成同样操作。人类创建房间不会占用玩家席位。
 - 创建者执行 `bidbrawl invite -room <room_id>` 获取 `invite_url`，受邀玩家登录后执行 `bidbrawl join -invite <URL> -cards <卡ID列表>`。邀请只定位宿主和房间，不提供身份权限；每个玩家使用自己的会话。没有默认房间，房间操作必须始终指定准确的 `-room`，join 也可由邀请链接指定。

@@ -8,8 +8,8 @@ import {renderContent,roomDirectory,dialogContent} from './web/render.js';
 const emptyStats={games:0,profit:0,paid:0,rate:null,agents:[]};
 // Fixture frames represent the server projection consumed by the renderer.
 function withFrames(s){return {...s,frames:Array.from({length:s.history.length+(s.settlement?2:1)},(_,i)=>({...s,phase:s.settlement&&i>=s.history.length?'settled':'bidding',round:Math.min(i+1,s.round),history:s.history.slice(0,i),public_hints:s.public_hints.filter(h=>h.round<=i+1),decisions:s.decisions.filter(d=>d.round<=i),settlement:i>=s.history.length?s.settlement:undefined}))};}
-const ui={room:'r',page:'watch',cursor:2,sort:'profit',quality:'all',search:''};
-let source={room_id:'r',room_name:'<Room>',phase:'settled',round:5,rules:{rounds:5,box_width:20,box_height:30,player_count:2},players:[{id:'p1',name:'<Atlas>',submitted:true},{id:'p2',name:'Echo',submitted:true}],history:Array.from({length:5},(_,i)=>({round:i+1,bids:[{player_id:'p1',amount:100+i},{player_id:'p2',amount:200+i}]})),public_hints:[{round:1,kind:'random_shape',data:{item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}}},{round:3,kind:'item_count',data:{count:2}}],settlement:{winner_id:'p2',paid:204,total_value:300,profit:96,tied_players:['p2'],items:[{id:'known',quality:'rare',price:100,top_left:{x:0,y:0},bottom_right:{x:1,y:1}},{id:'hidden-item',quality:'common',price:200,top_left:{x:1,y:0},bottom_right:{x:2,y:1}}],round:5,method:'final',payoffs:{p1:0,p2:96}},decisions:[]};
+const ui={room:'r',page:'room',cursor:2,sort:'profit',quality:'all',search:'',focusPlayer:'p1'};
+let source={room_id:'r',room_name:'<Room>',phase:'settled',round:5,rules:{rounds:5,box_width:20,box_height:30,player_count:2},players:[{id:'p1',name:'<Atlas>',avatar:5,submitted:true},{id:'p2',name:'Echo',avatar:1,submitted:true}],history:Array.from({length:5},(_,i)=>({round:i+1,bids:[{player_id:'p1',amount:100+i},{player_id:'p2',amount:200+i}]})),public_hints:[{round:1,kind:'random_shape',data:{item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}}},{round:3,kind:'item_count',data:{count:2}}],settlement:{winner_id:'p2',paid:204,total_value:300,profit:96,tied_players:['p2'],items:[{id:'known',quality:'rare',price:100,top_left:{x:0,y:0},bottom_right:{x:1,y:1}},{id:'hidden-item',quality:'common',price:200,top_left:{x:1,y:0},bottom_right:{x:2,y:1}}],round:5,method:'final',payoffs:{p1:0,p2:96}},decisions:[]};
 
 source=withFrames(source);
 
@@ -43,10 +43,10 @@ test('locales have matching keys, placeholders and no untranslated renderer text
   }
   for(const locale of ['zh-CN','en']) {
     setLocale(locale,false);
-    for(const page of ['watch','stats','replay'])assert.doesNotThrow(()=>renderContent(source,emptyStats,{...ui,page}));
+    for(const page of ['room','stats'])assert.doesNotThrow(()=>renderContent(source,emptyStats,{...ui,page}));
     assert.ok(dialogContent('rules',null,source,emptyStats,ui).content);
   }
-  for(const file of ['app.js','render.js','model.js','style.css']) {
+  for(const file of ['app.js','render.js','room-ui.js','avatars.js','appearance.js','model.js','style.css']) {
     const text=await readFile(new URL('./web/'+file,import.meta.url),'utf8');
     const withoutComments=text.replace(/\/\*[\s\S]*?\*\//g,'').replace(/\/\/[^\n]*/g,'');
     assert.equal(/[\u4e00-\u9fff]/.test(withoutComments),false,file);
@@ -88,23 +88,28 @@ test('instant sale replay and observer reasons do not expose later rounds or exe
   assert.equal('nonce' in early.settlement,false);assert.equal('commitment' in early,false);
 });
 
-test('finished replay shows selected-round reasons before the ledger and explains restricted access',()=>{
+test('player pane shows only selected player and round reasons and explains restricted access',()=>{
   const recorded=withFrames({...source,decisions:[
     {round:1,player_id:'p1',action:'bid',reason:'first-round-rationale'},
     {round:2,player_id:'p2',action:'card',card_id:'item_count',reason:'second-round-rationale'}
   ]});
-  const first=renderContent(recorded,emptyStats,{...ui,page:'replay',cursor:1,observer:true});
+  const first=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:1,observer:true});
+  assert.ok(first.includes(`<span class="status-pill world-phase"><i></i>${t('round',{round:1})}</span>`));
   assert.ok(first.includes('first-round-rationale'));
   assert.ok(!first.includes('second-round-rationale'));
-  assert.ok(first.indexOf('data-region="decisionReasons"')<first.indexOf('data-region="bids"'));
-  const second=renderContent(recorded,emptyStats,{...ui,page:'replay',cursor:2,observer:true});
+  assert.ok(first.includes('data-action="bids"'));
+  const second=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:2,observer:true,focusPlayer:'p2'});
   assert.ok(second.includes('second-round-rationale'));
   assert.ok(!second.includes('first-round-rationale'));
-  const final=renderContent(recorded,emptyStats,{...ui,page:'replay',cursor:6,observer:true});
-  assert.ok(final.includes('first-round-rationale')&&final.includes('second-round-rationale'));
-  const opening=renderContent(recorded,emptyStats,{...ui,page:'replay',cursor:0,observer:true});
+  const final=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:6,observer:true});
+  assert.ok(!final.includes('first-round-rationale')&&!final.includes('second-round-rationale'));
+  const opening=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:0,observer:true});
   assert.ok(opening.includes(t('openingDecision'))&&!opening.includes('first-round-rationale'));
-  const anonymous=renderContent(recorded,emptyStats,{...ui,page:'replay',cursor:1,observer:false});
+  assert.ok(opening.includes(`<span class="status-pill world-phase"><i></i>${t('opening')}</span>`));
+  const latest=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:null,observer:true});
+  assert.ok(!latest.includes('first-round-rationale')&&!latest.includes('second-round-rationale'));
+  assert.ok(latest.includes(`<span class="status-pill world-phase"><i></i>${t('settled')}</span>`));
+  const anonymous=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:1,observer:false});
   assert.ok(anonymous.includes(t('openFromHost'))&&!anonymous.includes('data-action="observer-login"'));
   assert.ok(!anonymous.includes('first-round-rationale')&&!anonymous.includes('second-round-rationale'));
 });
@@ -113,7 +118,7 @@ test('observer skill names and help use the saved card definition safely in both
   const played=withFrames({...source,decisions:[{round:1,player_id:'p1',action:'card',card_id:'value_band',reason:'estimate'}]});
   for(const locale of ['zh-CN','en']){
     setLocale(locale,false);
-    const html=renderContent(played,emptyStats,{...ui,page:'replay',cursor:1,observer:true});
+    const html=renderContent(played,emptyStats,{...ui,page:'room',cursor:1,observer:true});
     assert.ok(html.includes(t('card.value_band.name'))&&html.includes(t('card.value_band.description')));
     assert.ok(html.includes('data-action="card:value_band"')&&html.includes('role="tooltip"'));
     const detail=dialogContent('card','value_band',played,emptyStats,{...ui,observer:true});
@@ -122,9 +127,23 @@ test('observer skill names and help use the saved card definition safely in both
     assert.equal(dialogContent('card','value_band',played,emptyStats,{...ui,observer:false}),null);
   }
   const custom=withFrames({...played,rules:{...source.rules,cards:[{id:'custom',name:'<Card>',description:'<img src=x onerror=alert(1)>',effect:{type:'item_count'}}]},decisions:[{round:1,player_id:'p1',action:'card',card_id:'custom',reason:'estimate'}]});
-  const html=renderContent(custom,emptyStats,{...ui,page:'replay',cursor:1,observer:true});
+  const html=renderContent(custom,emptyStats,{...ui,page:'room',cursor:1,observer:true});
   assert.ok(html.includes('&lt;Card&gt;')&&html.includes('&lt;img src=x onerror=alert(1)&gt;'));
   assert.ok(!html.includes('<img src=x'));
-  const anonymous=renderContent(custom,emptyStats,{...ui,page:'replay',cursor:1,observer:false});
+  const anonymous=renderContent(custom,emptyStats,{...ui,page:'room',cursor:1,observer:false});
   assert.ok(!anonymous.includes('Card')&&!anonymous.includes('onerror'));
+});
+
+
+test('room uses persisted avatars and fitted item bounds without zoom controls',()=>{
+  const html=renderContent(source,emptyStats,{...ui,cursor:null});
+  assert.ok(html.includes('data-bot="5"')&&html.includes('data-bot="1"'));
+  assert.ok(html.includes('data-x="0" data-y="0" data-width="5" data-height="3.3333333333333335"'));
+  assert.ok(html.includes('data-columns="20" data-rows="30"'));
+  assert.equal((html.match(/data-item=/g)||[]).length,2);
+  assert.ok(!html.includes('zoom'));
+  assert.ok(!html.includes('style='));
+  const stats=renderContent(null,emptyStats,{...ui,page:'stats'});
+  assert.ok(stats.indexOf('class="metrics"')<stats.indexOf('data-region="scorecard"'));
+  assert.ok(stats.indexOf('data-region="scorecard"')<stats.indexOf('data-control="sort"'));
 });

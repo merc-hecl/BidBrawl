@@ -54,9 +54,16 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/card"+suffix, a, `{"reason":"protocol test","round":1,"card":"largest_price"}`, 200)
 	private := checkedRequest(t, s, "POST", "/api/bid"+suffix, a, `{"reason":"protocol test","round":1,"amount":777777}`, 200)
 	public := checkedRequest(t, s, "GET", "/api/state"+suffix, "", "", 200)
-	for _, forbidden := range []string{`"self":`, "777777", `"decisions":`, `"reason":"protocol test"`, `"settlement":`} {
+	var avatarView game.View
+	if err := json.Unmarshal(public, &avatarView); err != nil {
+		t.Fatal(err)
+	}
+	if avatarView.Players[0].Avatar == nil || avatarView.Players[1].Avatar == nil || *avatarView.Players[0].Avatar == *avatarView.Players[1].Avatar {
+		t.Fatal("public snapshot is missing distinct avatars")
+	}
+	for _, forbidden := range []string{`"self":`, `"amount":777777`, `"decisions":`, `"reason":"protocol test"`, `"settlement":`} {
 		if bytes.Contains(public, []byte(forbidden)) {
-			t.Fatal("public state leaked sealed or private data")
+			t.Fatalf("public state leaked sealed or private data: %s", forbidden)
 		}
 	}
 	_ = s.Close()
@@ -76,6 +83,20 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 		}
 	}
 	settled := checkedRequest(t, s, "GET", "/api/state"+suffix, "", "", 200)
+	replay := checkedRequest(t, s, "GET", "/api/replay"+suffix, "", "", 200)
+	var replayView struct {
+		Frames []game.View `json:"frames"`
+	}
+	if err := json.Unmarshal(replay, &replayView); err != nil {
+		t.Fatal(err)
+	}
+	for _, frame := range replayView.Frames {
+		for i, p := range frame.Players {
+			if p.Avatar == nil || *p.Avatar != *avatarView.Players[i].Avatar {
+				t.Fatal("replay changed player avatar")
+			}
+		}
+	}
 	results := checkedRequest(t, s, "GET", "/api/results", "", "", 200)
 	for range 2 {
 		_ = s.Close()

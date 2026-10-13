@@ -1,43 +1,24 @@
 <!doctype html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
   <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>BidBrawl</title><link rel="icon" href="data:,">
+  <meta name="color-scheme" content="light dark"><title>BidBrawl</title><link rel="icon" href="data:,">
+  <script src="/theme.js"></script>
   <link rel="stylesheet" href="/fonts/fonts.css"><link rel="stylesheet" href="/style.css">
   <script type="module" src="/app.js"></script>
 </head>
 <body>
-  <div class="app ledger refined playful">
-    <aside class="sidebar">
-      <a class="refined-brand" href="/" data-i18n-aria="home"><span class="refined-mark"><span class="icon icon-brand" aria-hidden="true"></span></span><span>BidBrawl</span></a>
-      <nav class="navigation" data-i18n-aria="navigation">
-        <button data-page="rooms" data-i18n-aria="rooms"><span class="icon icon-rooms" aria-hidden="true"></span><span data-i18n="rooms"></span></button>
-        <button data-page="watch" class="selected" data-i18n-aria="watch"><span class="icon icon-watch" aria-hidden="true"></span><span data-i18n="watch"></span></button>
-        <button data-page="stats" data-i18n-aria="stats"><span class="icon icon-stats" aria-hidden="true"></span><span data-i18n="stats"></span></button>
-        <button data-page="replay" data-i18n-aria="replay"><span class="icon icon-replay" aria-hidden="true"></span><span data-i18n="replay"></span></button>
-      </nav>
-      <div class="side-rooms">
-        <p><span data-i18n="rooms"></span></p>
-        <div class="room-tabs" role="group" data-i18n-aria="roomGroups">
-          <button data-room-group="active" aria-pressed="true" aria-controls="rooms"><span data-i18n="roomsActive"></span><span id="active-room-count" class="room-tab-count">0</span></button>
-          <button data-room-group="completed" aria-pressed="false" aria-controls="rooms"><span data-i18n="roomsCompleted"></span><span id="completed-room-count" class="room-tab-count">0</span></button>
-        </div>
-        <div id="rooms"></div>
-      </div>
+  <div class="app immersive">
+    <aside class="sidebar" id="sidebar">
+      <div class="rail-heading"><a class="world-brand" href="/" data-page="rooms" data-i18n-aria="home"><svg class="icon" aria-hidden="true"><use href="/icons.svg#brand"></use></svg><strong>BidBrawl</strong></a><button id="sidebar-toggle" class="rail-toggle" aria-controls="sidebar"><svg class="icon" aria-hidden="true"><use href="/icons.svg#panel"></use></svg></button></div>
+      <nav class="rail-actions" data-i18n-aria="navigation"><button class="rail-button" data-action="create-room" id="create-button" hidden data-i18n-aria="createRoom"><svg class="icon" aria-hidden="true"><use href="/icons.svg#plus"></use></svg><span data-i18n="createRoom"></span></button><button class="rail-button" data-page="stats" data-i18n-aria="stats"><svg class="icon" aria-hidden="true"><use href="/icons.svg#stats"></use></svg><span data-i18n="stats"></span></button></nav>
+      <div class="side-rooms"><p data-i18n="rooms"></p><div class="room-tabs" role="group" data-i18n-aria="roomGroups"><button data-room-group="active" aria-pressed="true" aria-controls="rooms"><span data-i18n="roomsActive"></span><span id="active-room-count" class="room-tab-count">0</span></button><button data-room-group="completed" aria-pressed="false" aria-controls="rooms"><span data-i18n="roomsCompleted"></span><span id="completed-room-count" class="room-tab-count">0</span></button></div><div id="rooms"></div></div>
+      <button id="language-button" class="rail-button"><svg class="icon" aria-hidden="true"><use href="/icons.svg#language"></use></svg><span data-i18n="language"></span></button>
     </aside>
-    <div class="workspace">
-      <header>
-        <div class="breadcrumb"><span id="page-icon" class="icon icon-watch" aria-hidden="true"></span><b id="page-name"></b></div>
-        <div class="controls">
-          <span id="connection" class="connection" role="status"></span>
-          <label class="room-control"><span class="visually-hidden" data-i18n="selectRoom"></span><select id="room-select" data-i18n-aria="selectRoom"></select></label>
-          <label class="language-control"><span class="visually-hidden" data-i18n="language"></span><select id="language-select" data-i18n-aria="language"><option value="zh-CN" lang="zh-CN">简体中文</option><option value="en" lang="en">English</option></select></label>
-          <button id="rules-button" class="quiet" data-i18n-aria="rules"><span class="icon icon-help" aria-hidden="true"></span><span data-i18n="rules"></span></button>
-        </div>
-      </header>
-      <main><div id="error" class="error" role="alert" hidden></div><div id="content" aria-busy="true"></div></main>
-    </div>
+    <button class="sidebar-scrim" tabindex="-1" data-i18n-aria="collapseSidebar"></button>
+    <div class="workspace"><header class="topline"><div class="breadcrumb"><b id="page-name"></b></div><div class="controls"><span id="connection" class="connection" role="status"></span><button id="avatars-button" class="icon-button" data-action="avatars" data-i18n-aria="avatarGallery"><svg class="icon" aria-hidden="true"><use href="/icons.svg#users"></use></svg></button><button id="theme-button" class="icon-button theme-button"></button><button id="rules-button" class="icon-button" data-i18n-aria="rules"><svg class="icon" aria-hidden="true"><use href="/icons.svg#help"></use></svg></button></div></header><main><div id="error" class="error" role="alert" hidden></div><div id="content" aria-busy="true"></div></main></div>
   </div>
+  <div id="item-tooltip" class="lot-tooltip" role="tooltip" hidden></div>
   <dialog aria-labelledby="dialog-title"></dialog>
 </body>
 </html>

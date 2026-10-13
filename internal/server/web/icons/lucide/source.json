@@ -5,9 +5,7 @@
   "integrity": "sha512-h18lunTFsIJWnY0FMRPjXeO9KcAtNi7fDqtqgWHOFbssfgUWsctn/pA7bpiyrd4g1DuBOJ24CsRnPfkYblwm/A==",
   "icons": {
     "brand": "boxes",
-    "watch": "panels-top-left",
     "stats": "chart-no-axes-column-increasing",
-    "replay": "history",
     "box": "package",
     "lock": "lock-keyhole",
     "shape": "scan",
@@ -16,6 +14,17 @@
     "back": "arrow-left",
     "help": "book-open",
     "check": "check",
-    "close": "x"
-  }
+    "close": "x",
+    "language": "languages",
+    "plus": "plus",
+    "users": "users-round",
+    "crown": "crown",
+    "scan": "scan",
+    "rooms": "package"
+  },
+  "custom_controls": [
+    "sun",
+    "moon",
+    "panel"
+  ]
 }

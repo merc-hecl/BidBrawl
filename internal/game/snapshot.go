@@ -42,16 +42,17 @@ type playerSnapshot struct {
 	Bid       *int64   `json:"bid"`
 	CardRound int      `json:"card_round"`
 	Revision  int      `json:"revision"`
+	Avatar    *int     `json:"avatar"`
 }
 
 func (g *Game) Snapshot() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := gameSnapshot{SchemaVersion: 2, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig,
+	s := gameSnapshot{SchemaVersion: 3, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig,
 		Phase: g.phase, Round: g.round, Version: g.version, Players: []playerSnapshot{}, Items: g.items,
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
-		s.Players = append(s.Players, playerSnapshot{p.id, p.name, p.token, p.deck, p.used, p.hints, p.bid, p.cardRound, p.revision})
+		s.Players = append(s.Players, playerSnapshot{p.id, p.name, p.token, p.deck, p.used, p.hints, p.bid, p.cardRound, p.revision, p.avatar})
 	}
 	return json.Marshal(s)
 }
@@ -69,7 +70,7 @@ func Restore(data []byte) (*Game, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return nil, errors.New("expected exactly one game snapshot")
 	}
-	if s.SchemaVersion != 2 {
+	if s.SchemaVersion != 3 {
 		return nil, errors.New("unsupported game snapshot schema")
 	}
 	g, err := NewWithConfig(s.PlayerCount, s.Config, s.Cards)
@@ -83,7 +84,7 @@ func Restore(data []byte) (*Game, error) {
 	g.items, g.hints, g.history = s.Items, s.Hints, s.History
 	g.decisions, g.settlement = s.Decisions, s.Settlement
 	for _, p := range s.Players {
-		g.players = append(g.players, &player{p.ID, p.Name, p.Token, p.Deck, p.Used, p.Hints, p.Bid, p.CardRound, p.Revision})
+		g.players = append(g.players, &player{p.ID, p.Name, p.Token, p.Deck, p.Used, p.Hints, p.Bid, p.CardRound, p.Revision, p.Avatar})
 	}
 	return g, nil
 }
@@ -102,8 +103,19 @@ func (s gameSnapshot) validate() error {
 		known[card.ID] = true
 	}
 	names, tokens := map[string]bool{}, map[string]bool{}
+	avatars := map[int]bool{}
 	pending := 0
 	for i, p := range s.Players {
+		if s.Phase == "lobby" {
+			if p.Avatar != nil {
+				return errors.New("avatar assigned before start")
+			}
+		} else {
+			if p.Avatar == nil || *p.Avatar < 0 || *p.Avatar >= 7 || avatars[*p.Avatar] {
+				return errors.New("invalid or duplicate avatar")
+			}
+			avatars[*p.Avatar] = true
+		}
 		if p.ID != fmt.Sprintf("p%d", i+1) || utf8.RuneCountInString(p.Name) < 1 || utf8.RuneCountInString(p.Name) > 32 || names[p.Name] || !validSecret(p.Token, 32) || tokens[p.Token] {
 			return errors.New("invalid player identity")
 		}
