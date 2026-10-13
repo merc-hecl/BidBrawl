@@ -25,8 +25,8 @@
 .crate-seal>.icon{color:var(--quiet-ink);width:33px;height:33px}
 .world-seats{position:absolute;inset:0;pointer-events:none}
 .world-seat{position:absolute;top:var(--seat-y);transform:translateY(-50%);width:102px;pointer-events:auto;text-align:center;z-index:4}
-.seat-left{left:1px}
-.seat-right{right:1px}
+.seat-left{left:calc(var(--scene-lane,116px)/2 - 51px)}
+.seat-right{right:calc(var(--scene-lane,116px)/2 - 51px)}
 .world-avatar-button{display:flex;flex-direction:column;align-items:center;width:100%;padding:4px 6px;color:var(--ink);border-radius:15px;background:transparent;border:1px solid transparent;gap:0}
 .world-avatar-button>.bot-avatar{width:76px;height:82px;flex-basis:82px}
 .world-avatar-button>strong{font:12px var(--body);font-weight:500;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:4px;color:var(--ink)}
@@ -168,6 +168,7 @@ small{font-size:10px}
 [data-theme=dark] .negative{color:#efb0a0}
 .theme-button{background:var(--panel-bg);border:1px solid var(--line)}
 main{flex:1;min-height:0;display:flex;flex-direction:column}
+.app[data-view=room] main{padding-top:16px}
 #content{flex:1;min-height:0;overflow:auto;padding-bottom:24px}
 #content:has(.auction-world){overflow:hidden;padding:0}
 .error{padding:7px 10px;font-size:11px;background:var(--panel-bg);border:1px solid var(--line);border-radius:7px}
@@ -332,6 +333,7 @@ dialog::backdrop{background:#173c3450;backdrop-filter:blur(4px)}
 .rail-button{height:32px}
 .rail-button .icon{width:16px;height:16px}
 .workspace{padding:0 9px}
+.app[data-view=room] main{padding-top:12px}
 .topline{height:35px}
 
 .controls{gap:2px}
@@ -424,3 +426,59 @@ button:active:not(:disabled){transform:none}}
 .bot-4{--bot-color:#cfb65a;--blink-delay:2.92s}
 .bot-5{--bot-color:#cc8c75;--blink-delay:3.65s}
 .bot-6{--bot-color:#89996f;--blink-delay:4.38s}
+
+/* Warehouse scenery is cosmetic; the crate remains the only item canvas. */
+:root{--scene-wall:#e9e4ce;--scene-wood:#c7ac7b;--scene-wood-dark:#a28660;--scene-edge:#a29773;--scene-light:#fff0b8;--scene-metal:#83916c;--scene-ink:#675e43;--ease-in-out:cubic-bezier(.77,0,.175,1)}
+[data-theme=dark]{--scene-wall:#33372a;--scene-wood:#7b6c47;--scene-wood-dark:#5c533a;--scene-edge:#64694c;--scene-light:#dbc277;--scene-metal:#74815b;--scene-ink:#d3c59b}
+.auction-world{border:1px solid color-mix(in srgb,var(--scene-edge) 28%,transparent);border-radius:24px;background:linear-gradient(180deg,color-mix(in srgb,var(--paper) 72%,var(--scene-wall)),color-mix(in srgb,var(--paper) 35%,var(--scene-wall)));padding:0 12px 0;box-shadow:0 5px 18px var(--soft-shadow)}
+.world-header{padding-left:8px;padding-right:8px}
+.world-floor{--scene-lane:116px;--scene-axis:calc(var(--scene-lane)/2);isolation:isolate;border-radius:18px;background:radial-gradient(ellipse at 50% 0,color-mix(in srgb,var(--scene-light) 20%,transparent),transparent 75%),var(--scene-wall);border:1px solid color-mix(in srgb,var(--scene-edge) 20%,transparent);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--scene-light) 20%,transparent)}
+.world-crate{inset:12px var(--scene-lane) 18px}
+.crate-object{border:1px solid var(--frame-line);border-radius:18px;overflow:hidden;box-shadow:0 2px 4px color-mix(in srgb,var(--scene-wood-dark) 16%,transparent),0 10px 28px color-mix(in srgb,var(--scene-wood-dark) 18%,transparent);background:var(--box-bg)}
+.crate-lid{border-radius:17px 17px 0 0;background:linear-gradient(110deg,color-mix(in srgb,var(--box-band) 78%,var(--scene-light)),var(--box-band) 65%);box-shadow:inset 0 1px 0 color-mix(in srgb,var(--scene-light) 30%,transparent)}
+.room-scene{position:absolute;inset:0;pointer-events:none}
+.warehouse-wall{position:absolute;inset:0 0 22%;background:repeating-linear-gradient(90deg,transparent 0 57px,color-mix(in srgb,var(--scene-edge) 12%,transparent) 58px 59px,transparent 60px 116px),linear-gradient(180deg,color-mix(in srgb,var(--scene-light) 15%,transparent),transparent 45%);border-bottom:1px solid color-mix(in srgb,var(--scene-edge) 14%,transparent)}
+.warehouse-wall:before{content:'';position:absolute;inset:13px 0 auto;height:12px;background:radial-gradient(circle at 12px 6px,var(--scene-edge) 1px,transparent 2px) 0 0/58px 12px,color-mix(in srgb,var(--scene-wood) 35%,transparent);border-block:1px solid color-mix(in srgb,var(--scene-edge) 24%,transparent)}
+.warehouse-wall:after{content:'';position:absolute;inset:65px 18px 10px;border:1px solid color-mix(in srgb,var(--scene-edge) 20%,transparent);border-radius:65px 65px 10px 10px;box-shadow:inset 0 0 0 8px color-mix(in srgb,var(--scene-light) 7%,transparent)}
+.warehouse-floor{position:absolute;inset:75% 0 0;mask-image:linear-gradient(180deg,transparent,#000 38px);background:repeating-linear-gradient(0deg,transparent 0 24px,color-mix(in srgb,var(--scene-edge) 15%,transparent) 25px 26px),repeating-linear-gradient(90deg,color-mix(in srgb,var(--scene-wood) 22%,transparent) 0 57px,color-mix(in srgb,var(--scene-edge) 15%,transparent) 58px 59px,transparent 60px 116px)}
+.lamp-beam{opacity:0;transition:opacity 200ms ease-out;pointer-events:none}
+.is-lit .lamp-beam{opacity:1;animation:warehouse-light 9s var(--ease-in-out) infinite alternate}
+.scene-prop{position:absolute;pointer-events:auto;padding:0;border:0;background:transparent;color:var(--scene-ink);border-radius:18px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.scene-prop svg{display:block;width:100%;height:100%;overflow:visible;pointer-events:none}
+.scene-prop:focus-visible{outline:2px solid var(--accent-text);outline-offset:2px}
+.scene-lamp{top:-17px;left:calc(var(--scene-axis) - 43px);width:86px;height:120px}
+.scene-gavel{bottom:15px;left:calc(var(--scene-axis) - 50px);width:100px;height:100px}
+.scene-parcel{bottom:20px;right:calc(var(--scene-axis) - 50px);width:100px;height:100px}
+.lamp-cord{fill:none;stroke:var(--scene-edge);stroke-width:3}
+.scene-shade{fill:var(--scene-metal);stroke:var(--scene-ink);stroke-width:1.5}
+.lamp-bulb{fill:var(--scene-wall);stroke:none}
+.is-lit .lamp-bulb{fill:var(--scene-light)}
+.prop-detail{fill:none;stroke:var(--scene-ink);stroke-width:2;opacity:.45}
+.prop-shadow{fill:var(--scene-edge);opacity:.16}
+.gavel-base,.gavel-head,.parcel-box{fill:var(--scene-wood);stroke:var(--scene-wood-dark);stroke-width:1.5;stroke-linejoin:round}
+.gavel-handle,.parcel-edge{fill:var(--scene-wood-dark)}
+.scene-mallet{transform-origin:83px 72px}
+.knock-stars{fill:var(--accent-text);opacity:0;transform:translateY(6px);transition:transform 180ms var(--ease-out),opacity 180ms ease-out}
+.lucky-knock .knock-stars{opacity:1;transform:translateY(0)}
+.parcel-interior{fill:var(--scene-wood-dark)}
+.parcel-top{fill:var(--scene-wood);stroke:var(--scene-wood-dark);stroke-width:1.5;stroke-linejoin:round}
+.parcel-tape{fill:var(--scene-light);opacity:.65}
+/* The rear edge (20,62)–(56,50) stays fixed as the lid folds away. */
+.scene-lid{transform-box:view-box;transform-origin:0 0;transform:translate(20px,62px) rotate(-18.435deg) scaleY(1) rotate(18.435deg) translate(-20px,-62px);transition:transform 200ms var(--ease-out) 80ms}
+.parcel-open .scene-lid{transform:translate(20px,62px) rotate(-18.435deg) scaleY(-.9) rotate(18.435deg) translate(-20px,-62px);transition-duration:240ms;transition-delay:0s}
+.parcel-visitor{transform:translateY(10px);opacity:0;transition:transform 160ms var(--ease-out),opacity 100ms ease-out}
+.parcel-open .parcel-visitor{transform:translateY(-7px);opacity:1;transition-delay:70ms}
+.visitor-body{fill:var(--active-bg);stroke:var(--scene-metal);stroke-width:2}
+.visitor-antenna,.visitor-smile,.visitor-eyes{stroke:var(--accent-text);stroke-width:2.5;stroke-linecap:round;fill:none}
+.visitor-light{fill:var(--lime);stroke:var(--scene-metal);stroke-width:1.5}
+@keyframes warehouse-light{from{opacity:.72}to{opacity:1}}
+.page-hidden .lamp-beam{animation-play-state:paused}
+.using-keyboard .scene-lid,.using-keyboard .parcel-visitor,.using-keyboard .knock-stars,.using-keyboard .lamp-beam{transition:none}
+@media(hover:hover) and (pointer:fine){.scene-prop:hover{filter:brightness(1.06)}.scene-lamp:hover .prop-detail{opacity:.9}}
+.theme-button{border-radius:50%;color:var(--ink)}
+.theme-button>.icon{width:19px;height:19px;transition:transform 160ms var(--ease-out)}
+[data-theme=dark] .theme-button>.icon{transform:rotate(180deg)}
+.using-keyboard .theme-button>.icon{transition:none}
+.room-access-message{line-height:1.8;color:var(--ink);max-width:42ch}
+@media(prefers-reduced-motion:reduce){.is-lit .lamp-beam{animation:none}.scene-lid,.parcel-visitor,.parcel-open .scene-lid,.parcel-open .parcel-visitor,.knock-stars,.lamp-beam,.theme-button>.icon{transition:none}}
+@media(max-width:620px){.auction-world{padding-inline:7px;border-radius:19px}.world-header{padding-inline:1px}.world-floor{border-radius:14px}.world-crate{inset:8px 6px 92px}.crate-object{border-radius:15px}.crate-lid{border-radius:14px 14px 0 0}.scene-lamp,.lamp-beam{display:none}.scene-gavel{width:53px;height:53px;bottom:7px;left:2px}.scene-parcel{width:53px;height:53px;bottom:10px;right:2px}.world-seats{inset:auto 53px 0}.world-avatar-button>strong{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}

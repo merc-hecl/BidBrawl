@@ -1,5 +1,4 @@
 import {t} from './i18n.js';
-import {icon} from './html.js';
 import {avatarGaze} from './avatars.js';
 
 const root=document.documentElement,app=document.querySelector('.app'),workspace=document.querySelector('.workspace');
@@ -12,7 +11,7 @@ export function updateAppearance(){
   workspace.inert=narrow.matches&&expanded;
   const toggle=document.getElementById('sidebar-toggle');
   toggle.setAttribute('aria-expanded',String(expanded));toggle.setAttribute('aria-label',t(expanded?'collapseSidebar':'expandSidebar'));
-  document.getElementById('theme-button').innerHTML=icon(dark?'sun':'moon');
+  document.getElementById('theme-button').setAttribute('aria-pressed',String(dark));
   document.getElementById('theme-button').setAttribute('aria-label',t(dark?'switchLight':'switchDark'));
 }
 export function setSidebar(value){expanded=value;try{localStorage.setItem('bidbrawl.sidebar',value?'open':'collapsed');}catch{}updateAppearance();}

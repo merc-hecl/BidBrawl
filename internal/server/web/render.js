@@ -32,7 +32,7 @@ function hints(view) {
   return `<section class="intel-panel"><div class="intel-list">${view.public_hints.map(hint=>{
     const text=hint.data.translations?.[getLocale()]||hint.data;
     return `<article><div class="intel-marker">${icon('scan')}</div><div class="intel-copy"><span class="eyebrow">${tr('round',{round:hint.round})}</span><h3>${esc(text.title)}</h3><p>${esc(text.message)}</p></div></article>`;
-  }).join('')||empty('noHints')}</div><p class="empty compact">${tr('hintScope')}</p></section>`;
+  }).join('')||empty('noHints')}</div></section>`;
 }
 function settlement(view) {
   if(!view.settlement)return `<div class="pending-settlement"><span>${tr('pending')}</span></div>`;
@@ -63,6 +63,7 @@ export function renderContent(source,results,ui) {
 }
 export function dialogContent(kind,id,source,results,ui) {
   const view=source?observation(source,ui.cursor):null;
+  if(kind==='room-access')return {title:t('createRoom'),content:`<p class="room-access-message">${tr('createRoomAccess')}</p>`};
   if(kind==='create-room')return {title:t('createRoom'),content:`<form id="create-room-form" class="room-form"><label>${tr('roomName')}<input name="name" maxlength="32" required autocomplete="off"></label><label>${tr('players')}<select name="players">${[2,3,4,5,6,7].map(count=>`<option value="${count}" ${count===4?'selected':''}>${count}</option>`).join('')}</select></label><p id="create-room-error" class="negative" hidden>${tr('createRoomError')}</p><button type="submit" class="quiet">${tr('createRoom')}</button></form>`};
   if(kind==='invite-room')return {title:t('invitePlayers'),content:`<div class="invite-content"><label for="invite-link">${tr('inviteLink')}</label><div class="invite-copy"><input id="invite-link" readonly value="${esc(id)}">${button(tr('copyInvite'),'copy-invite','quiet')}</div><label>${tr('joinCommand')}</label><code class="join-command">bidbrawl join -invite "${esc(id)}"</code></div>`};
   if(kind==='room-error')return {title:t('roomActionError'),content:''};

@@ -7,6 +7,7 @@ import {esc,renderContent,roomDirectory,roomButtons,roomGroup,maxFrame,dialogCon
 import {observe} from './live.js';
 import {patchContent} from './patch.js';
 import {restoreSession} from './session.js';
+import {activateScene,sceneFeedback} from './room-scene.js';
 
 const $=id=>document.getElementById(id);
 const text=(id,value)=>{const node=$(id),next=String(value);if(node.textContent!==next)node.textContent=next;};
@@ -25,7 +26,7 @@ function redraw() {
   translateDOM();
   updateAppearance();
   $('language-button').setAttribute('aria-label',t('switchLanguage'));
-  $('create-button').hidden=!ui.manage;
+  $('create-button').title=ui.manage?t('createRoom'):t('createRoomAccess');
   document.querySelector('.app').dataset.view=ui.page;
   text('page-name',t(navigationPage));
   document.querySelectorAll('[data-page]').forEach(button=>{
@@ -93,6 +94,7 @@ document.addEventListener('click',event=>{
   const action=event.target.closest('[data-action]')?.dataset.action;
   if(!action)return;
   const separator=action.indexOf(':'),kind=separator<0?action:action.slice(0,separator),id=separator<0?'':action.slice(separator+1);
+  if(kind==='scene'&&activateScene(id)){redraw();sceneFeedback(event.target.closest('button'),id,event.detail>0);return;}
   if(kind==='avatar-greet'){greet(event.target.closest('button'));return;}
   if(kind==='focus-agent'){ui.focusPlayer=ui.focusPlayer===id?null:id;hideTip();redraw();greet(event.target.closest('button'));return;}
   if(kind==='dismiss-player'){const focused=ui.focusPlayer;ui.focusPlayer=null;redraw();document.querySelector(`[data-action="focus-agent:${CSS.escape(focused)}"]`)?.focus();return;}
@@ -100,7 +102,7 @@ document.addEventListener('click',event=>{
   if(kind==='unpin'){ui.focusItem=null;redraw();return;}
   if(['avatars','hints','inventory','bids'].includes(kind)){hideTip();showDialog(kind);return;}
   if(kind==='room'){chooseRoom(id);return;}
-  if(kind==='create-room'){showDialog('create-room');return;}
+  if(kind==='create-room'){showDialog(ui.manage?'create-room':'room-access');return;}
   if(kind==='invite-room'||kind==='start-room'){manageRoom(kind);return;}
   if(kind==='copy-invite'){
     navigator.clipboard.writeText($('invite-link').value).then(()=>{event.target.textContent=t('copied');}).catch(()=>{event.target.textContent=t('copyFailed');});return;

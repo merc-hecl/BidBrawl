@@ -4,8 +4,23 @@ import {readFile} from 'node:fs/promises';
 import {catalogs,t,setLocale,localizeCard} from './web/i18n.js';
 import {normalizeView,observation,knownItems} from './web/model.js';
 import {renderContent,roomDirectory,dialogContent} from './web/render.js';
+import {roomScene,activateScene} from './web/room-scene.js';
 
 const emptyStats={games:0,profit:0,paid:0,rate:null,agents:[]};
+test('warehouse easter eggs stay cosmetic, survive redraws and reset for another room',()=>{
+  setLocale('zh-CN',false);
+  const initial=roomScene('scene-test');
+  assert.ok(initial.includes('is-lit')&&!initial.includes('parcel-open'));
+  assert.equal(activateScene('unknown'),false);
+  activateScene('lamp');activateScene('parcel');
+  for(let i=0;i<3;i++)activateScene('gavel');
+  const opened=roomScene('scene-test');
+  assert.ok(opened.includes('parcel-open')&&opened.includes('lucky-knock')&&!opened.includes('is-lit'));
+  assert.equal(roomScene('scene-test'),opened);
+  activateScene('gavel');
+  assert.ok(!roomScene('scene-test').includes('lucky-knock'));
+  assert.equal(roomScene('another-scene'),initial);
+});
 // Fixture frames represent the server projection consumed by the renderer.
 function withFrames(s){return {...s,frames:Array.from({length:s.history.length+(s.settlement?2:1)},(_,i)=>({...s,phase:s.settlement&&i>=s.history.length?'settled':'bidding',round:Math.min(i+1,s.round),history:s.history.slice(0,i),public_hints:s.public_hints.filter(h=>h.round<=i+1),decisions:s.decisions.filter(d=>d.round<=i),settlement:i>=s.history.length?s.settlement:undefined}))};}
 const ui={room:'r',page:'room',cursor:2,sort:'profit',quality:'all',search:'',focusPlayer:'p1'};
@@ -21,6 +36,8 @@ test('room directory is empty until creation and management is restricted',()=>{
     const rooms=roomDirectory([{room_id:'r',name:'<Table>',phase:'lobby',players:1,player_count:3}],{manage:true});
     assert.ok(rooms.includes('&lt;Table&gt;')&&rooms.includes('data-action="room:r"'));
     assert.ok(dialogContent('create-room',null,null,emptyStats,ui).content.includes('name="players"'));
+    const access=dialogContent('room-access',null,null,emptyStats,{...ui,manage:false});
+    assert.ok(access.content.includes(t('createRoomAccess'))&&!access.content.includes('<form'));
     assert.ok(dialogContent('invite-room','http://localhost/invite?room=r',null,emptyStats,ui).content.includes('bidbrawl join -invite'));
   }
 });
@@ -56,7 +73,7 @@ test('custom clue text is escaped, localized and cannot reveal item geometry',()
   setLocale('en',false);
   const en=dialogContent('hints',null,view,emptyStats,{...ui,cursor:null}).content;
   assert.ok(en.includes('Custom clue')&&en.includes('Perhaps a surprise.'));
-  assert.ok(en.includes('total item count'));
+  assert.ok(!en.includes('total item count'));
   setLocale('zh-CN',false);
 });
 
