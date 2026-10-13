@@ -58,6 +58,18 @@ func TestBuiltinFactsAreAccurateAndLimited(t *testing.T) {
 				}
 			}
 			switch p.Builtin {
+			case "quality_presence":
+				if *f.Present != (len(group) > 0) {
+					t.Fatal("inaccurate presence", f)
+				}
+			case "quality_largest_area":
+				largest := 0
+				for _, item := range group {
+					largest = max(largest, (item.BottomRight.X-item.TopLeft.X)*(item.BottomRight.Y-item.TopLeft.Y))
+				}
+				if *f.Area != largest {
+					t.Fatal("inaccurate largest area", f)
+				}
 			case "quality_count":
 				if *f.Count != len(group) {
 					t.Fatal("inaccurate count", f)
@@ -107,21 +119,52 @@ func TestBroadPricesAndRemovedHintsAreUnavailable(t *testing.T) {
 	if _, err := builtin("quality_average", r); !errors.Is(err, ErrNotApplicable) {
 		t.Fatal("whole-box average revealed")
 	}
-	for _, kind := range []string{"item_count", "total_value", "value_band", "value_mood", "value_spread"} {
+	for _, kind := range []string{"item_count", "total_value", "value_band", "value_mood", "value_spread", "random_dimensions", "random_area", "random_aspect", "random_region", "quality_region_count", "quality_count_compare", "random_quality_compare", "random_price_compare"} {
 		cfg := Default()
 		cfg.Plugins[0].Builtin = kind
 		if cfg.Validate() == nil {
 			t.Fatal("removed hint accepted", kind)
+		}
+		if _, err := builtin(kind, r); err == nil {
+			t.Fatal("removed builtin still generates a clue", kind)
 		}
 	}
 	for _, text := range []string{
 		`{"title":"x","message":"y","fact":{"type":"item_count","count":5}}`,
 		`{"title":"x","message":"y","fact":{"type":"total_value","price":100}}`,
 		`{"title":"x","message":"y","fact":{"type":"quality_count","quality":"common","count":2,"price":100}}`,
+		`{"title":"x","message":"y","fact":{"type":"quality_presence","quality":"rare","present":true,"count":2}}`,
+		`{"title":"x","message":"y","fact":{"type":"quality_largest_area","quality":"rare","area":0}}`,
+		`{"title":"x","message":"y","fact":{"type":"random_region","item_id":"a","region":"top_left"}}`,
 	} {
 		if _, err := ParseClue(strings.NewReader(text)); err == nil {
 			t.Fatal("overly broad fact accepted")
 		}
+	}
+}
+
+func TestLargestQualityAreaUsesRectanglesAndPresenceKeepsFalse(t *testing.T) {
+	r := Request{Items: []Item{
+		{ID: "a", Quality: "rare", BottomRight: Point{2, 3}},
+		{ID: "b", Quality: "rare", TopLeft: Point{2, 0}, BottomRight: Point{5, 4}},
+		{ID: "c", Quality: "epic", TopLeft: Point{0, 4}, BottomRight: Point{1, 5}},
+	}}
+	for range 40 {
+		c, err := builtin("quality_largest_area", r)
+		if err != nil || c.Fact == nil {
+			t.Fatal(c, err)
+		}
+		if *c.Fact.Area != map[string]int{"rare": 12, "epic": 1}[c.Fact.Quality] {
+			t.Fatal("incorrect maximum rectangle area", c)
+		}
+	}
+	c, err := ParseClue(strings.NewReader(`{"title":"No legendary items","message":"None present","fact":{"type":"quality_presence","quality":"legendary","present":false}}`))
+	if err != nil || c.Fact.Present == nil || *c.Fact.Present {
+		t.Fatal("absence must be preserved as an explicit false", c, err)
+	}
+	data, _ := json.Marshal(c)
+	if !bytes.Contains(data, []byte(`"present":false`)) {
+		t.Fatal("absence disappeared during serialization")
 	}
 }
 

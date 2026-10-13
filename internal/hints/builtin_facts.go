@@ -11,6 +11,7 @@ var ErrNotApplicable = errors.New("hint does not apply to this box")
 var builtins = map[string]bool{
 	"random_shape": true, "random_quality": true,
 	"quality_count": true, "quality_average": true, "random_quality_price": true,
+	"quality_presence": true, "quality_largest_area": true,
 }
 
 var qualityNames = map[string][2]string{
@@ -50,7 +51,19 @@ func builtin(kind string, r Request) (Clue, error) {
 			zhTitle, enTitle = "随机物品品质", "Random item quality"
 			zh, en = fmt.Sprintf("物品 %s 的品质为%s。", item.ID, qualityNames[item.Quality][0]), fmt.Sprintf("Item %s has %s quality.", item.ID, qualityNames[item.Quality][1])
 		}
-	case "quality_count", "quality_average", "random_quality_price":
+	case "quality_presence":
+		all := []string{"common", "uncommon", "rare", "epic", "legendary"}
+		fact.Quality = all[Random(len(all))]
+		present := len(groups[fact.Quality]) > 0
+		fact.Present = &present
+		name := qualityNames[fact.Quality]
+		zhTitle, enTitle = "指定品质是否存在", "Presence of one quality"
+		if present {
+			zh, en = fmt.Sprintf("箱内存在%s品质的物品。", name[0]), fmt.Sprintf("The box contains items of %s quality.", name[1])
+		} else {
+			zh, en = fmt.Sprintf("箱内没有%s品质的物品。", name[0]), fmt.Sprintf("The box contains no items of %s quality.", name[1])
+		}
+	case "quality_count", "quality_average", "random_quality_price", "quality_largest_area":
 		if len(qualities) == 0 || kind == "random_quality_price" && len(r.Items) < 2 {
 			return Clue{}, ErrNotApplicable
 		}
@@ -59,6 +72,15 @@ func builtin(kind string, r Request) (Clue, error) {
 		fact.Quality = q
 		name := qualityNames[q]
 		switch kind {
+		case "quality_largest_area":
+			area := 0
+			for _, item := range items {
+				area = max(area, (item.BottomRight.X-item.TopLeft.X)*(item.BottomRight.Y-item.TopLeft.Y))
+			}
+			fact.Area = &area
+			zhTitle, enTitle = "指定品质最大面积", "Largest area within one quality"
+			zh = fmt.Sprintf("箱内%s品质物品中，最大的一件占 %d 格。", name[0], area)
+			en = fmt.Sprintf("The largest %s-quality item occupies %d cells.", name[1], area)
 		case "quality_count":
 			count := len(items)
 			fact.Count = &count

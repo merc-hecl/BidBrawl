@@ -77,6 +77,19 @@ test('custom clue text is escaped, localized and cannot reveal item geometry',()
   setLocale('zh-CN',false);
 });
 
+test('quality presence and largest area display without inventing item outlines',()=>{
+  const facts=[{type:'quality_presence',quality:'legendary',present:false},{type:'quality_largest_area',quality:'rare',area:12}];
+  const view={...source,settlement:undefined,public_hints:facts.map(fact=>({round:1,kind:fact.type,data:{title:'品质线索',message:'仅包含已公开事实',fact,translations:{en:{title:'Quality clue',message:'Only published facts'}}}}))};
+  assert.deepEqual(knownItems(view),[]);
+  for(const locale of ['zh-CN','en']){
+    setLocale(locale,false);
+    const html=dialogContent('hints',null,view,emptyStats,{...ui,cursor:null}).content;
+    assert.equal((html.match(/<article>/g)||[]).length,2);
+    assert.ok(html.includes(locale==='en'?'Only published facts':'仅包含已公开事实'));
+  }
+  setLocale('zh-CN',false);
+});
+
 test('locales have matching keys, placeholders and no untranslated renderer text',async()=>{
   assert.deepEqual(Object.keys(catalogs.en).sort(),Object.keys(catalogs['zh-CN']).sort());
   for(const key of Object.keys(catalogs.en)) {

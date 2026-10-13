@@ -5,6 +5,8 @@
     {"id": "random_quality", "builtin": "random_quality"},
     {"id": "quality_count", "builtin": "quality_count"},
     {"id": "quality_average", "builtin": "quality_average"},
-    {"id": "random_quality_price", "builtin": "random_quality_price"}
+    {"id": "random_quality_price", "builtin": "random_quality_price"},
+    {"id": "quality_presence", "builtin": "quality_presence"},
+    {"id": "quality_largest_area", "builtin": "quality_largest_area"}
   ]
 }

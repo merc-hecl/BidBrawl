@@ -50,7 +50,7 @@ func cli(t *testing.T, args ...string) map[string]any {
 
 func TestCLIHintConfigurationAndPublicCatalog(t *testing.T) {
 	exported := cli(t, "hints", "-defaults", "-url", "http://127.0.0.1:1")
-	if len(exported["plugins"].([]any)) != 5 {
+	if len(exported["plugins"].([]any)) != 7 {
 		t.Fatal("missing offline default hints")
 	}
 	cfg := hints.Config{SchemaVersion: 1, Plugins: []hints.Plugin{

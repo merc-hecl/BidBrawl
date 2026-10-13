@@ -15,6 +15,8 @@ type Fact struct {
 	Price        *int64   `json:"price,omitempty"`
 	TopLeft      *Point   `json:"top_left,omitempty"`
 	BottomRight  *Point   `json:"bottom_right,omitempty"`
+	Present      *bool    `json:"present,omitempty"`
+	Area         *int     `json:"area,omitempty"`
 }
 
 func (f Fact) IsPrice() bool { return f.Type == "quality_average" || f.Type == "random_quality_price" }
@@ -57,8 +59,21 @@ func (f Fact) Validate() error {
 	if f.BottomRight != nil {
 		fields++
 	}
+	if f.Present != nil {
+		fields++
+	}
+	if f.Area != nil {
+		fields++
+		if *f.Area < 1 || *f.Area > 128*128 {
+			return errors.New("invalid hint area")
+		}
+	}
 	valid := false
 	switch f.Type {
+	case "quality_presence":
+		valid = fields == 2 && f.Quality != "" && f.Present != nil
+	case "quality_largest_area":
+		valid = fields == 2 && f.Quality != "" && f.Area != nil
 	case "quality_count":
 		valid = fields == 2 && f.Quality != "" && f.Count != nil
 	case "quality_average":

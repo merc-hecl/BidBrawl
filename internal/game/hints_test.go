@@ -67,6 +67,37 @@ func TestHintFailureLeavesLobbyUntouched(t *testing.T) {
 	}
 }
 
+func TestQualityPresenceAndLargestAreaSurviveRestore(t *testing.T) {
+	c := hints.Config{SchemaVersion: 1, Plugins: []hints.Plugin{
+		{ID: "presence", Builtin: "quality_presence"}, {ID: "area", Builtin: "quality_largest_area"},
+	}}
+	g, err := NewWithHints(2, DefaultConfig(), cards.Default(), c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{"A", "B"} {
+		if _, _, err := g.Join(name, []string{}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := g.Start(); err != nil {
+		t.Fatal(err)
+	}
+	snapshot, err := g.Snapshot()
+	if err != nil {
+		t.Fatal(err)
+	}
+	restored, err := Restore(snapshot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, _ := json.Marshal(g.plannedHints)
+	after, _ := json.Marshal(restored.plannedHints)
+	if !bytes.Equal(before, after) {
+		t.Fatal("retained quality clues changed after restore")
+	}
+}
+
 func TestPlannedHintsStayPrivateAndRestoreWithoutPlugins(t *testing.T) {
 	c := hints.Config{SchemaVersion: 1, Plugins: []hints.Plugin{
 		{ID: "custom_first", Builtin: "random_quality"}, {ID: "custom_second", Builtin: "quality_count"},
