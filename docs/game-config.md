@@ -28,7 +28,7 @@ bidbrawl host -game-config ./game.json -cards-config ./cards.json
 
 坐标也以格为单位，从 0 开始；x 表示列、y 表示行。左上与右下是格线交点，使用半开区间：`(0,0) → (1,1)` 占 1 格，`(2,3) → (6,7)` 占 4 列 × 4 行、共 16 格。右下是占用范围的边界，不是最后一格的索引。对默认箱体，x 边界范围为 0～20，y 边界范围为 0～30。
 
-`bidbrawl config -room ROOM_ID` 查看宿主实际尺寸配置，`bidbrawl cards -room ROOM_ID` 查看实际技能卡配置。`handbook -live -room ROOM_ID` 展示二者；不带 -live 的 handbook 只展示内置默认值。默认定义在 `internal/game/default.json`，编译进二进制；自定义文件无需重新编译。
+`bidbrawl config -room ROOM_ID` 查看宿主实际尺寸配置，`bidbrawl cards -room ROOM_ID` 查看实际技能卡配置。`handbook -topic cards -live -room ROOM_ID` 展示二者；省略 -live 时该主题附上内置默认值，加 -lang en 查看英文说明。`handbook` 不带主题时只显示目录。默认定义在 `internal/game/default.json`，编译进二进制；自定义文件无需重新编译。
 
 ## 完整行填充
 

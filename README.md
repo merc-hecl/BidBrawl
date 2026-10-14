@@ -1,8 +1,8 @@
 # BidBrawl
 
-面向外部 **LLM Agent 玩家**的本地暗拍游戏。Go 宿主负责身份、房间、规则裁决与信息隔离；Agent 统一通过 CLI 进行操作，通过 skill 与游戏 handbook 学习规则。推理、记忆、决策和调用节奏由 Agent 原有 harness 负责。
+面向 **LLM Agent 玩家**的暗拍游戏。2～7 位玩家竞拍一个内容未知的物品箱，查看线索、使用私人技能卡、提交暗标，最多五轮后成交开箱。
 
-项目不包含 LLM 运行器、模型接口、API Key 配置、决策循环或自动代报。无需域名、公共托管平台、外部数据库服务或 Node.js 运行时；账号、房间和对局使用嵌入式 bbolt 数据库。玩法参考 [Steam《竞拍之王》](https://store.steampowered.com/app/4128580/_/?l=schinese) 的品类；代码与界面独立实现，不使用其素材。
+玩家通过 CLI 参与，从 [游戏 skill](skills/bidbrawl/SKILL.md) 开始，或执行 `bidbrawl handbook` 阅读[游玩手册](internal/manual/HANDBOOK.md)。本 README 提供宿主启动、管理与开发说明。玩法参考 [Steam《竞拍之王》](https://store.steampowered.com/app/4128580/_/?l=schinese) 的品类；代码与界面独立实现，不使用其素材。
 
 ## 启动宿主
 
@@ -47,7 +47,7 @@ bidbrawl cards -defaults > cards.json
 bidbrawl host -cards-config ./cards.json
 ```
 
-可自定义卡牌 ID、名称、说明、物品选择方式、揭示字段组合、估值区间和默认卡组，也可移除卡牌。配置启动时严格校验，所有房间使用固定快照；完整格式与效果参数见 [技能卡配置](docs/cards.md)。
+可自定义卡牌 ID、名称、说明、物品选择方式、揭示字段组合、估值区间和预设卡组，也可移除卡牌。玩家入席时用 `-cards` 指定携带的卡，省略则不带卡。配置启动时严格校验，所有房间使用固定快照；完整格式与效果参数见 [技能卡配置](docs/cards.md)。
 
 公共情报提供真实而局部的线索：随机物品轮廓、随机物品品质、某种品质的件数 / 均价，以及某种品质中随机一件物品的价格。不提供全箱总件数、总价值或全箱均价，也不人为加入错误信息。品质均价只从不超过全箱一半物品的品质组中抽选，每局最多一条价格类提示。第 1、3 轮各发布一条不同插件的线索，所有玩家一致；随机只影响线索与对象的抽选。私人技能与结算仍按原规则提供实际结果。
 
@@ -62,70 +62,32 @@ bidbrawl hints -room ROOM_ID   # 查询该房间固定的插件 ID
 
 默认内置 7 类局部提示，在原有轮廓、品质、品质数量、受限均价和单件价格之外，提供“品质是否存在”和“同品质最大单件面积”。每局仍在第 1、3 轮各发布一条，最多一条价格类提示。配置支持混用内置提示与外部程序。完整协议、可构建示例及权限边界见 [公共提示插件](docs/hints.md)。提示配置与尚未公开的提示保存在私有快照，公共接口只返回插件 ID 与已公开文案。当前对局快照格式升级为 4；旧格式不能恢复，不提供自动迁移，账号格式不变。
 
-## 外部 Agent 使用 CLI
+## 玩家接入
 
-所有操作成功时 stdout 输出 JSON；失败时 stderr 输出 JSON，退出码非零。help、handbook 与宿主启动提示是文本。普通命令执行单次操作；`watch` 持续订阅公开通知，以逐行 JSON 输出，不替玩家决定行动。
-
-```powershell
-# 宿主管理员的独立终端：登记一次，保存并单独分发对应 Agent 的 credential
-$env:BIDBRAWL_URL = 'http://127.0.0.1:8787'
-$env:BIDBRAWL_TOKEN = '<宿主启动时输出的管理员 Token>'
-$registration = (& ./bin/bidbrawl.exe register -name Atlas | ConvertFrom-Json)
-./bin/bidbrawl.exe accounts
-# 凭据遗失 / 泄露时：rotate-credential -account <account_id>，ID 不变
-```
+房主在独立终端登记账号，并将各自的 credential 单独交给对应玩家：
 
 ```powershell
-# 当前玩家的独立终端 / harness 环境：只接收自己的凭据，不持有管理员 Token
 $env:BIDBRAWL_URL = 'http://127.0.0.1:8787'
-$env:BIDBRAWL_CREDENTIAL = '<宿主管理员分发的本 Agent 凭据>'
-$login = (& ./bin/bidbrawl.exe login | ConvertFrom-Json)
-$env:BIDBRAWL_TOKEN = $login.token
-
-./bin/bidbrawl.exe handbook
-./bin/bidbrawl.exe config
-./bin/bidbrawl.exe cards
-./bin/bidbrawl.exe me
-./bin/bidbrawl.exe rooms
-$created = (& ./bin/bidbrawl.exe create -name 首局 -players 2 | ConvertFrom-Json)
-$roomID = $created.room_id
-$invite = (& ./bin/bidbrawl.exe invite -room $roomID | ConvertFrom-Json)
-# 将 invite_url 交给其它玩家，各自登录后凭链接加入；创建者也需另行入席
-./bin/bidbrawl.exe join -invite $invite.invite_url -cards item_count,value_band,largest_price
-# 人数到齐后由创建者或宿主人类开始
-./bin/bidbrawl.exe start -room $roomID
-./bin/bidbrawl.exe state -room $roomID
-./bin/bidbrawl.exe card -room $roomID -round 1 -card item_count -reason "先确认件数，减少估值偏差"
-./bin/bidbrawl.exe bid -room $roomID -round 1 -amount 1200 -reason "根据当前线索估值，并保留风险余量"
+$env:BIDBRAWL_TOKEN = '<宿主管理员 Token>'
+bidbrawl register -name Atlas
 ```
 
-`register` 仅允许宿主管理员调用，返回永久 `account_id` 与随机游戏 `credential`；Agent 用 credential 登录换取会话 `token`，不提供密码或模型凭据。ID 是公开标识，不是登录密钥；昵称保留唯一性便于识别，但登录、席位和成绩关联 ID。同一账号在每个房间最多一个席位；创建者需另外加入才能参赛。登录与加入分离，重启后重新登录仍会恢复已有席位和私有线索；`logout` 撤销当前会话。凭据与会话不要放在公开房间名、游戏消息或仓库里。
+`accounts` 查看已登记账号；凭据遗失或泄露时，用 `rotate-credential -account ACCOUNT_ID` 补发。管理员 Token 留在房主环境中，玩家仅接收自己的 credential。
 
-账号 ID、昵称和 credential 的 SHA-256 摘要在返回成功前事务落盘，原始凭据不保存在数据库中。宿主重启后账号与原凭据有效，旧会话和管理员 Token 失效；Agent 重新登录获取新 token。`accounts` 仅向管理员列出 ID 与昵称；`rotate-credential -account ID` 由管理员生成新凭据，保留 ID 与当前房间席位，撤销旧凭据及该账号全部旧会话，其他账号不受影响。原始凭据仅在创建 / 轮换响应中返回，丢失后由管理员轮换。
+玩家设置 `BIDBRAWL_URL` 与 `BIDBRAWL_CREDENTIAL`，执行 `login` 后将返回的 token 设为 `BIDBRAWL_TOKEN`。随后通过邀请链接入席，或自行建房。
 
-创建房间、入席、开局、用卡和报价均在成功响应前事务落盘；包含所属账号、卡组 / 消耗状态、私有线索、当前暗标、已公开轮次、箱体 / 私有决策理由、配置快照和完整结算。写入成功才发布新状态，失败返回 500 并保留原状态。最后一笔报价与结算一起提交，恢复不重新生成箱体、线索或抽取并列赢家。已结算历史持续用于统计与复盘；未完成对局恢复原轮次，已确认提交的报价不可重复提交，Agent 重新登录后先读 state 再继续。
-
-身份对应宿主登记的逻辑 Agent，不自动验证模型、harness 或实际操作者。没有公共大厅服务或自动会话过期。
-
-## CLI、skill 与 handbook
-
-- 外部 harness 使用自己的命令执行能力调用 CLI，通过 `bidbrawl <命令> -h` 查看参数，读取 stdout JSON、stderr JSON 与退出码。
-- [游戏 skill](skills/bidbrawl/SKILL.md)：注册 / 登录 / 入席 / 观察 / 用卡 / 报价 / 结算的操作流程。复制到你的 harness 技能目录后，由该 harness 发现与加载；项目不自动安装技能。
-- [游戏 handbook](internal/manual/HANDBOOK.md)：完整规则、操作教程、错误与重连说明。`bidbrawl handbook` 离线读取并附上内置默认游戏配置与卡牌目录；`bidbrawl handbook -live -room ROOM_ID` 附上指定房间的实际配置。`bidbrawl config` / `cards` 输出宿主实际游戏 / 卡牌配置，添加 `-defaults` 离线导出对应默认配置。
-
-CLI 不跨调用自动保存会话。每个玩家由外部 harness 单独保留游戏 credential 与 token，在每次命令中通过环境变量或参数传入。CLI 内部连接宿主 HTTP 接口，宿主继续提供本地、局域网与个人服务器联机；玩家无需配置额外的接入协议。`join` 省略 `-cards` 时从宿主读取默认卡组，显式传空字符串则不带卡；示例中的卡 ID 属于内置默认配置，自定义宿主应先读 `cards` 再选择。
+- [中文 skill](skills/bidbrawl/SKILL.md) 为默认入口；[English skill](skills/bidbrawl-en/SKILL.md) 为英文版本。复制所选技能目录到 Agent 的技能目录加载。
+- [中文手册目录](internal/manual/HANDBOOK.md) / [English index](internal/manual/en/HANDBOOK.md)：按需查看登录、每轮操作、成交规则、卡牌、重连与复盘。`bidbrawl handbook` 默认显示中文目录，`-topic start` 等参数打开主题，`-lang en` 切换英文。
+- `bidbrawl handbook -topic cards -live -room ROOM_ID`：查看当前房间的尺寸和卡牌目录；省略 `-live` 查看内置默认配置。
+- `bidbrawl <命令> -h`：参数用法。普通操作输出 JSON，`watch` 持续输出通知。
 
 ## 规则概览
 
-房主设置 2～7 位玩家，人数到齐后开始，最多五轮暗标。每人每轮一次，全员提交后同时公开报价。第 1、2、3 轮，唯一且非零的最高报价分别达到第二高报价的 **2、1.7、1.5 倍（包含相等）** 时，秒杀成交并结束整局。第 4 轮不触发秒杀，继续第 5 轮；第 5 轮正常按最高价成交，并列则等概率抽取获箱者（全零报价也适用）。获箱者盈亏 = 箱内总价值 − 本轮成交报价，其余玩家盈亏为 0。
+每轮每人提交一次整数暗标，全员报价后同时揭晓。第 1、2、3 轮，唯一且非零的最高价达到第二高价的 2、1.7、1.5 倍时立即成交；第 4 轮继续，第 5 轮最高价成交，并列时等概率抽取获箱者（全零也适用）。成交者盈亏为箱内总价值减成交价，其他玩家为 0。
 
-箱体默认 20 列 × 30 行，物品默认占 1×1～4×4 格。每局随机选取已使用行数，再从最上、最左的未填格逐件填充，每件独立随机选择可行宽高，让相邻边界错开；已使用的每行占满箱宽，物品间无空隙、不重叠，剩余空白仅在底部，物品数量随随机填充产生。坐标单位为格，左上与右下格线坐标唯一确定占格数，采用右下边界不包含的半开矩形；例如 `(0,0) → (4,4)` 占 16 格。第一、三轮各公开一条共同情报；每人开局前最多携带五张不同技能卡，每轮报价前最多使用一张，单局不能复用，结果只对本人可见。所有分布、价格范围、排布规则和卡牌效果见 handbook。
+第 1、3 轮各有一条公共线索。开局前最多携带五张不同卡，每轮报价前最多用一张，每张单局限用一次，结果只对本人可见。用卡和报价均需填写简短的 `-reason`，由本人及授权人类观察者查看。
 
-结算公开物品完整信息、实际轮次报价、获箱者、成交价与盈亏，不再生成或校验箱体哈希承诺。
-
-报价与用卡必须提交 `reason`（1–2000 字符，任意语言，允许换行，不能全为空白）。理由与行动一同持久化，结算及服务重启后仍可查看，玩家只在 `self.decisions` 中看到自己的记录。宿主自动打开的 WebUI 按轮次显示每位玩家的技能 / 报价理由；用卡记录展示实际技能卡名称，悬浮或聚焦可读说明，点击问号可打开详情。观察者的用卡决策通过 `card_id` 关联对局保存的卡牌定义，不返回原始技能结果。主导航只保留房间和统计，观战与复盘统一通过房间进入：进行中的房间显示最新进度，已完成的房间显示结算；点击时间轴轮次后在其下方展示该轮理由，点击结算可查看全部轮次。未授权网页提示从宿主启动 WebUI；匿名访客和参赛账号无法读取这些记录，技能原始结果仍只属于玩家本人。
-
-统计包含累计盈亏、盈亏率（累计盈亏 ÷ 实际成交投入）、平均每局盈亏、单局最大盈利和单局最大亏损。所有参赛局都计入平均值，未成交局盈亏为 0；成交投入为零时盈亏率显示“—”。
+结算后可用 `results` 查看对局，`stats` 查看跨局成绩，`replay -room ROOM_ID` 回看公开历史。完整操作见游玩手册。
 
 ## 宿主 HTTP 接口（CLI 与 WebUI 内部通信）
 

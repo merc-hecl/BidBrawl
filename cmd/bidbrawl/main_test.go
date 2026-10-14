@@ -25,6 +25,16 @@ import (
 // Exercise the command parser and its real HTTP requests, including stdout JSON.
 func cli(t *testing.T, args ...string) map[string]any {
 	t.Helper()
+	data := cliOutput(t, args...)
+	var result map[string]any
+	if err := json.Unmarshal(data, &result); err != nil {
+		t.Fatal(args[0], err)
+	}
+	return result
+}
+
+func cliOutput(t *testing.T, args ...string) []byte {
+	t.Helper()
 	f, err := os.Create(filepath.Join(t.TempDir(), "stdout.json"))
 	if err != nil {
 		t.Fatal(err)
@@ -41,11 +51,57 @@ func cli(t *testing.T, args ...string) map[string]any {
 	if err != nil {
 		t.Fatal(err)
 	}
-	var result map[string]any
-	if err = json.Unmarshal(data, &result); err != nil {
-		t.Fatal(args[0], err)
+	return data
+}
+
+func TestCLIHandbookTopicsAndLanguages(t *testing.T) {
+	t.Setenv("BIDBRAWL_URL", "http://127.0.0.1:1")
+	for _, tc := range []struct {
+		name, want, absent string
+		args               []string
+	}{
+		{name: "default_index", want: "# BidBrawl 游玩手册", absent: "## 卡牌目录"},
+		{name: "english_index", args: []string{"-lang", "en"}, want: "# BidBrawl handbook", absent: "## Card catalog"},
+		{name: "chinese_topic", args: []string{"-topic", "start"}, want: "# 登录与入席", absent: "## 卡牌目录"},
+		{name: "english_topic", args: []string{"-topic", "play", "-lang", "en"}, want: "# Each round", absent: "## Card catalog"},
+		{name: "chinese_catalog", args: []string{"-topic", "cards"}, want: "## 卡牌目录", absent: "## Card catalog"},
+		{name: "english_catalog", args: []string{"-topic", "cards", "-lang", "en"}, want: "Largest-item appraisal", absent: "巨物鉴定"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			output := string(cliOutput(t, append([]string{"handbook"}, tc.args...)...))
+			if !strings.Contains(output, tc.want) || strings.Contains(output, tc.absent) {
+				t.Fatalf("unexpected handbook output: %s", output)
+			}
+		})
 	}
-	return result
+	for _, args := range [][]string{
+		{"-lang", "fr"}, {"-topic", "../HANDBOOK"}, {"-live"},
+	} {
+		if err := run(context.Background(), append([]string{"handbook"}, args...)); err == nil {
+			t.Fatalf("invalid handbook options accepted: %v", args)
+		}
+	}
+}
+
+func TestCLIHandbookLiveCatalog(t *testing.T) {
+	geometry := game.Config{SchemaVersion: 1, Box: game.Dimensions{Width: 13, Height: 9}, Items: game.ItemLimits{MaxWidth: 5, MaxHeight: 2}}
+	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []cards.Definition{
+		{ID: "audit", Name: "Custom audit", Description: "Custom count", Effect: cards.Effect{Type: "count"}},
+	}}
+	s := server.New(geometry, cfg)
+	host := httptest.NewServer(s)
+	defer host.Close()
+	t.Setenv("BIDBRAWL_URL", host.URL)
+	room := cli(t, "create", "-token", s.HostToken, "-players", "2")["room_id"].(string)
+	for _, lang := range []string{"zh-CN", "en"} {
+		for _, roomArgs := range [][]string{nil, {"-room", room}} {
+			args := append([]string{"handbook", "-topic", "cards", "-lang", lang, "-live"}, roomArgs...)
+			output := string(cliOutput(t, args...))
+			if !strings.Contains(output, "13") || !strings.Contains(output, "117") || !strings.Contains(output, "Custom audit") || strings.Contains(output, "largest_price") {
+				t.Fatalf("live handbook did not use host/room configuration: %s", output)
+			}
+		}
+	}
 }
 
 func TestCLIHintConfigurationAndPublicCatalog(t *testing.T) {
@@ -73,6 +129,35 @@ func TestCLIHintConfigurationAndPublicCatalog(t *testing.T) {
 		if len(ids) != 2 || ids[0] != "custom_a" || ids[1] != "custom_b" {
 			t.Fatal("wrong plugin catalog", catalog)
 		}
+	}
+}
+
+func TestCLIJoinCardSelection(t *testing.T) {
+	s := server.New(game.DefaultConfig(), cards.Default())
+	host := httptest.NewServer(s)
+	defer host.Close()
+	t.Setenv("BIDBRAWL_URL", host.URL)
+	t.Setenv("BIDBRAWL_TOKEN", s.HostToken)
+	room := cli(t, "create", "-players", "3")["room_id"].(string)
+	for _, tc := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "omitted"},
+		{name: "empty", args: []string{"-cards", ""}},
+		{name: "selected", args: []string{"-cards", "item_count"}, want: "item_count"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			credential := cli(t, "register", "-name", tc.name)["credential"].(string)
+			token := cli(t, "login", "-credential", credential)["token"].(string)
+			args := append([]string{"join", "-room", room, "-token", token}, tc.args...)
+			cli(t, args...)
+			deck := cli(t, "state", "-room", room, "-token", token)["self"].(map[string]any)["deck"].([]any)
+			if tc.want == "" && len(deck) != 0 || tc.want != "" && (len(deck) != 1 || deck[0] != tc.want) {
+				t.Fatalf("unexpected carried cards: %v", deck)
+			}
+		})
 	}
 }
 
@@ -110,12 +195,12 @@ func TestCLIProtocolGameFlow(t *testing.T) {
 	for i, token := range tokens {
 		t.Setenv("BIDBRAWL_TOKEN", token)
 		if i == 0 {
-			cli(t, "join", "-invite", invitation)
+			cli(t, "join", "-invite", invitation, "-cards", "audit")
 		} else {
 			cli(t, "join", "-invite", invitation, "-cards", "")
 		}
 		if len(cli(t, "state", "-room", room)["self"].(map[string]any)["deck"].([]any)) != 1-i {
-			t.Fatal("default deck or explicit empty deck ignored")
+			t.Fatal("selected cards or explicit empty deck ignored")
 		}
 	}
 	if err := run(context.Background(), []string{"start", "-room", room}); err == nil {

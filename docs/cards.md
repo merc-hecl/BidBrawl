@@ -9,7 +9,7 @@ bidbrawl cards -defaults > cards.json
 bidbrawl host -cards-config ./cards.json -players 4
 ```
 
-`bidbrawl cards -room ROOM_ID` 输出当前宿主的实际配置；`bidbrawl handbook -live -room ROOM_ID` 把同一配置渲染进教程。玩家 `join` 省略 `-cards` 时使用宿主的 `default_deck`，显式 `-cards ''` 表示不带卡。
+`bidbrawl cards -room ROOM_ID` 输出当前宿主的实际配置；`bidbrawl handbook -topic cards -live -room ROOM_ID` 将同一配置附在卡牌主题后，加 `-lang en` 查看英文说明。玩家用 `join -cards CARD_ID,CARD_ID` 指定携带的卡；省略 `-cards` 或显式传 `-cards ''` 都不带卡。
 
 ## 完整配置示例
 
@@ -46,7 +46,7 @@ bidbrawl host -cards-config ./cards.json -players 4
 - `cards`：可用卡牌列表；删除某个定义即移除该卡。可以为空数组，最多 256 个定义。
 - `id`：唯一 ID，满足 `[a-z][a-z0-9_]{0,63}`；引擎按配置查找，不根据具体 ID 判断效果。
 - `name`、`description`：公开名称与说明，分别最多 80、1000 个字符，非空且不能含控制字符。说明由房主维护，应准确反映 effect；玩家也可直接检查公开的 effect。
-- `default_deck`：默认携带的卡 ID，最多五个，不重复且必须存在于 cards；可以为空数组。
+- `default_deck`：供玩家查询的预设卡组，最多五个，不重复且必须存在于 cards；可以为空数组。携带时需用 `-cards` 明确指定。
 
 | effect.type | 参数 | 返回信息 |
 |---|---|---|

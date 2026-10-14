@@ -163,13 +163,15 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	players := f.Int("players", 4, "创建房间的玩家数 (2–7)")
 	name := f.String("name", "Agent", "玩家名称")
 	accountID := f.String("account", "", "agent / rotate-credential：永久账号 ID，必填")
-	deck := f.String("cards", "", "最多 5 张不同卡，用逗号分隔；省略时读取宿主默认卡组，空字符串表示不带卡")
-	round := f.Int("round", 0, "行动所属轮次，必填；防止旧请求误入新轮")
+	deck := f.String("cards", "", "携带的卡 ID，最多 5 张不同卡，用逗号分隔；省略或空字符串表示不带卡")
+	round := f.Int("round", 0, "用卡 / 报价的当前轮次，必填，从 state 查看")
 	card := f.String("card", "", "技能卡 ID")
 	amount := f.Int64("amount", 0, "整数报价")
 	reason := f.String("reason", "", "报价 / 用卡的私有决策理由，必填，1–2000 字符")
 	defaults := f.Bool("defaults", false, "config / cards / hints 命令：离线导出内置默认配置")
-	live := f.Bool("live", false, "handbook 命令：读取指定房间的实际游戏与卡牌配置")
+	live := f.Bool("live", false, "handbook -topic cards：读取宿主或指定房间的实际配置")
+	topic := f.String("topic", "", "handbook：start / play / rules / cards / reconnect / results；省略显示目录")
+	lang := f.String("lang", "zh-CN", "handbook：zh-CN / en；默认中文")
 	events := f.String("event", "", "watch：逗号分隔的事件名；省略接收当前房间全部事件")
 	once := f.Bool("once", false, "watch：收到首个匹配事件后退出")
 	waitTimeout := f.Duration("timeout", 0, "watch：总等待期限，例如 2m；0 表示持续订阅")
@@ -216,9 +218,23 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	if command == "config" && *defaults {
 		return printJSON(game.DefaultConfig())
 	}
-	if command == "handbook" && !*live {
-		fmt.Print(manual.Render(cards.Default(), game.DefaultConfig(), "内置默认配置；自定义宿主请使用 handbook -live"))
-		return nil
+	var handbookText string
+	if command == "handbook" {
+		var err error
+		handbookText, err = manual.Read(*topic, *lang)
+		if err != nil {
+			return err
+		}
+		if *live && *topic != "cards" {
+			return errors.New("-live requires handbook -topic cards")
+		}
+		if !*live {
+			fmt.Print(handbookText)
+			if *topic == "cards" {
+				fmt.Print(manual.Catalog(cards.Default(), game.DefaultConfig(), *lang))
+			}
+			return nil
+		}
 	}
 	c := client.New(*url, *token)
 	if *observer {
@@ -301,7 +317,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 			if command == "cards" {
 				return printJSON(configuration.Cards)
 			}
-			fmt.Print(manual.Render(configuration.Cards, configuration.Game, "宿主当前配置"))
+			fmt.Print(handbookText, manual.Catalog(configuration.Cards, configuration.Game, *lang))
 			return nil
 		}
 		observation, err := c.Observe(ctx, *room)
@@ -316,7 +332,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		}
 		cfg := cards.Config{SchemaVersion: observation.Rules.CardsSchemaVersion, DefaultDeck: observation.Rules.DefaultDeck, Cards: observation.Rules.Cards}
 		if command == "handbook" {
-			fmt.Print(manual.Render(cfg, observation.Rules.GameConfig, "当前房间 "+observation.RoomID))
+			fmt.Print(handbookText, manual.Catalog(cfg, observation.Rules.GameConfig, *lang))
 			return nil
 		}
 		return printJSON(cfg)
@@ -364,13 +380,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	case "join":
 		path = client.RoomPath("/api/join", *room)
 		cards := []string{}
-		if !explicit["cards"] {
-			observation, err := c.Observe(ctx, *room)
-			if err != nil {
-				return err
-			}
-			cards = observation.Rules.DefaultDeck
-		} else if *deck != "" {
+		if *deck != "" {
 			for _, id := range strings.Split(*deck, ",") {
 				cards = append(cards, strings.TrimSpace(id))
 			}
