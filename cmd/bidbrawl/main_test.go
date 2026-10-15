@@ -264,14 +264,9 @@ func TestCLIProtocolGameFlow(t *testing.T) {
 	}
 }
 
-func TestRemovedCommandsAndMissingBid(t *testing.T) {
-	for _, command := range []string{"mcp", "tools", "demo"} {
-		for _, args := range [][]string{{command}, {command, "-h"}} {
-			err := run(context.Background(), args)
-			if err == nil || !strings.Contains(err.Error(), "unknown command") {
-				t.Fatal("removed command accepted", args, err)
-			}
-		}
+func TestCLIRejectsUnknownCommandAndMissingBidAmount(t *testing.T) {
+	if err := run(context.Background(), []string{"unknown"}); err == nil || !strings.Contains(err.Error(), "unknown command") {
+		t.Fatal("unknown command accepted", err)
 	}
 	if err := run(context.Background(), []string{"bid", "-round", "1"}); err == nil || !strings.Contains(err.Error(), "-amount is required") {
 		t.Fatal("missing bid accepted", err)

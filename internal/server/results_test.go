@@ -91,7 +91,7 @@ func TestResultsOnlySettledAndStableIdentity(t *testing.T) {
 func TestEmbeddedWebUIAssets(t *testing.T) {
 	g, _ := game.New(2)
 	s := testTable(g)
-	for _, path := range []string{"/i18n.js", "/render.js", "/room-ui.js", "/avatars.js", "/appearance.js", "/theme.js", "/html.js", "/icons.svg", "/model.js", "/locales/zh-CN.js", "/locales/en.js", "/fonts/fonts.css", "/icons/lucide/boxes.svg", "/fonts/zcool-kuaile/LICENSE", "/fonts/space-grotesk/LICENSE"} {
+	for _, path := range []string{"/", "/app.js", "/style.css", "/i18n.js", "/render.js", "/room-ui.js", "/avatars.js", "/appearance.js", "/theme.js", "/html.js", "/icons.svg", "/model.js", "/locales/zh-CN.js", "/locales/en.js", "/fonts/fonts.css", "/icons/lucide/boxes.svg", "/fonts/zcool-kuaile/LICENSE", "/fonts/space-grotesk/LICENSE"} {
 		if code, body := request(t, s, "GET", path, "", ""); code != 200 || len(body) == 0 {
 			t.Fatalf("embedded asset %s: %d", path, code)
 		}

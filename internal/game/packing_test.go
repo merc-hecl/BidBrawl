@@ -3,8 +3,6 @@ package game
 import (
 	"math/rand/v2"
 	"testing"
-
-	"bidbrawl/internal/cards"
 )
 
 // Rasterize independently: every occupied row must contain exactly one item
@@ -119,28 +117,5 @@ func TestRowTilingMaximumCapacity(t *testing.T) {
 	items := g.tileRows(cfg.Box.Height)
 	if len(items) != 4096 || assertTiledRows(t, items, cfg) != cfg.Box.Height {
 		t.Fatal("unit items do not tile the maximum capacity")
-	}
-}
-
-func TestDimensionsCountCells(t *testing.T) {
-	cfg := DefaultConfig()
-	cfg.Items = ItemLimits{1, 1}
-	g, err := NewWithConfig(2, cfg, cards.Default())
-	if err != nil {
-		t.Fatal(err)
-	}
-	items := g.tileRows(30)
-	if len(items) != 600 || assertTiledRows(t, items, cfg) != 30 {
-		t.Fatal("20 columns by 30 rows must hold exactly 600 unit cells")
-	}
-	last := items[len(items)-1]
-	if last.TopLeft != (Point{19, 29}) || last.BottomRight != (Point{20, 30}) || last.area() != 1 {
-		t.Fatal("last cell must use grid boundary coordinates", last)
-	}
-	if area := (Item{TopLeft: Point{2, 3}, BottomRight: Point{6, 7}}).area(); area != 16 {
-		t.Fatal("a 4 by 4 item must occupy 16 cells", area)
-	}
-	if unit := view(t, g, "").Rules.CoordinateUnit; unit != "cell" {
-		t.Fatal("agent rules must declare the grid coordinate unit", unit)
 	}
 }

@@ -108,7 +108,7 @@ func TestBuiltinFactsAreAccurateAndLimited(t *testing.T) {
 	}
 }
 
-func TestBroadPricesAndRemovedHintsAreUnavailable(t *testing.T) {
+func TestBroadPricesAndInvalidFactsAreRejected(t *testing.T) {
 	r := Request{Items: []Item{{ID: "a", Quality: "common", Price: 60, BottomRight: Point{1, 1}}}}
 	for _, kind := range []string{"quality_average", "random_quality_price"} {
 		if _, err := builtin(kind, r); !errors.Is(err, ErrNotApplicable) {
@@ -119,23 +119,14 @@ func TestBroadPricesAndRemovedHintsAreUnavailable(t *testing.T) {
 	if _, err := builtin("quality_average", r); !errors.Is(err, ErrNotApplicable) {
 		t.Fatal("whole-box average revealed")
 	}
-	for _, kind := range []string{"item_count", "total_value", "value_band", "value_mood", "value_spread", "random_dimensions", "random_area", "random_aspect", "random_region", "quality_region_count", "quality_count_compare", "random_quality_compare", "random_price_compare"} {
-		cfg := Default()
-		cfg.Plugins[0].Builtin = kind
-		if cfg.Validate() == nil {
-			t.Fatal("removed hint accepted", kind)
-		}
-		if _, err := builtin(kind, r); err == nil {
-			t.Fatal("removed builtin still generates a clue", kind)
-		}
+	if _, err := builtin("unknown", r); err == nil {
+		t.Fatal("unknown builtin generated a clue")
 	}
 	for _, text := range []string{
-		`{"title":"x","message":"y","fact":{"type":"item_count","count":5}}`,
-		`{"title":"x","message":"y","fact":{"type":"total_value","price":100}}`,
+		`{"title":"x","message":"y","fact":{"type":"unknown"}}`,
 		`{"title":"x","message":"y","fact":{"type":"quality_count","quality":"common","count":2,"price":100}}`,
 		`{"title":"x","message":"y","fact":{"type":"quality_presence","quality":"rare","present":true,"count":2}}`,
 		`{"title":"x","message":"y","fact":{"type":"quality_largest_area","quality":"rare","area":0}}`,
-		`{"title":"x","message":"y","fact":{"type":"random_region","item_id":"a","region":"top_left"}}`,
 	} {
 		if _, err := ParseClue(strings.NewReader(text)); err == nil {
 			t.Fatal("overly broad fact accepted")

@@ -30,10 +30,8 @@ func TestGameConfiguration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg.Box.Width = 99
-	copy := g.GameConfig()
-	copy.Items.MaxWidth = 99
-	if g.GameConfig() != DefaultConfig() {
-		t.Fatal("game geometry snapshot changed")
+	rules := view(t, g, "").Rules
+	if rules.GameConfig != cfg || rules.CoordinateUnit != "cell" {
+		t.Fatal("public rules do not describe the configured cell grid", rules)
 	}
 }

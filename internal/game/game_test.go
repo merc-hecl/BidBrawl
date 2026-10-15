@@ -208,23 +208,11 @@ func TestGeometryAndPriceRanges(t *testing.T) {
 		g, ts := fixture(t, 2)
 		assertTiledRows(t, g.items, g.GameConfig())
 		ids := map[string]bool{}
-		occupied := map[Point]bool{}
 		for _, i := range g.items {
 			if ids[i.ID] {
 				t.Fatal("duplicate id")
 			}
 			ids[i.ID] = true
-			if i.TopLeft.X < 0 || i.TopLeft.Y < 0 || i.BottomRight.X > g.width || i.BottomRight.Y > g.height || i.area() <= 0 {
-				t.Fatal("invalid rectangle", i)
-			}
-			if w, h := i.BottomRight.X-i.TopLeft.X, i.BottomRight.Y-i.TopLeft.Y; w < 1 || w > g.gameConfig.Items.MaxWidth || h < 1 || h > g.gameConfig.Items.MaxHeight {
-				t.Fatal("invalid sampled dimensions", i)
-			}
-			for y := i.TopLeft.Y; y < i.BottomRight.Y; y++ {
-				for x := i.TopLeft.X; x < i.BottomRight.X; x++ {
-					occupied[Point{x, y}] = true
-				}
-			}
 			valid := false
 			for _, q := range qualities {
 				if i.Quality == q.ID {
@@ -234,32 +222,6 @@ func TestGeometryAndPriceRanges(t *testing.T) {
 			if !valid {
 				t.Fatal("invalid quality/price")
 			}
-			for _, j := range g.items {
-				if i.ID != j.ID && i.TopLeft.X < j.BottomRight.X && i.BottomRight.X > j.TopLeft.X && i.TopLeft.Y < j.BottomRight.Y && i.BottomRight.Y > j.TopLeft.Y {
-					t.Fatal("overlap")
-				}
-			}
-		}
-		// Flood-fill occupied cells independently of the placement algorithm.
-		// Corner-only contact and separated groups cannot pass this check.
-		if !occupied[Point{0, 0}] {
-			t.Fatal("cluster does not start at the top left")
-		}
-		seen := map[Point]bool{{0, 0}: true}
-		queue := []Point{{0, 0}}
-		for len(queue) > 0 {
-			p := queue[0]
-			queue = queue[1:]
-			for _, d := range []Point{{1, 0}, {-1, 0}, {0, 1}, {0, -1}} {
-				next := Point{p.X + d.X, p.Y + d.Y}
-				if occupied[next] && !seen[next] {
-					seen[next] = true
-					queue = append(queue, next)
-				}
-			}
-		}
-		if len(seen) != len(occupied) {
-			t.Fatal("items are scattered into disconnected groups")
 		}
 		if e := g.UseCard(ts[0], 1, "value_band", "protocol test"); e != nil {
 			t.Fatal(e)

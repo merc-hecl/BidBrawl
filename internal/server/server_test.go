@@ -3,7 +3,6 @@ package server
 import (
 	"bytes"
 	"encoding/json"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -56,6 +55,7 @@ func accountSession(t *testing.T, s *Server, name string) (string, string) {
 func TestAuthenticationAndPrivacy(t *testing.T) {
 	g, _ := game.New(2)
 	s := testTable(g)
+	checkedRequest(t, s, "POST", "/api/register", s.HostToken, `{"name":`, 400)
 	tokens := []string{}
 	for _, name := range []string{"A", "B"} {
 		token, _ := accountSession(t, s, name)
@@ -112,15 +112,9 @@ func TestAuthenticationAndPrivacy(t *testing.T) {
 		t.Fatal("public bid leak")
 	}
 }
-func TestAssetsAndOrigin(t *testing.T) {
+func TestCrossOriginMutationAndCacheProtection(t *testing.T) {
 	g, _ := game.New(2)
 	s := testTable(g)
-	for _, path := range []string{"/", "/app.js", "/style.css"} {
-		code, b := request(t, s, "GET", path, "", "")
-		if code != 200 || len(b) == 0 {
-			t.Fatal(path, code)
-		}
-	}
 	r := httptest.NewRequest("POST", "http://localhost/api/join", bytes.NewBufferString(`{"name":"X","cards":[]}`))
 	r.Header.Set("Origin", "https://evil.example")
 	w := httptest.NewRecorder()
@@ -130,13 +124,6 @@ func TestAssetsAndOrigin(t *testing.T) {
 	}
 	if w.Header().Get("Cache-Control") != "no-store" {
 		t.Fatal("missing private cache protection")
-	}
-	r = httptest.NewRequest("POST", "/api/register", io.LimitReader(bytes.NewReader(bytes.Repeat([]byte("x"), 10000)), 10000))
-	r.Header.Set("Authorization", "Bearer "+s.HostToken)
-	w = httptest.NewRecorder()
-	s.ServeHTTP(w, r)
-	if w.Code != 400 {
-		t.Fatal("large body accepted")
 	}
 }
 

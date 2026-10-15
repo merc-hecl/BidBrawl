@@ -91,7 +91,4 @@ func TestDecisionReasonsPrivateAndRequired(t *testing.T) {
 	if len(observer.Decisions) != 2 || observer.Self != nil {
 		t.Fatal("observer did not receive only decision records")
 	}
-	if bytes.Contains(data, []byte(`"commitment":`)) || bytes.Contains(data, []byte(`"nonce":`)) {
-		t.Fatal("obsolete box verification present")
-	}
 }

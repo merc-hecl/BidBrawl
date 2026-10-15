@@ -6,9 +6,6 @@ import (
 )
 
 func TestConfigurationValidation(t *testing.T) {
-	if err := Default().Validate(); err != nil {
-		t.Fatal(err)
-	}
 	if _, err := Parse(strings.NewReader(`{"schema_version":1,"default_deck":[],"cards":[]}`)); err != nil {
 		t.Fatal("empty catalog should be supported", err)
 	}

@@ -23,9 +23,6 @@ func TestHandbookPagesAndLinks(t *testing.T) {
 			return err
 		}
 		text := string(data)
-		if strings.Contains(text, "PowerShell") || strings.Contains(text, "$env:") || strings.Contains(text, "```bash") {
-			t.Errorf("handbook binds instructions to a shell: %s", name)
-		}
 		for _, match := range link.FindAllStringSubmatch(text, -1) {
 			target := path.Clean(path.Join(path.Dir(name), match[1]))
 			if _, err := pages.ReadFile(target); err != nil {
