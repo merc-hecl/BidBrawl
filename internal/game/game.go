@@ -19,6 +19,7 @@ import (
 
 const Rounds = 5
 const MaxBid int64 = 1_000_000
+const InitialInspectionCount = 3
 
 // Point is an integer grid boundary: x counts columns, y counts rows.
 // Item bounds are half-open; (0,0) to (1,1) occupies exactly one cell.
@@ -67,15 +68,36 @@ type PlayerInfo struct {
 	Avatar    *int   `json:"avatar,omitempty"`
 }
 type Self struct {
-	ID                string     `json:"id"`
-	Deck              []string   `json:"deck"`
-	Used              []string   `json:"used"`
-	Hints             []Hint     `json:"hints"`
-	Bid               *int64     `json:"bid,omitempty"`
-	CardUsedThisRound bool       `json:"card_used_this_round"`
-	MinBid            int64      `json:"min_bid"`
-	MaxBid            int64      `json:"max_bid"`
-	Decisions         []Decision `json:"decisions"`
+	ID                string           `json:"id"`
+	Deck              []string         `json:"deck"`
+	Used              []string         `json:"used"`
+	Hints             []Hint           `json:"hints"`
+	Bid               *int64           `json:"bid,omitempty"`
+	CardUsedThisRound bool             `json:"card_used_this_round"`
+	MinBid            int64            `json:"min_bid"`
+	MaxBid            int64            `json:"max_bid"`
+	Decisions         []Decision       `json:"decisions"`
+	InitialInspection []InspectionItem `json:"initial_inspection"`
+	ItemReveals       []ItemReveal     `json:"item_reveals"`
+}
+
+// InspectionItem deliberately has no price field.
+type InspectionItem struct {
+	ID          string `json:"id"`
+	Quality     string `json:"quality"`
+	TopLeft     Point  `json:"top_left"`
+	BottomRight Point  `json:"bottom_right"`
+}
+
+// A single-item skill locates its target. Quality and price are included only
+// when the skill learned them; aggregate results do not locate any items.
+type ItemReveal struct {
+	Round       int    `json:"round"`
+	ItemID      string `json:"item_id"`
+	Quality     string `json:"quality,omitempty"`
+	Price       *int64 `json:"price,omitempty"`
+	TopLeft     *Point `json:"top_left,omitempty"`
+	BottomRight *Point `json:"bottom_right,omitempty"`
 }
 type Decision struct {
 	Round    int    `json:"round"`
@@ -99,32 +121,35 @@ type Settlement struct {
 	Method   string           `json:"method"`
 }
 type Rules struct {
-	Rounds             int                `json:"rounds"`
-	Width              int                `json:"box_width"`
-	Height             int                `json:"box_height"`
-	CoordinateUnit     string             `json:"coordinate_unit"`
-	GameConfig         Config             `json:"game_config"`
-	PlayerCount        int                `json:"player_count"`
-	MaxBid             int64              `json:"max_bid"`
-	Qualities          []Quality          `json:"qualities"`
-	Cards              []cards.Definition `json:"cards"`
-	CardsSchemaVersion int                `json:"cards_schema_version"`
-	DefaultDeck        []string           `json:"default_deck"`
-	PublicHintPlugins  []string           `json:"public_hint_plugins"`
-	Description        string             `json:"description"`
-	EarlyMultipliers   []float64          `json:"early_settlement_multipliers"`
+	Rounds                 int                `json:"rounds"`
+	Width                  int                `json:"box_width"`
+	Height                 int                `json:"box_height"`
+	CoordinateUnit         string             `json:"coordinate_unit"`
+	GameConfig             Config             `json:"game_config"`
+	PlayerCount            int                `json:"player_count"`
+	MaxBid                 int64              `json:"max_bid"`
+	Qualities              []Quality          `json:"qualities"`
+	Cards                  []cards.Definition `json:"cards"`
+	CardsSchemaVersion     int                `json:"cards_schema_version"`
+	DefaultDeck            []string           `json:"default_deck"`
+	PublicHintPlugins      []string           `json:"public_hint_plugins"`
+	Description            string             `json:"description"`
+	EarlyMultipliers       []float64          `json:"early_settlement_multipliers"`
+	InitialInspectionCount int                `json:"initial_inspection_count"`
 }
 type View struct {
-	Version     int                `json:"version"`
-	Phase       string             `json:"phase"`
-	Round       int                `json:"round"`
-	Rules       Rules              `json:"rules"`
-	Players     []PlayerInfo       `json:"players"`
-	PublicHints []Hint             `json:"public_hints"`
-	History     []RoundResult      `json:"history"`
-	Decisions   []ObserverDecision `json:"decisions,omitempty"`
-	Self        *Self              `json:"self,omitempty"`
-	Settlement  *Settlement        `json:"settlement,omitempty"`
+	Version            int                         `json:"version"`
+	Phase              string                      `json:"phase"`
+	Round              int                         `json:"round"`
+	Rules              Rules                       `json:"rules"`
+	Players            []PlayerInfo                `json:"players"`
+	PublicHints        []Hint                      `json:"public_hints"`
+	History            []RoundResult               `json:"history"`
+	Decisions          []ObserverDecision          `json:"decisions,omitempty"`
+	Self               *Self                       `json:"self,omitempty"`
+	Settlement         *Settlement                 `json:"settlement,omitempty"`
+	InitialInspections map[string][]InspectionItem `json:"initial_inspections,omitempty"`
+	ItemReveals        map[string][]ItemReveal     `json:"item_reveals,omitempty"`
 }
 type player struct {
 	id, name, token string
@@ -134,6 +159,7 @@ type player struct {
 	cardRound       int
 	revision        int
 	avatar          *int
+	inspection      []InspectionItem
 }
 type Game struct {
 	mu                                        sync.Mutex
@@ -269,6 +295,19 @@ func (g *Game) Start() error {
 		return err
 	}
 	g.items, g.plannedHints = items, planned
+	// A fresh partial Fisher-Yates shuffle gives each player the same per-item
+	// inclusion probability without letting earlier players consume the pool.
+	for _, p := range g.players {
+		pool := append([]Item(nil), items...)
+		count := min(InitialInspectionCount, len(pool))
+		p.inspection = make([]InspectionItem, 0, count)
+		for i := 0; i < count; i++ {
+			j := i + random(len(pool)-i)
+			pool[i], pool[j] = pool[j], pool[i]
+			item := pool[i]
+			p.inspection = append(p.inspection, InspectionItem{item.ID, item.Quality, item.TopLeft, item.BottomRight})
+		}
+	}
 	g.phase = "bidding"
 	g.round = 1
 	g.hints = append(g.hints, g.plannedHints[0])
@@ -393,9 +432,6 @@ func (g *Game) cardEffect(effect cards.Effect) map[string]any {
 			counts[i.Quality]++
 		}
 		return map[string]any{"counts": counts}
-	case "value_band":
-		lower := g.total() / effect.BandSize * effect.BandSize
-		return map[string]any{"lower_inclusive": lower, "upper_exclusive": lower + effect.BandSize}
 	}
 	panic("unvalidated card effect")
 }
@@ -564,10 +600,21 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 		Rules: Rules{Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig, PlayerCount: g.maxPlayers, MaxBid: MaxBid, Qualities: qualities, Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck, PublicHintPlugins: g.hintConfig.IDs(),
 			Description: "Bid on a hidden box with 2–7 players over up to 5 rounds. All bids are revealed together. In rounds 1/2/3, a unique positive highest bid settles at >= 2x/1.7x/1.5x the second-highest bid. Round 4 continues; round 5 settles at the highest bid, with uniform random choice among ties, including all-zero bids. The winner pays that round's bid and receives the box; payoff is total value minus price, others receive 0. Public clues appear in rounds 1 and 3. Before bidding, optionally use one carried, unused card; results are private. Each card/bid requires a reason. Read state for the current round and your submitted bid; watch for updates. See bidbrawl handbook for commands."}}
 	v.Rules.EarlyMultipliers = []float64{2, 1.7, 1.5, 0, 0}
+	v.Rules.InitialInspectionCount = InitialInspectionCount
+	v.Rules.Description += " At start, every player independently samples min(initial_inspection_count, item count) distinct items uniformly without replacement. Each item has the same inclusion probability for every player regardless of quality; players may sample overlapping items. Your self.initial_inspection contains only sampled item IDs, shapes and qualities, never prices."
+	v.Rules.Description += " Every single-item skill also reveals its target's shape and position in self.item_reveals, together with only the quality or price fields learned by that skill. Count skills do not uncover positions."
 	if observer {
 		v.Decisions = g.observerDecisions()
+		v.InitialInspections = make(map[string][]InspectionItem, len(g.players))
+		v.ItemReveals = make(map[string][]ItemReveal, len(g.players))
 		for _, p := range g.players {
 			v.Version += p.revision
+			v.InitialInspections[p.id] = p.inspection
+			var err error
+			v.ItemReveals[p.id], err = g.itemReveals(p)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
 	for _, p := range g.players {
@@ -585,9 +632,41 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 				own = append(own, d)
 			}
 		}
-		v.Self = &Self{p.id, p.deck, p.used, p.hints, p.bid, p.cardRound == g.round, 0, MaxBid, own}
+		reveals, err := g.itemReveals(p)
+		if err != nil {
+			return nil, err
+		}
+		v.Self = &Self{p.id, p.deck, p.used, p.hints, p.bid, p.cardRound == g.round, 0, MaxBid, own, p.inspection, reveals}
 	}
 	return json.Marshal(v)
+}
+
+func (g *Game) itemReveals(p *player) ([]ItemReveal, error) {
+	reveals := []ItemReveal{}
+	for _, hint := range p.hints {
+		// Whitelist learned attributes from the durable result, then locate only
+		// that target. Never copy an item's hidden quality or price.
+		data, err := json.Marshal(hint.Data)
+		if err != nil {
+			return nil, err
+		}
+		var reveal ItemReveal
+		if err := json.Unmarshal(data, &reveal); err != nil {
+			return nil, err
+		}
+		if reveal.ItemID == "" {
+			continue
+		}
+		for _, item := range g.items {
+			if item.ID == reveal.ItemID {
+				reveal.TopLeft, reveal.BottomRight = &item.TopLeft, &item.BottomRight
+				break
+			}
+		}
+		reveal.Round = hint.Round
+		reveals = append(reveals, reveal)
+	}
+	return reveals, nil
 }
 
 // Card identity comes from the durable skill-use record; raw results stay private.

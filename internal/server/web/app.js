@@ -12,7 +12,7 @@ import {activateScene,sceneFeedback} from './room-scene.js';
 const $=id=>document.getElementById(id);
 const text=(id,value)=>{const node=$(id),next=String(value);if(node.textContent!==next)node.textContent=next;};
 const initialRoom=new URLSearchParams(location.search).get('room')||'';
-const ui={room:initialRoom,roomGroup:null,page:initialRoom?'room':'rooms',cursor:null,sort:'profit',quality:'all',search:'',observer:false,manage:false,focusPlayer:null,focusItem:null};
+const ui={room:initialRoom,roomGroup:null,page:initialRoom?'room':'rooms',cursor:null,sort:'profit',quality:'all',search:'',observer:false,manage:false,focusPlayer:null,focusItem:null,fitBox:false};
 let source=null,rooms=[],results={games:0,profit:0,paid:0,rate:null,agents:[]},connection='connecting',resultsFailed=false;
 let lastContent='',lastRooms='',lastContentObserver=false;
 let managing=false,activeDialog=null;
@@ -96,10 +96,11 @@ document.addEventListener('click',event=>{
   const separator=action.indexOf(':'),kind=separator<0?action:action.slice(0,separator),id=separator<0?'':action.slice(separator+1);
   if(kind==='scene'&&activateScene(id)){redraw();sceneFeedback(event.target.closest('button'),id,event.detail>0);return;}
   if(kind==='avatar-greet'){greet(event.target.closest('button'));return;}
-  if(kind==='focus-agent'){ui.focusPlayer=ui.focusPlayer===id?null:id;hideTip();redraw();greet(event.target.closest('button'));return;}
-  if(kind==='dismiss-player'){const focused=ui.focusPlayer;ui.focusPlayer=null;redraw();document.querySelector(`[data-action="focus-agent:${CSS.escape(focused)}"]`)?.focus();return;}
+  if(kind==='focus-agent'){ui.focusPlayer=ui.focusPlayer===id?null:id;ui.focusItem=null;hideTip();redraw();updateDialog();greet(event.target.closest('button'));return;}
+  if(kind==='dismiss-player'){const focused=ui.focusPlayer;ui.focusPlayer=null;ui.focusItem=null;hideTip();redraw();updateDialog();document.querySelector(`[data-action="focus-agent:${CSS.escape(focused)}"]`)?.focus();return;}
   if(kind==='select-item'){ui.focusItem=ui.focusItem===id?null:id;hideTip();redraw();return;}
   if(kind==='unpin'){ui.focusItem=null;redraw();return;}
+  if(kind==='fit-box'){ui.fitBox=!ui.fitBox;hideTip();redraw();document.querySelector('.crate-window')?.scrollTo(0,0);return;}
   if(['avatars','hints','inventory','bids'].includes(kind)){hideTip();showDialog(kind);return;}
   if(kind==='room'){chooseRoom(id);return;}
   if(kind==='create-room'){showDialog(ui.manage?'create-room':'room-access');return;}
@@ -137,7 +138,7 @@ $('rules-button').addEventListener('click',()=>showDialog('rules'));
 function hideTip(){$('item-tooltip').hidden=true;}
 function showTip(target){
   if(!source||ui.page!=='room'||$('content').inert)return hideTip();
-  const item=knownItems(observation(source,ui.cursor)).find(item=>item.id===target.dataset.item);if(!item)return hideTip();
+  const item=knownItems(observation(source,ui.cursor),ui.observer?ui.focusPlayer:null).find(item=>item.id===target.dataset.item);if(!item)return hideTip();
   const tip=$('item-tooltip'),box=target.getBoundingClientRect();tip.innerHTML=itemTip(item);tip.hidden=false;
   tip.style.left=Math.max(8,Math.min(innerWidth-tip.offsetWidth-8,box.right+9))+'px';
   tip.style.top=Math.max(8,Math.min(innerHeight-tip.offsetHeight-8,box.top))+'px';
@@ -147,6 +148,7 @@ $('content').addEventListener('pointerout',event=>{if(event.target.closest('[dat
 $('content').addEventListener('focusin',event=>{const target=event.target.closest('[data-item]');if(target)showTip(target);});
 $('content').addEventListener('focusout',hideTip);
 addEventListener('resize',hideTip);
+$('content').addEventListener('scroll',hideTip,true);
 
 async function readJSON(path,signal) {
   const response=await fetch(path,{cache:'no-store',signal});
@@ -156,14 +158,15 @@ async function readJSON(path,signal) {
 function setObserver(value) {
   if(ui.observer===value)return;
   ui.observer=value;
-  if(source)source={...source,decisions:[]};
+  if(source)source=normalizeView(source,value);
+  ui.focusItem=null;hideTip();updateDialog();
   redraw();live.changeObserver();
 }
 const live=observe({getRoom:()=>ui.room,getObserver:()=>ui.observer,getSort:()=>ui.sort,read:readJSON,
   onObserverExpired(){ui.manage=false;setObserver(false);},
   onData(data){
-    if(data.state){source=normalizeView(data.state);hideTip();}
-    if(source&&!knownItems(observation(source,ui.cursor)).some(item=>item.id===ui.focusItem))ui.focusItem=null;
+    if(data.state){source=normalizeView(data.state,ui.observer);hideTip();}
+    if(source&&!knownItems(observation(source,ui.cursor),ui.observer?ui.focusPlayer:null).some(item=>item.id===ui.focusItem))ui.focusItem=null;
     if(data.rooms){
       const previous=rooms.find(room=>room.room_id===ui.room);
       rooms=data.rooms.rooms;

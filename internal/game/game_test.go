@@ -26,7 +26,7 @@ func fixture(t *testing.T, n int) (*Game, []string) {
 	}
 	tokens := []string{}
 	for i := 0; i < n; i++ {
-		_, token, e := g.Join(string(rune('A'+i)), []string{"largest_price", "random_shape", "item_count", "quality_counts", "value_band"})
+		_, token, e := g.Join(string(rune('A'+i)), []string{"largest_price", "random_shape", "item_count", "quality_counts", "random_quality"})
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -54,7 +54,7 @@ func TestLobbyValidation(t *testing.T) {
 	if e := g.Start(); e == nil {
 		t.Fatal("started empty game")
 	}
-	for _, deck := range [][]string{{"bad"}, {"item_count", "item_count"}, {"largest_price", "random_shape", "item_count", "quality_counts", "value_band", "largest_quality"}} {
+	for _, deck := range [][]string{{"bad"}, {"item_count", "item_count"}, {"largest_price", "random_shape", "item_count", "quality_counts", "random_quality", "largest_quality"}} {
 		if _, _, e := g.Join("A", deck); e == nil {
 			t.Fatal("invalid deck accepted")
 		}
@@ -205,7 +205,7 @@ func TestFiveRoundsSettlementAndHints(t *testing.T) {
 }
 func TestGeometryAndPriceRanges(t *testing.T) {
 	for trial := 0; trial < 100; trial++ {
-		g, ts := fixture(t, 2)
+		g, _ := fixture(t, 2)
 		assertTiledRows(t, g.items, g.GameConfig())
 		ids := map[string]bool{}
 		for _, i := range g.items {
@@ -222,14 +222,6 @@ func TestGeometryAndPriceRanges(t *testing.T) {
 			if !valid {
 				t.Fatal("invalid quality/price")
 			}
-		}
-		if e := g.UseCard(ts[0], 1, "value_band", "protocol test"); e != nil {
-			t.Fatal(e)
-		}
-		v := view(t, g, ts[0])
-		d := v.Self.Hints[0].Data
-		if float64(g.total()) < d["lower_inclusive"].(float64) || float64(g.total()) >= d["upper_exclusive"].(float64) {
-			t.Fatal("incorrect value band")
 		}
 	}
 }

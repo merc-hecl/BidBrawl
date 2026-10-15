@@ -24,7 +24,7 @@ test('warehouse easter eggs stay cosmetic, survive redraws and reset for another
 // Fixture frames represent the server projection consumed by the renderer.
 function withFrames(s){return {...s,frames:Array.from({length:s.history.length+(s.settlement?2:1)},(_,i)=>({...s,phase:s.settlement&&i>=s.history.length?'settled':'bidding',round:Math.min(i+1,s.round),history:s.history.slice(0,i),public_hints:s.public_hints.filter(h=>h.round<=i+1),decisions:s.decisions.filter(d=>d.round<=i),settlement:i>=s.history.length?s.settlement:undefined}))};}
 const ui={room:'r',page:'room',cursor:2,sort:'profit',quality:'all',search:'',focusPlayer:'p1'};
-let source={room_id:'r',room_name:'<Room>',phase:'settled',round:5,rules:{rounds:5,box_width:20,box_height:30,player_count:2},players:[{id:'p1',name:'<Atlas>',avatar:5,submitted:true},{id:'p2',name:'Echo',avatar:1,submitted:true}],history:Array.from({length:5},(_,i)=>({round:i+1,bids:[{player_id:'p1',amount:100+i},{player_id:'p2',amount:200+i}]})),public_hints:[{round:1,kind:'random_shape',data:{title:'随机物品轮廓',message:'物品 known 占 1 × 1 格。',fact:{type:'random_shape',item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}},translations:{en:{title:'Random item shape',message:'Item known occupies 1 × 1 cells.'}}}},{round:3,kind:'quality_count',data:{title:'指定品质数量',message:'箱内稀有品质物品共有 2 件。',fact:{type:'quality_count',quality:'rare',count:2}}}],settlement:{winner_id:'p2',paid:204,total_value:300,profit:96,tied_players:['p2'],items:[{id:'known',quality:'rare',price:100,top_left:{x:0,y:0},bottom_right:{x:1,y:1}},{id:'hidden-item',quality:'common',price:200,top_left:{x:1,y:0},bottom_right:{x:2,y:1}}],round:5,method:'final',payoffs:{p1:0,p2:96}},decisions:[]};
+let source={room_id:'r',room_name:'<Room>',phase:'settled',round:5,rules:{initial_inspection_count:3,rounds:5,box_width:20,box_height:30,player_count:2},players:[{id:'p1',name:'<Atlas>',avatar:5,submitted:true},{id:'p2',name:'Echo',avatar:1,submitted:true}],history:Array.from({length:5},(_,i)=>({round:i+1,bids:[{player_id:'p1',amount:100+i},{player_id:'p2',amount:200+i}]})),public_hints:[{round:1,kind:'random_shape',data:{title:'随机物品轮廓',message:'物品 known 占 1 × 1 格。',fact:{type:'random_shape',item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}},translations:{en:{title:'Random item shape',message:'Item known occupies 1 × 1 cells.'}}}},{round:3,kind:'quality_count',data:{title:'指定品质数量',message:'箱内稀有品质物品共有 2 件。',fact:{type:'quality_count',quality:'rare',count:2}}}],settlement:{winner_id:'p2',paid:204,total_value:300,profit:96,tied_players:['p2'],items:[{id:'known',quality:'rare',price:100,top_left:{x:0,y:0},bottom_right:{x:1,y:1}},{id:'hidden-item',quality:'common',price:200,top_left:{x:1,y:0},bottom_right:{x:2,y:1}}],round:5,method:'final',payoffs:{p1:0,p2:96}},decisions:[]};
 
 source=withFrames(source);
 
@@ -160,16 +160,16 @@ test('player pane shows only selected player and round reasons and explains rest
 });
 
 test('observer skill names and help use the saved card definition safely in both languages',()=>{
-  const played=withFrames({...source,decisions:[{round:1,player_id:'p1',action:'card',card_id:'value_band',reason:'estimate'}]});
+  const played=withFrames({...source,decisions:[{round:1,player_id:'p1',action:'card',card_id:'largest_quality',reason:'estimate'}]});
   for(const locale of ['zh-CN','en']){
     setLocale(locale,false);
     const html=renderContent(played,emptyStats,{...ui,page:'room',cursor:1,observer:true});
-    assert.ok(html.includes(t('card.value_band.name'))&&html.includes(t('card.value_band.description')));
-    assert.ok(html.includes('data-action="card:value_band"')&&html.includes('role="tooltip"'));
-    const detail=dialogContent('card','value_band',played,emptyStats,{...ui,observer:true});
-    assert.equal(detail.title,t('card.value_band.name'));
-    assert.ok(detail.content.includes(t('card.value_band.description')));
-    assert.equal(dialogContent('card','value_band',played,emptyStats,{...ui,observer:false}),null);
+    assert.ok(html.includes(t('card.largest_quality.name'))&&html.includes(t('card.largest_quality.description')));
+    assert.ok(html.includes('data-action="card:largest_quality"')&&html.includes('role="tooltip"'));
+    const detail=dialogContent('card','largest_quality',played,emptyStats,{...ui,observer:true});
+    assert.equal(detail.title,t('card.largest_quality.name'));
+    assert.ok(detail.content.includes(t('card.largest_quality.description')));
+    assert.equal(dialogContent('card','largest_quality',played,emptyStats,{...ui,observer:false}),null);
   }
   const custom=withFrames({...played,rules:{...source.rules,cards:[{id:'custom',name:'<Card>',description:'<img src=x onerror=alert(1)>',effect:{type:'item_count'}}]},decisions:[{round:1,player_id:'p1',action:'card',card_id:'custom',reason:'estimate'}]});
   const html=renderContent(custom,emptyStats,{...ui,page:'room',cursor:1,observer:true});
@@ -186,4 +186,57 @@ test('room renders persisted avatars and item bounds',()=>{
   assert.ok(html.includes('data-x="0" data-y="0" data-width="5" data-height="3.3333333333333335"'));
   assert.ok(html.includes('data-columns="20" data-rows="30"'));
   assert.equal((html.match(/data-item=/g)||[]).length,2);
+});
+
+test('fog follows the selected inspection, clears on session loss and lifts at settlement',()=>{
+  const first={id:'private-first',quality:'rare',top_left:{x:0,y:0},bottom_right:{x:2,y:2}};
+  const second={id:'private-second',quality:'epic',top_left:{x:2,y:0},bottom_right:{x:4,y:2}};
+  const raw=withFrames({...source,phase:'bidding',settlement:undefined,initial_inspections:{p1:[first],p2:[second]},public_hints:[]});
+  const observed=normalizeView(raw,true);
+  assert.deepEqual(knownItems(observation(observed,0),'p1'),[first]);
+  assert.deepEqual(knownItems(observation(observed,0),'p2'),[second]);
+  assert.deepEqual(knownItems(observed),[]);
+  const firstHTML=renderContent(observed,emptyStats,{...ui,cursor:0,observer:true});
+  assert.ok(firstHTML.includes('data-item="private-first"')&&!firstHTML.includes('data-item="private-second"'));
+  assert.ok(firstHTML.includes('has-fog'));
+  assert.equal(dialogContent('item','private-second',observed,emptyStats,{...ui,cursor:0,observer:true}),null);
+  const secondHTML=renderContent(observed,emptyStats,{...ui,cursor:0,observer:true,focusPlayer:'p2'});
+  assert.ok(secondHTML.includes('data-item="private-second"')&&!secondHTML.includes('data-item="private-first"'));
+  const expired=normalizeView(observed,false);
+  assert.deepEqual(knownItems(observation(expired,0),'p1'),[]);
+  const publicHTML=renderContent(expired,emptyStats,{...ui,cursor:0,observer:false});
+  assert.ok(!publicHTML.includes('private-first')&&!publicHTML.includes('private-second'));
+  const settled=renderContent(source,emptyStats,{...ui,cursor:null,observer:true});
+  assert.ok(!settled.includes('has-fog')&&settled.includes('data-item="hidden-item"'));
+});
+
+test('skill reveals accumulate only learned attributes in the selected player vision',()=>{
+  const inspected={id:'sample',quality:'rare',top_left:{x:0,y:0},bottom_right:{x:1,y:1}};
+  const shape={round:1,item_id:'scanned',top_left:{x:1,y:0},bottom_right:{x:3,y:2}};
+  const price={round:2,item_id:'scanned',price:700};
+  const priced={round:2,item_id:'largest',price:1500,top_left:{x:4,y:0},bottom_right:{x:8,y:4}};
+  const raw={...source,settlement:undefined,public_hints:[],initial_inspections:{p1:[inspected],p2:[]},item_reveals:{p1:[shape,price,priced],p2:[]},frames:[]};
+  raw.frames=[{...raw,item_reveals:{p1:[],p2:[]}},{...raw,item_reveals:{p1:[shape],p2:[]}}];
+  const observed=normalizeView(raw,true);
+  assert.deepEqual(knownItems(observation(observed,0),'p1'),[inspected]);
+  const scanned=knownItems(observation(observed,1),'p1').find(item=>item.id==='scanned');
+  assert.equal(scanned.price,undefined);assert.equal(scanned.quality,undefined);
+  assert.equal(knownItems(observed,'p1').find(item=>item.id==='scanned').price,700);
+  assert.deepEqual(knownItems(observed,'p1').find(item=>item.id==='largest'),{id:'largest',price:1500,top_left:priced.top_left,bottom_right:priced.bottom_right});
+  assert.deepEqual(knownItems(observed,'p2'),[]);
+  const html=renderContent(observed,emptyStats,{...ui,cursor:null,observer:true});
+  assert.ok(html.includes('data-item="scanned"')&&html.includes('data-quality="unrevealed"'));
+  assert.ok(html.includes('data-item="largest" data-quality="unrevealed"'));
+  assert.ok(dialogContent('item','largest',observed,emptyStats,{...ui,cursor:null,observer:true}).content.includes('1,500'));
+  const detail=dialogContent('item','scanned',observed,emptyStats,{...ui,cursor:null,observer:true});
+  assert.ok(detail.content.includes('700'));
+  const identified={...observed,item_reveals:{...observed.item_reveals,p1:[...observed.item_reveals.p1,{round:3,item_id:'scanned',quality:'epic'}]}};
+  const identifiedHTML=renderContent(identified,emptyStats,{...ui,cursor:null,observer:true});
+  assert.ok(identifiedHTML.includes('data-item="scanned" data-quality="epic"'));
+  assert.equal(knownItems(identified,'p1').find(item=>item.id==='scanned').price,700);
+  const expired=normalizeView(observed,false);
+  assert.deepEqual(knownItems(expired,'p1'),[]);
+  assert.deepEqual(knownItems(observation(expired,1),'p1'),[]);
+  const merged=knownItems({...observed,public_hints:[{data:{fact:{type:'random_quality',item_id:'largest',quality:'epic'}}}]},'p1').find(item=>item.id==='largest');
+  assert.equal(merged.quality,'epic');assert.equal(merged.price,1500);
 });

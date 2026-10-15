@@ -76,5 +76,4 @@ var englishCards = map[string][2]string{
 	"random_quality":  {"Random appraisal", "Reveals the ID and quality of one random item."},
 	"item_count":      {"Item count", "Reveals the total number of items."},
 	"quality_counts":  {"Quality census", "Reveals the number of items in each quality tier."},
-	"value_band":      {"Value band", "Reveals the 1,000-coin interval containing the total value: [lower, upper)."},
 }

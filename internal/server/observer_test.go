@@ -28,6 +28,65 @@ func TestDecisionReasonJSONSizeBoundary(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/bid", a, string(body), 200)
 }
 
+func TestObserverVisionUpdatesImmediatelyAndReplayExcludesFutureSkills(t *testing.T) {
+	g, _ := game.New(2)
+	s := testTable(g)
+	a, _ := accountSession(t, s, "A")
+	b, _ := accountSession(t, s, "B")
+	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["random_shape","largest_price","item_count"]}`, 201)
+	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":[]}`, 201)
+	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
+	var own game.View
+	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state", a, "", 200), &own)
+	id := own.Self.ID
+	for round, card := range []string{"random_shape", "largest_price", "item_count"} {
+		round++
+		body, _ := json.Marshal(map[string]any{"round": round, "card": card, "reason": "inspect current knowledge"})
+		checkedRequest(t, s, "POST", "/api/card", a, string(body), 200)
+		var latest struct {
+			game.View
+			Frames []game.View `json:"frames"`
+		}
+		_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table", s.ObserverToken, "", 200), &latest)
+		if len(latest.ItemReveals[id]) != min(round, 2) {
+			t.Fatal("live vision did not follow skill use")
+		}
+		if len(latest.Frames[0].ItemReveals[id]) != 0 {
+			t.Fatal("opening includes future skill")
+		}
+		if round > 1 && len(latest.Frames[1].ItemReveals[id]) != 1 {
+			t.Fatal("first round includes later skill")
+		}
+		first := latest.ItemReveals[id][0]
+		if first.TopLeft == nil || first.BottomRight == nil || first.Quality != "" || first.Price != nil {
+			t.Fatal("shape scan exposed extra attributes")
+		}
+		if round > 1 {
+			price := latest.ItemReveals[id][1]
+			if price.Price == nil || price.TopLeft == nil || price.BottomRight == nil || price.Quality != "" {
+				t.Fatal("price skill failed to locate target or disclosed quality")
+			}
+		}
+		for _, path := range []string{"/api/state", "/api/replay?room=table"} {
+			for _, token := range []string{"", a, b} {
+				var public game.View
+				_ = json.Unmarshal(checkedRequest(t, s, "GET", path, token, "", 200), &public)
+				if len(public.ItemReveals) != 0 || public.Self != nil && token == b && len(public.Self.ItemReveals) != 0 {
+					t.Fatal("observer vision leaked through public/player route")
+				}
+			}
+		}
+		bid, _ := json.Marshal(map[string]any{"round": round, "amount": 100, "reason": "protocol sample"})
+		checkedRequest(t, s, "POST", "/api/bid", a, string(bid), 200)
+		checkedRequest(t, s, "POST", "/api/bid", b, string(bid), 200)
+	}
+	var frame game.View
+	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table&frame=2", s.ObserverToken, "", 200), &frame)
+	if len(frame.ItemReveals[id]) != 2 {
+		t.Fatal("recorded vision is incomplete")
+	}
+}
+
 func TestObserverReasonsAreAuthenticatedReadOnlyAndDurable(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "accounts.db")
 	s := persistentServer(t, path)
@@ -69,6 +128,15 @@ func TestObserverReasonsAreAuthenticatedReadOnlyAndDurable(t *testing.T) {
 	var observed game.View
 	if err := json.Unmarshal(observer, &observed); err != nil || observed.Decisions[0].CardID != "item_count" || observed.Decisions[1].CardID != "" || observed.Self != nil {
 		t.Fatal("observer card identity missing or private skill results exposed")
+	}
+	if len(observed.InitialInspections) != 2 {
+		t.Fatal("human observer is missing initial inspections")
+	}
+	for _, path := range []string{"/api/state?room=table", "/api/replay?room=table"} {
+		public := checkedRequest(t, s, "GET", path, a, "", 200)
+		if bytes.Contains(public, []byte(`"initial_inspections"`)) {
+			t.Fatal("public route exposes other players' inspections")
+		}
 	}
 	checkedRequest(t, s, "POST", "/api/bid", s.ObserverToken, `{"round":1,"amount":100,"reason":"unauthorized"}`, 401)
 	for _, body := range []string{`{"round":1,"amount":100}`, `{"round":1,"amount":100,"reason":" "}`, `{"round":1,"card":"item_count"}`} {

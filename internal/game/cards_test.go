@@ -8,9 +8,9 @@ import (
 )
 
 func TestConfiguredCardsAndSnapshot(t *testing.T) {
-	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit", "estimate"}, Cards: []cards.Definition{
+	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit", "census"}, Cards: []cards.Definition{
 		{ID: "audit", Name: "组合全检", Description: "最大物品全部信息", Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price", "shape"}}},
-		{ID: "estimate", Name: "细分估值", Description: "250 金币区间", Effect: cards.Effect{Type: "value_band", BandSize: 250}},
+		{ID: "census", Name: "清点", Description: "物品总数", Effect: cards.Effect{Type: "count"}},
 	}}
 	g, err := NewWithCards(2, cfg)
 	if err != nil {
@@ -23,7 +23,7 @@ func TestConfiguredCardsAndSnapshot(t *testing.T) {
 	if _, _, err := g.Join("invalid", []string{"largest_price"}); err == nil {
 		t.Fatal("removed built-in card accepted")
 	}
-	_, a, _ := g.Join("A", []string{"audit", "estimate"})
+	_, a, _ := g.Join("A", []string{"audit", "census"})
 	_, b, _ := g.Join("B", nil)
 	if err := g.Start(); err != nil {
 		t.Fatal(err)
@@ -46,17 +46,17 @@ func TestConfiguredCardsAndSnapshot(t *testing.T) {
 	}
 	_ = g.Submit(a, 1, 0, "protocol test")
 	_ = g.Submit(b, 1, 0, "protocol test")
-	if err := g.UseCard(a, 2, "estimate", "protocol test"); err != nil {
+	if err := g.UseCard(a, 2, "census", "protocol test"); err != nil {
 		t.Fatal(err)
 	}
 	data = view(t, g, a).Self.Hints[1].Data
-	if data["lower_inclusive"] != float64(500) || data["upper_exclusive"] != float64(750) {
-		t.Fatal("configured interval ignored", data)
+	if data["count"] != float64(3) {
+		t.Fatal("configured count ignored", data)
 	}
-	if err := g.UseCard(a, 2, "estimate", "protocol test"); err == nil {
+	if err := g.UseCard(a, 2, "census", "protocol test"); err == nil {
 		t.Fatal("configured card reused")
 	}
-	if !reflect.DeepEqual(view(t, g, "").Rules.DefaultDeck, []string{"audit", "estimate"}) {
+	if !reflect.DeepEqual(view(t, g, "").Rules.DefaultDeck, []string{"audit", "census"}) {
 		t.Fatal("caller changed configuration snapshot")
 	}
 }

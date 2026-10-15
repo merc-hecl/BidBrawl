@@ -27,12 +27,9 @@ func TestConfigurationValidation(t *testing.T) {
 		{Type: "reveal", Selector: "anything", Fields: []string{"price"}},
 		{Type: "reveal", Selector: "random", Fields: []string{"token"}},
 		{Type: "reveal", Selector: "random", Fields: []string{"price", "price"}},
-		{Type: "reveal", Selector: "random", Fields: []string{"price"}, BandSize: 10},
+		{Type: "reveal", Selector: "random", Fields: []string{"price"}, GroupBy: "quality"},
 		{Type: "count", GroupBy: "name"},
 		{Type: "count", Selector: "largest"},
-		{Type: "value_band", BandSize: 0},
-		{Type: "value_band", BandSize: 1_000_001},
-		{Type: "value_band", BandSize: 250, Fields: []string{"price"}},
 	} {
 		cfg := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{{ID: "new_card", Name: "新卡", Description: "测试", Effect: effect}}}
 		if err := cfg.Validate(); err == nil {

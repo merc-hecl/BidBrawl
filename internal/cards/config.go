@@ -23,7 +23,6 @@ type Effect struct {
 	Selector string   `json:"selector,omitempty"`
 	Fields   []string `json:"fields,omitempty"`
 	GroupBy  string   `json:"group_by,omitempty"`
-	BandSize int64    `json:"band_size,omitempty"`
 }
 
 type Definition struct {
@@ -133,8 +132,8 @@ func (e Effect) validate() error {
 		if e.Selector != "random" && e.Selector != "largest" && e.Selector != "smallest" {
 			return errors.New("reveal selector must be random, largest or smallest")
 		}
-		if len(e.Fields) < 1 || len(e.Fields) > 3 || e.GroupBy != "" || e.BandSize != 0 {
-			return errors.New("reveal needs 1–3 fields and does not accept group_by or band_size")
+		if len(e.Fields) < 1 || len(e.Fields) > 3 || e.GroupBy != "" {
+			return errors.New("reveal needs 1–3 fields and does not accept group_by")
 		}
 		seen := map[string]bool{}
 		for _, field := range e.Fields {
@@ -144,12 +143,8 @@ func (e Effect) validate() error {
 			seen[field] = true
 		}
 	case "count":
-		if e.Selector != "" || len(e.Fields) != 0 || e.BandSize != 0 || (e.GroupBy != "" && e.GroupBy != "quality") {
+		if e.Selector != "" || len(e.Fields) != 0 || (e.GroupBy != "" && e.GroupBy != "quality") {
 			return errors.New("count accepts only optional group_by=quality")
-		}
-	case "value_band":
-		if e.BandSize < 1 || e.BandSize > 1_000_000 || e.Selector != "" || len(e.Fields) != 0 || e.GroupBy != "" {
-			return errors.New("value_band accepts only band_size in 1–1000000")
 		}
 	default:
 		return fmt.Errorf("unknown effect type: %q", e.Type)

@@ -84,10 +84,11 @@ export function dialogContent(kind,id,source,results,ui) {
     const geometry=rules.game_config?.items;
     if(geometry)pairs.push(['itemMax',`${geometry.max_width} × ${geometry.max_height}`]);
     pairs.push(['cardLimit',tr('cardsCount',{count:5})]);
+    pairs.push(['initialInspection',tr('inspectionRule',{count:rules.initial_inspection_count})]);
     return {title:t('rules'),content:details(pairs).replace('<dl>','<dl class="rule-grid">')+`<details class="card-rules"><summary>${tr('cardCatalog')}</summary>${(rules.cards||[]).map(localizeCard).map(card=>`<article><h3>${esc(card.name)}</h3><p>${esc(card.description)}</p></article>`).join('')}</details>`};
   }
   if(kind==='item'){
-    const item=view && knownItems(view).find(item=>item.id===id);if(!item)return null;
+    const item=view && knownItems(view,ui.observer?ui.focusPlayer:null).find(item=>item.id===id);if(!item)return null;
     return {title:item.id,content:details([['quality',quality(item.quality)],['value',item.price===undefined?tr('unrevealed'):money(item.price)],['area',`${item.bottom_right.x-item.top_left.x} × ${item.bottom_right.y-item.top_left.y}`],['bounds',`[(${item.top_left.x}, ${item.top_left.y}), (${item.bottom_right.x}, ${item.bottom_right.y}))`]])};
   }
   const seated=kind==='agent'?view?.players.find(player=>player.id===id):null;

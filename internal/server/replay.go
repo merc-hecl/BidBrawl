@@ -80,6 +80,16 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 				}
 			}
 			frame["decisions"] = decisions
+			reveals := make(map[string][]game.ItemReveal, len(view.ItemReveals))
+			for player, items := range view.ItemReveals {
+				reveals[player] = []game.ItemReveal{}
+				for _, item := range items {
+					if item.Round <= n {
+						reveals[player] = append(reveals[player], item)
+					}
+				}
+			}
+			frame["item_reveals"] = reveals
 		}
 		settled := view.Settlement != nil && n == len(view.History)
 		if !settled {

@@ -36,26 +36,27 @@ type gameSnapshot struct {
 }
 
 type playerSnapshot struct {
-	ID        string   `json:"id"`
-	Name      string   `json:"name"`
-	Token     string   `json:"token"`
-	Deck      []string `json:"deck"`
-	Used      []string `json:"used"`
-	Hints     []Hint   `json:"hints"`
-	Bid       *int64   `json:"bid"`
-	CardRound int      `json:"card_round"`
-	Revision  int      `json:"revision"`
-	Avatar    *int     `json:"avatar"`
+	ID         string           `json:"id"`
+	Name       string           `json:"name"`
+	Token      string           `json:"token"`
+	Deck       []string         `json:"deck"`
+	Used       []string         `json:"used"`
+	Hints      []Hint           `json:"hints"`
+	Bid        *int64           `json:"bid"`
+	CardRound  int              `json:"card_round"`
+	Revision   int              `json:"revision"`
+	Avatar     *int             `json:"avatar"`
+	Inspection []InspectionItem `json:"initial_inspection"`
 }
 
 func (g *Game) Snapshot() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := gameSnapshot{SchemaVersion: 4, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
+	s := gameSnapshot{SchemaVersion: 5, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
 		Phase: g.phase, Round: g.round, Version: g.version, Players: []playerSnapshot{}, Items: g.items,
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
-		s.Players = append(s.Players, playerSnapshot{p.id, p.name, p.token, p.deck, p.used, p.hints, p.bid, p.cardRound, p.revision, p.avatar})
+		s.Players = append(s.Players, playerSnapshot{p.id, p.name, p.token, p.deck, p.used, p.hints, p.bid, p.cardRound, p.revision, p.avatar, p.inspection})
 	}
 	return json.Marshal(s)
 }
@@ -73,7 +74,7 @@ func Restore(data []byte) (*Game, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return nil, errors.New("expected exactly one game snapshot")
 	}
-	if s.SchemaVersion != 4 {
+	if s.SchemaVersion != 5 {
 		return nil, errors.New("unsupported game snapshot schema")
 	}
 	g, err := NewWithHints(s.PlayerCount, s.Config, s.Cards, s.HintConfig)
@@ -88,7 +89,7 @@ func Restore(data []byte) (*Game, error) {
 	g.plannedHints = s.PlannedHints
 	g.decisions, g.settlement = s.Decisions, s.Settlement
 	for _, p := range s.Players {
-		g.players = append(g.players, &player{p.ID, p.Name, p.Token, p.Deck, p.Used, p.Hints, p.Bid, p.CardRound, p.Revision, p.Avatar})
+		g.players = append(g.players, &player{p.ID, p.Name, p.Token, p.Deck, p.Used, p.Hints, p.Bid, p.CardRound, p.Revision, p.Avatar, p.Inspection})
 	}
 	return g, nil
 }
@@ -109,7 +110,26 @@ func (s gameSnapshot) validate() error {
 	names, tokens := map[string]bool{}, map[string]bool{}
 	avatars := map[int]bool{}
 	pending := 0
+	items := make(map[string]Item, len(s.Items))
+	for _, item := range s.Items {
+		items[item.ID] = item
+	}
 	for i, p := range s.Players {
+		count := 0
+		if s.Phase != "lobby" {
+			count = min(InitialInspectionCount, len(s.Items))
+		}
+		if len(p.Inspection) != count {
+			return errors.New("invalid initial inspection count")
+		}
+		seen := map[string]bool{}
+		for _, observed := range p.Inspection {
+			item, ok := items[observed.ID]
+			if !ok || seen[observed.ID] || observed != (InspectionItem{item.ID, item.Quality, item.TopLeft, item.BottomRight}) {
+				return errors.New("invalid initial inspection item")
+			}
+			seen[observed.ID] = true
+		}
 		if p.Avatar == nil || *p.Avatar < 0 || *p.Avatar >= 7 || avatars[*p.Avatar] {
 			return errors.New("invalid or duplicate avatar")
 		}

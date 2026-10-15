@@ -1,17 +1,17 @@
 {
   "schema_version": 1,
-  "default_deck": ["largest_price", "random_shape", "item_count", "quality_counts", "value_band"],
+  "default_deck": ["largest_price", "random_shape", "item_count", "quality_counts"],
   "cards": [
     {
       "id": "largest_quality",
       "name": "巨物鉴定",
-      "description": "揭示面积最大物品的品质；并列按物品 ID 排序取首个。",
+      "description": "揭示面积最大物品的轮廓、位置和品质；并列按物品 ID 排序取首个。",
       "effect": {"type": "reveal", "selector": "largest", "fields": ["quality"]}
     },
     {
       "id": "largest_price",
       "name": "巨物估价",
-      "description": "揭示面积最大物品的真实价格。",
+      "description": "揭示面积最大物品的轮廓、位置和真实价格，不揭示品质。",
       "effect": {"type": "reveal", "selector": "largest", "fields": ["price"]}
     },
     {
@@ -23,7 +23,7 @@
     {
       "id": "random_quality",
       "name": "随机鉴定",
-      "description": "揭示一件随机物品的 ID 和品质。",
+      "description": "揭示一件随机物品的 ID、轮廓、位置和品质，不揭示价格。",
       "effect": {"type": "reveal", "selector": "random", "fields": ["quality"]}
     },
     {
@@ -37,12 +37,6 @@
       "name": "品质普查",
       "description": "揭示每种品质的物品数量。",
       "effect": {"type": "count", "group_by": "quality"}
-    },
-    {
-      "id": "value_band",
-      "name": "区间估值",
-      "description": "揭示总价值所在的 1000 金币区间 [下界, 上界)。",
-      "effect": {"type": "value_band", "band_size": 1000}
     }
   ]
 }

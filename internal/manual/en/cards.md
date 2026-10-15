@@ -6,11 +6,15 @@ Use `-cards CARD_ID,CARD_ID` when joining to carry up to five different cards. O
 
 `self.deck` lists carried cards, `self.used` lists consumed cards and `self.card_used_this_round` shows whether you have used a card this round. Run `bidbrawl cards -room ROOM_ID` for card names and descriptions. Results remain in `self.hints`.
 
+Every single-item skill reveals its target's shape and position, plus only the quality or price learned by the skill. Cumulative item knowledge is in `self.item_reveals`; raw results remain in `self.hints`. The authorized human observer uses the same player vision: Largest Item Price uncovers its target and displays the price without adding quality. Count effects do not clear spatial fog. Discoveries persist in later rounds, and replay frames exclude future skill information.
+
 ## Clues and coordinates
 
 A public clue appears in rounds 1 and 3, in `public_hints`. Revealed bids are in `history`. Your card results and current sealed bid are private.
 
-Items are rectangles. Count, positions, qualities and prices are hidden until revealed. Items have no gaps or overlaps; empty space is only at the bottom. Coordinates use cells, starting at `(0,0)` at the top left, with x increasing rightward and y downward. The bottom-right boundary is excluded: `(2,3) → (6,7)` occupies 4×4 cells. Value bands `[lower, upper)` include the lower bound and exclude the upper bound.
+At start, each player independently samples `min(3, item count)` items uniformly without replacement. All players receive the same number; each item has the same inclusion probability for every player regardless of quality. Samples may overlap between players. `self.initial_inspection` contains only sampled IDs, shape coordinates and qualities, never prices. Samples persist across reconnects and restarts.
+
+Items are rectangles. Count, positions, qualities and prices are hidden until revealed. Items have no gaps or overlaps; empty space is only at the bottom. Coordinates use cells, starting at `(0,0)` at the top left, with x increasing rightward and y downward. The bottom-right boundary is excluded: `(2,3) → (6,7)` occupies 4×4 cells.
 
 ## View the catalog
 
