@@ -4,23 +4,9 @@ import {readFile} from 'node:fs/promises';
 import {catalogs,t,setLocale,localizeCard} from './web/i18n.js';
 import {normalizeView,observation,knownItems} from './web/model.js';
 import {renderContent,roomDirectory,dialogContent} from './web/render.js';
-import {roomScene,activateScene} from './web/room-scene.js';
+import {itemInfo} from './web/room-ui.js';
 
 const emptyStats={games:0,profit:0,paid:0,rate:null,agents:[]};
-test('warehouse easter eggs stay cosmetic, survive redraws and reset for another room',()=>{
-  setLocale('zh-CN',false);
-  const initial=roomScene('scene-test');
-  assert.ok(initial.includes('is-lit')&&!initial.includes('parcel-open'));
-  assert.equal(activateScene('unknown'),false);
-  activateScene('lamp');activateScene('parcel');
-  for(let i=0;i<3;i++)activateScene('gavel');
-  const opened=roomScene('scene-test');
-  assert.ok(opened.includes('parcel-open')&&opened.includes('lucky-knock')&&!opened.includes('is-lit'));
-  assert.equal(roomScene('scene-test'),opened);
-  activateScene('gavel');
-  assert.ok(!roomScene('scene-test').includes('lucky-knock'));
-  assert.equal(roomScene('another-scene'),initial);
-});
 // Fixture frames represent the server projection consumed by the renderer.
 function withFrames(s){return {...s,frames:Array.from({length:s.history.length+(s.settlement?2:1)},(_,i)=>({...s,phase:s.settlement&&i>=s.history.length?'settled':'bidding',round:Math.min(i+1,s.round),history:s.history.slice(0,i),public_hints:s.public_hints.filter(h=>h.round<=i+1),decisions:s.decisions.filter(d=>d.round<=i),settlement:i>=s.history.length?s.settlement:undefined}))};}
 const ui={room:'r',page:'room',cursor:2,sort:'profit',quality:'all',search:'',focusPlayer:'p1'};
@@ -183,7 +169,7 @@ test('observer skill names and help use the saved card definition safely in both
 test('room renders persisted avatars and item bounds',()=>{
   const html=renderContent(source,emptyStats,{...ui,cursor:null});
   assert.ok(html.includes('data-bot="5"')&&html.includes('data-bot="1"'));
-  assert.ok(html.includes('data-x="0" data-y="0" data-width="5" data-height="3.3333333333333335"'));
+  assert.ok(html.includes('data-col="0" data-row="0" data-w="1" data-h="1"'));
   assert.ok(html.includes('data-columns="20" data-rows="30"'));
   assert.equal((html.match(/data-item=/g)||[]).length,2);
 });
@@ -199,7 +185,7 @@ test('fog follows the selected inspection, clears on session loss and lifts at s
   const firstHTML=renderContent(observed,emptyStats,{...ui,cursor:0,observer:true});
   assert.ok(firstHTML.includes('data-item="private-first"')&&!firstHTML.includes('data-item="private-second"'));
   assert.ok(firstHTML.includes('has-fog'));
-  assert.equal(dialogContent('item','private-second',observed,emptyStats,{...ui,cursor:0,observer:true}),null);
+  assert.equal(itemInfo(observation(observed,0),{...ui,focusItem:'private-second',observer:true}),'');
   const secondHTML=renderContent(observed,emptyStats,{...ui,cursor:0,observer:true,focusPlayer:'p2'});
   assert.ok(secondHTML.includes('data-item="private-second"')&&!secondHTML.includes('data-item="private-first"'));
   const expired=normalizeView(observed,false);
@@ -227,9 +213,9 @@ test('skill reveals accumulate only learned attributes in the selected player vi
   const html=renderContent(observed,emptyStats,{...ui,cursor:null,observer:true});
   assert.ok(html.includes('data-item="scanned"')&&html.includes('data-quality="unrevealed"'));
   assert.ok(html.includes('data-item="largest" data-quality="unrevealed"'));
-  assert.ok(dialogContent('item','largest',observed,emptyStats,{...ui,cursor:null,observer:true}).content.includes('1,500'));
-  const detail=dialogContent('item','scanned',observed,emptyStats,{...ui,cursor:null,observer:true});
-  assert.ok(detail.content.includes('700'));
+  assert.ok(itemInfo(observation(observed,null),{...ui,focusItem:'largest',observer:true}).includes('1,500'));
+  const detail=itemInfo(observation(observed,null),{...ui,focusItem:'scanned',observer:true});
+  assert.ok(detail.includes('700'));
   const identified={...observed,item_reveals:{...observed.item_reveals,p1:[...observed.item_reveals.p1,{round:3,item_id:'scanned',quality:'epic'}]}};
   const identifiedHTML=renderContent(identified,emptyStats,{...ui,cursor:null,observer:true});
   assert.ok(identifiedHTML.includes('data-item="scanned" data-quality="epic"'));

@@ -9,7 +9,6 @@
     "box": "package",
     "lock": "lock-keyhole",
     "shape": "scan",
-    "coin": "coins",
     "arrow": "arrow-right",
     "back": "arrow-left",
     "help": "book-open",

@@ -1,33 +1,37 @@
 import {initialLocale,setLocale,getLocale,t,translateDOM} from './i18n.js';
-import {updateAppearance,closeMobileSidebar,greet} from './appearance.js';
+import {updateAppearance,closeMobileSidebar,setSidebar,toggleTheme,greet} from './appearance.js';
 import {icon} from './html.js';
 import {itemTip} from './room-ui.js';
 import {observation,knownItems,normalizeView} from './model.js';
-import {esc,renderContent,roomDirectory,roomButtons,roomGroup,maxFrame,dialogContent} from './render.js';
+import {esc,renderContent,roomDirectory,historyDirectory,roomButtons,roomGroup,maxFrame,dialogContent} from './render.js';
 import {observe} from './live.js';
 import {patchContent} from './patch.js';
 import {restoreSession} from './session.js';
-import {activateScene,sceneFeedback} from './room-scene.js';
+import {syncCanvas,canvasAction} from './canvas.js';
 
 const $=id=>document.getElementById(id);
 const text=(id,value)=>{const node=$(id),next=String(value);if(node.textContent!==next)node.textContent=next;};
 const initialRoom=new URLSearchParams(location.search).get('room')||'';
-const ui={room:initialRoom,roomGroup:null,page:initialRoom?'room':'rooms',cursor:null,sort:'profit',quality:'all',search:'',observer:false,manage:false,focusPlayer:null,focusItem:null,fitBox:false};
+const ui={room:initialRoom,roomGroup:null,page:initialRoom?'room':new URLSearchParams(location.search).get('page')==='history'?'history':new URLSearchParams(location.search).get('page')==='stats'?'stats':'rooms',cursor:null,sort:'profit',quality:'all',search:'',observer:false,manage:false,focusPlayer:null,focusItem:null,inspector:null};
 let source=null,rooms=[],results={games:0,profit:0,paid:0,rate:null,agents:[]},connection='connecting',resultsFailed=false;
 let lastContent='',lastRooms='',lastContentObserver=false;
-let managing=false,activeDialog=null;
+let managing=false,activeDialog=null,closeDirectoryOnLoad=false;
 const dialog=document.querySelector('dialog');
 setLocale(initialLocale(),false);
 
 function redraw() {
   const roomPending=!!source && source.room_id!==ui.room;
   const contentPending=roomPending && ui.page==='room';
+  if(source&&!roomPending&&ui.focusItem&&!knownItems(observation(source,ui.cursor),ui.observer?ui.focusPlayer:null).some(item=>item.id===ui.focusItem)){
+    ui.focusItem=null;ui.inspector=ui.focusPlayer?'player':null;
+  }
   const navigationPage=ui.page==='room'?'rooms':ui.page;
   translateDOM();
   updateAppearance();
   $('language-button').setAttribute('aria-label',t('switchLanguage'));
   $('create-button').title=ui.manage?t('createRoom'):t('createRoomAccess');
   document.querySelector('.app').dataset.view=ui.page;
+  document.querySelector('.app').classList.toggle('in-room',ui.page==='room'&&source?.phase!=='lobby');
   text('page-name',t(navigationPage));
   document.querySelectorAll('[data-page]').forEach(button=>{
     const selected=button.dataset.page===navigationPage;
@@ -44,23 +48,29 @@ function redraw() {
   document.querySelectorAll('[data-room-group]').forEach(button=>{
     button.setAttribute('aria-pressed',String(button.dataset.roomGroup===(ui.roomGroup||'active')));
   });
-  $('rules-button').hidden=!source||roomPending||ui.page==='stats'||ui.page==='rooms';
+  $('rules-button').hidden=!source||roomPending||ui.page!=='room';
   const side=roomButtons(rooms,ui.room,ui.roomGroup||'active');
   if(lastRooms!==side){patchContent($('rooms'),side);lastRooms=side;}
   // Keep the rendered room intact until its replacement snapshot arrives.
-  const html=contentPending&&lastContentObserver===ui.observer?lastContent:ui.page==='rooms'?roomDirectory(rooms,ui):renderContent(source,results,ui);
+  const html=contentPending&&lastContentObserver===ui.observer?lastContent:ui.page==='rooms'?roomDirectory(rooms,ui):ui.page==='history'?historyDirectory(rooms):renderContent(source,results,ui);
   if(lastContent!==html){
     patchContent($('content'),html);lastContent=html;
   }
-  fitCanvas();
+  syncCanvas();
   lastContentObserver=ui.observer;
   $('content').inert=contentPending;
   $('content').setAttribute('aria-busy',contentPending||connection==='connecting'?'true':'false');
 }
 function updateDialog() {
   if(!activeDialog)return;
+  if(activeDialog.kind==='create-room'){
+    if(!ui.manage){dialog.close();return;}
+    // A background SSE refresh must not erase the form being edited.
+    if(dialog.open&&dialog.querySelector('#create-room-form'))return;
+  }
   const content=dialogContent(activeDialog.kind,activeDialog.id,source,results,ui);
   if(!content){dialog.close();return;}
+  dialog.className=['hints','bids','inventory','room-info'].includes(activeDialog.kind)?'drawer drawer-'+activeDialog.kind:'';
   patchContent(dialog,`<div class="dialog-head"><h2 id="dialog-title">${esc(content.title)}</h2><button class="dialog-close" aria-label="${esc(t('close'))}">${icon('close')}</button></div>${content.content}`);
   dialog.querySelector('button').onclick=()=>dialog.close();
 }
@@ -75,40 +85,60 @@ function showDialog(kind,id) {
   }
 }
 dialog.addEventListener('close',()=>{activeDialog=null;});
-function chooseRoom(id) {
-  closeMobileSidebar();hideTip();ui.focusPlayer=null;ui.focusItem=null;
+function navigate(page){
+  closeMobileSidebar();hideTip();dialog.close();ui.page=page;ui.cursor=null;ui.focusItem=null;ui.focusPlayer=null;
+  const url=new URL(location.href);url.searchParams.delete('room');if(page==='rooms')url.searchParams.delete('page');else url.searchParams.set('page',page);history.replaceState(null,'',url);redraw();
+}
+function chooseRoom(id,fromDirectory=false) {
+  if(!fromDirectory)closeMobileSidebar();
+  closeDirectoryOnLoad=fromDirectory;hideTip();ui.focusPlayer=null;ui.focusItem=null;
   ui.page='room';
   ui.roomGroup=roomGroup(rooms.find(room=>room.room_id===id));
-  if(id===ui.room){redraw();return;}
+  if(id===ui.room){if(source?.room_id===id)closeMobileSidebar();redraw();return;}
   ui.room=id;ui.cursor=null;ui.quality='all';ui.search='';
   connection='connecting';
   dialog.close();
-  const url=new URL(location.href);url.searchParams.set('room',id);history.replaceState(null,'',url);
+  const url=new URL(location.href);url.searchParams.set('room',id);url.searchParams.delete('page');history.replaceState(null,'',url);
   redraw();live.changeRoom();
+}
+function closeInspection(){
+  const player=ui.focusPlayer,item=ui.focusItem;
+  ui.focusPlayer=null;ui.focusItem=null;ui.inspector=null;hideTip();redraw();updateDialog();
+  document.querySelector(`[data-action="${item?'select-item:'+CSS.escape(item):'focus-agent:'+CSS.escape(player||'')}"]`)?.focus({preventScroll:true});
 }
 document.addEventListener('click',event=>{
   const group=event.target.closest('[data-room-group]')?.dataset.roomGroup;
   if(group){ui.roomGroup=group;$('rooms').scrollTop=0;redraw();return;}
   const page=event.target.closest('[data-page]')?.dataset.page;
-  if(page){event.preventDefault();closeMobileSidebar();hideTip();ui.page=page;ui.cursor=null;redraw();return;}
+  if(page){event.preventDefault();navigate(page);return;}
   const action=event.target.closest('[data-action]')?.dataset.action;
   if(!action)return;
   const separator=action.indexOf(':'),kind=separator<0?action:action.slice(0,separator),id=separator<0?'':action.slice(separator+1);
-  if(kind==='scene'&&activateScene(id)){redraw();sceneFeedback(event.target.closest('button'),id,event.detail>0);return;}
   if(kind==='avatar-greet'){greet(event.target.closest('button'));return;}
-  if(kind==='focus-agent'){ui.focusPlayer=ui.focusPlayer===id?null:id;ui.focusItem=null;hideTip();redraw();updateDialog();greet(event.target.closest('button'));return;}
-  if(kind==='dismiss-player'){const focused=ui.focusPlayer;ui.focusPlayer=null;ui.focusItem=null;hideTip();redraw();updateDialog();document.querySelector(`[data-action="focus-agent:${CSS.escape(focused)}"]`)?.focus();return;}
-  if(kind==='select-item'){ui.focusItem=ui.focusItem===id?null:id;hideTip();redraw();return;}
-  if(kind==='unpin'){ui.focusItem=null;redraw();return;}
-  if(kind==='fit-box'){ui.fitBox=!ui.fitBox;hideTip();redraw();document.querySelector('.crate-window')?.scrollTo(0,0);return;}
-  if(['avatars','hints','inventory','bids'].includes(kind)){hideTip();showDialog(kind);return;}
-  if(kind==='room'){chooseRoom(id);return;}
+  if(kind==='focus-agent'){
+    if(ui.focusPlayer===id&&ui.inspector==='player'){closeInspection();return;}
+    if(ui.focusPlayer!==id)ui.focusItem=null;
+    ui.focusPlayer=id;ui.inspector='player';hideTip();redraw();updateDialog();greet(event.target.closest('button'));return;
+  }
+  if(kind==='dismiss-player'){closeInspection();return;}
+  if(kind==='select-item'){const fromDialog=dialog.open;ui.focusItem=!fromDialog&&ui.focusItem===id&&ui.inspector==='item'?null:id;ui.inspector=ui.focusItem?'item':ui.focusPlayer?'player':null;if(fromDialog)dialog.close();hideTip();redraw();if(fromDialog)document.getElementById('inspector-content')?.focus({preventScroll:true});return;}
+  if(kind==='inspect'){ui.inspector=id;hideTip();redraw();return;}
+  if(kind==='unpin'){ui.focusItem=null;ui.inspector=ui.focusPlayer?'player':null;redraw();return;}
+  if(['fit-box','zoom-in','zoom-out'].includes(kind)){hideTip();canvasAction(kind);return;}
+  if(kind==='filter'){ui.directoryFilter=id;redraw();return;}
+  if(kind==='back-lobby'){navigate('rooms');return;}
+  if(kind==='room-switch'){dialog.close();setSidebar(true);return;}
+  if(kind==='toggle-theme'){toggleTheme();return;}
+  if(kind==='toggle-language'){$('language-button').click();return;}
+  if(kind==='rules'){showDialog('rules');return;}
+  if(['avatars','hints','inventory','bids','room-info'].includes(kind)){hideTip();showDialog(kind);return;}
+  if(kind==='room'){chooseRoom(id,!!event.target.closest('#sidebar'));return;}
   if(kind==='create-room'){showDialog(ui.manage?'create-room':'room-access');return;}
   if(kind==='invite-room'||kind==='start-room'){manageRoom(kind);return;}
   if(kind==='copy-invite'){
     navigator.clipboard.writeText($('invite-link').value).then(()=>{event.target.textContent=t('copied');}).catch(()=>{event.target.textContent=t('copyFailed');});return;
   }
-  if(['item','agent','stats-agent','card'].includes(kind)){showDialog(kind,id);return;}
+  if(['agent','stats-agent','card'].includes(kind)){showDialog(kind,id);return;}
   if(!source)return;
   if(kind==='step')ui.cursor=Number(id);
   else if(kind==='latest')ui.cursor=null;
@@ -117,8 +147,13 @@ document.addEventListener('click',event=>{
 });
 document.addEventListener('keydown',event=>{
   if(event.key==='Escape'&&!dialog.open){
-    hideTip();const focused=ui.focusPlayer;ui.focusPlayer=null;ui.focusItem=null;redraw();
-    if(focused)document.querySelector(`[data-action="focus-agent:${CSS.escape(focused)}"]`)?.focus();
+    if(ui.focusPlayer||ui.focusItem)closeInspection();else hideTip();
+  }
+  if(event.target.closest('.inspector-tabs')&&['ArrowLeft','ArrowRight','Home','End'].includes(event.key)){
+    event.preventDefault();
+    const tabs=[...document.querySelectorAll('.inspector-tabs button:not(:disabled)')],index=tabs.indexOf(event.target);
+    const next=event.key==='Home'?0:event.key==='End'?tabs.length-1:(index+(event.key==='ArrowLeft'?-1:1)+tabs.length)%tabs.length;
+    tabs[next]?.click();tabs[next]?.focus();return;
   }
   const target=event.target.closest('[data-item]');
   if(target&&['ArrowLeft','ArrowRight','ArrowUp','ArrowDown'].includes(event.key)){
@@ -137,7 +172,7 @@ $('language-button').addEventListener('click',()=>{setLocale(getLocale()==='en'?
 $('rules-button').addEventListener('click',()=>showDialog('rules'));
 function hideTip(){$('item-tooltip').hidden=true;}
 function showTip(target){
-  if(!source||ui.page!=='room'||$('content').inert)return hideTip();
+  if(!source||ui.page!=='room'||$('content').inert||ui.focusPlayer||ui.focusItem)return hideTip();
   const item=knownItems(observation(source,ui.cursor),ui.observer?ui.focusPlayer:null).find(item=>item.id===target.dataset.item);if(!item)return hideTip();
   const tip=$('item-tooltip'),box=target.getBoundingClientRect();tip.innerHTML=itemTip(item);tip.hidden=false;
   tip.style.left=Math.max(8,Math.min(innerWidth-tip.offsetWidth-8,box.right+9))+'px';
@@ -165,7 +200,10 @@ function setObserver(value) {
 const live=observe({getRoom:()=>ui.room,getObserver:()=>ui.observer,getSort:()=>ui.sort,read:readJSON,
   onObserverExpired(){ui.manage=false;setObserver(false);},
   onData(data){
-    if(data.state){source=normalizeView(data.state,ui.observer);hideTip();}
+    if(data.state){
+      source=normalizeView(data.state,ui.observer);hideTip();
+      if(closeDirectoryOnLoad&&source.room_id===ui.room){closeMobileSidebar();closeDirectoryOnLoad=false;}
+    }
     if(source&&!knownItems(observation(source,ui.cursor),ui.observer?ui.focusPlayer:null).some(item=>item.id===ui.focusItem))ui.focusItem=null;
     if(data.rooms){
       const previous=rooms.find(room=>room.room_id===ui.room);
@@ -219,14 +257,3 @@ dialog.addEventListener('submit',async event=>{
   finally{managing=false;submit.disabled=false;}
 });
 redraw();
-
-
-function fitCanvas(){
-  document.querySelectorAll('[data-seat-y]').forEach(seat=>seat.style.setProperty('--seat-y',seat.dataset.seatY+'%'));
-  document.querySelectorAll('.fitted-grid').forEach(grid=>{
-    grid.style.setProperty('--columns',grid.dataset.columns);grid.style.setProperty('--rows',grid.dataset.rows);
-    grid.querySelectorAll('[data-item]').forEach(item=>{
-      for(const [property,key] of [['left','x'],['top','y'],['width','width'],['height','height']])item.style[property]=item.dataset[key]+'%';
-    });
-  });
-}

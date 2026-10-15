@@ -1,7 +1,8 @@
 import {t, money, signed, localizeCard, getLocale} from './i18n.js';
-import {knownItems, observation} from './model.js';
+import {observation} from './model.js';
 import {esc,icon,button} from './html.js';
 import {roomView,avatarGallery} from './room-ui.js';
+import {waterfall} from './illustrations.js';
 export {esc} from './html.js';
 
 const tr = (key, values) => esc(t(key, values));
@@ -22,11 +23,15 @@ export function roomButtons(rooms, selected, group) {
     'room:'+room.room_id, selected === room.room_id ? 'selected' : '', selected === room.room_id ? 'aria-current="true"' : '')).join('') || `<p class="side-empty">${tr(group === 'completed' ? 'noCompletedRooms' : 'noActiveRooms')}</p>`;
 }
 function bids(view) {
-  return `<div class="table-scroll"><table class="bid-table"><thead><tr><th scope="col">${tr('agent')}</th>${Array.from({length:view.rules.rounds},(_,i)=>`<th scope="col">${label(i+1)}${i===view.settlement?.round-1?`<small>${tr('finalRound')}</small>`:''}</th>`).join('')}</tr></thead><tbody>${view.players.map((player,i)=>`<tr><th scope="row">${button(`<i class="agent-color-${i}"></i>${esc(player.name)}`,'agent:'+player.id,'text-button agent-name')}</th>${Array.from({length:view.rules.rounds},(_,r)=>{
-    const record=view.history.find(h=>h.round===r+1),bid=record?.bids.find(b=>b.player_id===player.id);
-    const high=bid && bid.amount===Math.max(...record.bids.map(b=>b.amount));
-    return `<td class="${high?'high':''}">${bid?money(bid.amount):r+1===view.round && view.phase==='bidding'?`<span class="sealed-bid">${tr('sealed')}</span>`:'—'}</td>`;
-  }).join('')}</tr>`).join('')}</tbody></table>${view.players.length?'':empty('noBids')}</div>`;
+  const rounds=Array.from({length:view.rules.rounds},(_,i)=>{
+    const record=view.history.find(h=>h.round===i+1),high=Math.max(0,...(record?.bids||[]).map(b=>b.amount));
+    return {record,high,tied:high>0&&record.bids.filter(b=>b.amount===high).length>1,zero:!!record?.bids.length&&high===0};
+  });
+  return `<section class="bid-ledger"><p class="bid-ledger-subtitle">${icon('coin')}${tr('publicBidsNote')}</p><div class="bid-legend"><span class="bid-key">${tr('highestShort')}</span><span>${tr('roundHighest')}</span><span class="bid-key is-sale">${tr('settlement')}</span><span>${tr('settledBid')}</span></div><div class="table-scroll"><table class="bid-table"><thead><tr><th scope="col">${tr('players')}</th>${rounds.map(({zero},i)=>`<th scope="col">${label(i+1)}<small>${i===view.settlement?.round-1?tr('finalRound'):zero?tr('allZeroBids'):tr('round',{round:i+1})}</small></th>`).join('')}</tr></thead><tbody>${view.players.map(player=>`<tr><th scope="row">${button(esc(player.name),'agent:'+player.id,'text-button agent-name')}</th>${rounds.map(({record,high,tied},r)=>{
+    const bid=record?.bids.find(b=>b.player_id===player.id),leader=!!bid&&high>0&&bid.amount===high;
+    const sale=!!bid&&view.settlement?.round===r+1&&view.settlement.winner_id===player.id;
+    return `<td><div class="bid-cell ${sale?'is-sale':leader?'is-highest':''}">${bid?`<strong>${money(bid.amount)}</strong>${sale?`<small>${icon('crown')}${tr('settledBid')}</small>`:leader?`<small>${tr(tied?'tiedHighest':'highestShort')}</small>`:''}`:r+1===view.round&&view.phase==='bidding'?`<span class="sealed-bid">${tr('sealed')}</span>`:'—'}</div></td>`;
+  }).join('')}</tr>`).join('')}</tbody></table>${view.players.length?'':empty('noBids')}</div><p class="bid-ledger-note">${tr('bidLedgerNote')}</p></section>`;
 }
 function hints(view) {
   return `<section class="intel-panel"><div class="intel-list">${view.public_hints.map(hint=>{
@@ -42,20 +47,34 @@ function settlement(view) {
 function inventory(view,ui) {
   if(!view.settlement)return '';
   const items=view.settlement.items.filter(item=>(ui.quality==='all'||item.quality===ui.quality)&&item.id.toLowerCase().includes(ui.search.toLowerCase()));
-  return `<section class="panel" data-region="inventory"><div class="inventory-controls"><label>${tr('quality')} <select data-control="quality" aria-label="${tr('quality')}"><option value="all">${tr('allQuality')}</option>${['common','uncommon','rare','epic','legendary'].map(q=>`<option value="${q}" ${ui.quality===q?'selected':''}>${tr(q)}</option>`).join('')}</select></label><input data-control="search" aria-label="${tr('searchItem')}" placeholder="${tr('searchItem')}" value="${esc(ui.search)}"><small>${tr('itemCountRatio',{count:items.length,total:view.settlement.items.length})}</small></div><div class="inventory-table table-scroll"><table><thead><tr>${['id','quality','area','bounds','value'].map(key=>`<th>${tr(key)}</th>`).join('')}</tr></thead><tbody>${items.map(item=>`<tr><td>${button(esc(item.id),'item:'+item.id,'text-button')}</td><td><i class="quality-${esc(item.quality)}"></i>${quality(item.quality)}</td><td>${item.bottom_right.x-item.top_left.x} × ${item.bottom_right.y-item.top_left.y}</td><td class="mono">(${item.top_left.x}, ${item.top_left.y}) → (${item.bottom_right.x}, ${item.bottom_right.y})</td><td>${money(item.price)}</td></tr>`).join('')}</tbody></table>${items.length?'':empty('noItems')}</div></section>`;
+  return `<section class="panel" data-region="inventory"><div class="inventory-controls"><label>${tr('quality')} <select data-control="quality" aria-label="${tr('quality')}"><option value="all">${tr('allQuality')}</option>${['common','uncommon','rare','epic','legendary'].map(q=>`<option value="${q}" ${ui.quality===q?'selected':''}>${tr(q)}</option>`).join('')}</select></label><input data-control="search" aria-label="${tr('searchItem')}" placeholder="${tr('searchItem')}" value="${esc(ui.search)}"><small>${tr('itemCountRatio',{count:items.length,total:view.settlement.items.length})}</small></div><div class="inventory-table table-scroll"><table><thead><tr>${['id','quality','area','bounds','value'].map(key=>`<th>${tr(key)}</th>`).join('')}</tr></thead><tbody>${items.map(item=>`<tr><td>${button(esc(item.id),'select-item:'+item.id,'text-button')}</td><td><i class="quality-${esc(item.quality)}"></i>${quality(item.quality)}</td><td>${item.bottom_right.x-item.top_left.x} × ${item.bottom_right.y-item.top_left.y}</td><td class="mono">(${item.top_left.x}, ${item.top_left.y}) → (${item.bottom_right.x}, ${item.bottom_right.y})</td><td>${money(item.price)}</td></tr>`).join('')}</tbody></table>${items.length?'':empty('noItems')}</div></section>`;
 }
 function stats(results,ui) {
   const rows=results.agents,profit=results.profit;
   const rate=value=>value===null?'—':money(value,2)+'%';
   const sortControl=`<label>${tr('sort')} <select data-control="sort" aria-label="${tr('statsSort')}">${[['profit','cumulativeProfit'],['rate','profitRate'],['average','averageProfit'],['max_profit','maxProfit'],['max_loss','maxLoss']].map(([value,key])=>`<option value="${value}" ${ui.sort===value?'selected':''}>${tr(key)}</option>`).join('')}</select></label>`;
-  return `<div class="metrics">${[['sampleCount',results.games],['cumulativeProfit',results.games?signed(profit):'—'],['profitRate',rate(results.rate)]].map(([key,value])=>`<article><p>${tr(key)}</p><strong>${value}</strong></article>`).join('')}</div>${panel('scorecard',rows.length?`<div class="table-scroll"><table class="stats-table"><thead><tr>${['agent','participation','profitRate','averageProfit','maxProfit','maxLoss','cumulativeProfit'].map(key=>`<th>${tr(key)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr><th scope="row">${button(esc(row.name),'stats-agent:'+row.id,'text-button')}</th><td>${row.games}</td><td>${rate(row.rate)}</td><td class="${row.average>=0?'positive':'negative'}">${signed(row.average,2)}</td><td>${signed(row.max_profit)}</td><td class="${row.max_loss<0?'negative':''}">${signed(row.max_loss)}</td><td class="${row.profit>=0?'positive':'negative'}">${signed(row.profit)}</td></tr>`).join('')}</tbody></table></div>`:empty('noResults'),sortControl)}`;
+  return `<div class="metrics">${[['sampleCount',results.games],['cumulativeProfit',results.games?signed(profit):'—'],['profitRate',rate(results.rate)],['totalPaid',money(results.paid)]].map(([key,value])=>`<article><p>${tr(key)}</p><strong class="${key==='cumulativeProfit'||key==='profitRate'?String(value).startsWith('−')||String(value).startsWith('-')?'negative':'positive':''}">${value}</strong></article>`).join('')}</div>${panel('scorecard',rows.length?`<div class="table-scroll"><table class="stats-table"><thead><tr>${['agent','participation','profitRate','averageProfit','maxProfit','maxLoss','cumulativeProfit'].map(key=>`<th>${tr(key)}</th>`).join('')}</tr></thead><tbody>${rows.map(row=>`<tr><th scope="row">${button(esc(row.name),'stats-agent:'+row.id,'text-button')}</th><td>${row.games}</td><td>${rate(row.rate)}</td><td class="${row.average>=0?'positive':'negative'}">${signed(row.average,2)}</td><td>${signed(row.max_profit)}</td><td class="${row.max_loss<0?'negative':''}">${signed(row.max_loss)}</td><td class="${row.profit>=0?'positive':'negative'}">${signed(row.profit)}</td></tr>`).join('')}</tbody></table></div>`:empty('noResults'),sortControl)}`;
 }
 
+const heading=(title,subtitle,action='')=>'<div class="page-heading"><div><h1>'+tr(title)+'</h1><p>'+tr(subtitle)+'</p></div>'+action+'</div>';
+const roomDate=value=>value?esc(new Intl.DateTimeFormat(getLocale(),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value))):'';
+function roomTile(room){
+  return '<article class="paper room-tile '+(room.phase==='lobby'?'is-waiting':'')+'"><span class="eyebrow">'+esc(room.room_id.slice(0,8))+'</span><h2>'+esc(room.name)+'</h2><p>'+tr('roomSeats',{count:room.players,total:room.player_count,phase:t({lobby:'phaseLobby',bidding:'phaseBidding',settled:'phaseSettled'}[room.phase])})+'</p><div class="seat-marks" aria-hidden="true">'+Array.from({length:room.player_count},(_,i)=>'<span class="'+(i<room.players?'occupied':'')+'">'+icon('users')+'</span>').join('')+'</div>'+button(icon('arrow')+tr(room.phase==='settled'?'viewArchive':room.phase==='lobby'?'enterRoom':'enterWatch'),'room:'+room.room_id,'paper-button')+'</article>';
+}
 export function roomDirectory(rooms,ui){
-  return `<div class="page-heading"><h1>${tr('rooms')}</h1>${ui.manage?button(tr('createRoom'),'create-room','quiet'):''}</div><div class="room-directory">${rooms.map(room=>`<article class="panel room-tile"><span class="eyebrow">${tr(room.phase==='lobby'?'waiting':room.phase==='settled'?'settled':'bidding')}</span><h2>${esc(room.name)}</h2><div class="room-tile-footer"><span>${room.players} / ${room.player_count} ${tr('players')}</span>${button(tr('enterRoom'),'room:'+room.room_id,'quiet')}</div></article>`).join('')||`<div class="empty-room">${icon('brand')}<h2>${tr('noRooms')}</h2>${ui.manage?button(tr('createRoom'),'create-room','quiet'):''}</div>`}</div>`;
+  const ordered=[...rooms].sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+  const featured=ordered.find(room=>room.phase==='bidding')||ordered.find(room=>room.phase==='lobby')||ordered[0];
+  const filtered=ui.directoryFilter==='waiting'?ordered.filter(room=>room.phase==='lobby'):ordered;
+  const create=ui.manage?button(icon('plus')+tr('createRoom'),'create-room','primary'):'';
+  const hero='<section class="lobby-hero paper"><div class="hero-copy"><span class="eyebrow">'+tr('featured')+(featured?' · '+tr({lobby:'phaseLobby',bidding:'phaseBidding',settled:'phaseSettled'}[featured.phase]):'')+'</span><h2>'+esc(featured?.name||t('heroTitle'))+'</h2><p>'+tr('heroSubtitle')+'</p><div class="hero-note">'+icon('scan')+'<span>'+tr('heroTitle')+'</span></div>'+(featured?button(icon('arrow')+tr(featured.phase==='settled'?'viewArchive':'enterWatch'),'room:'+featured.room_id,'primary'):create)+'</div>'+waterfall()+'</section>';
+  return heading('lobbyTitle','lobbySubtitle',create)+hero+'<div class="directory-heading"><h2>'+tr('findRoom')+'</h2><div class="segmented">'+button(tr('allRooms')+' '+ordered.length,'filter:all','paper-button','aria-pressed="'+(ui.directoryFilter!=='waiting')+'"')+button(tr('waitingRooms'),'filter:waiting','paper-button','aria-pressed="'+(ui.directoryFilter==='waiting')+'"')+'</div></div><div class="room-directory">'+(filtered.map(roomTile).join('')||'<div class="empty-room paper">'+icon('box')+'<h2>'+tr('noRooms')+'</h2>'+create+'</div>')+'</div>';
+}
+export function historyDirectory(rooms){
+  const completed=rooms.filter(room=>room.phase==='settled').sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+  return heading('historyTitle','historySubtitle')+'<section class="history-list">'+(completed.map(room=>'<article class="paper history-card"><span class="archive-symbol">'+icon('book')+'</span><div><span class="eyebrow">'+esc(room.room_id.slice(0,8))+'</span><h2>'+esc(room.name)+'</h2><p>'+tr('roomSeats',{count:room.players,total:room.player_count,phase:t('phaseSettled')})+' · '+tr('createdAt')+' '+roomDate(room.created_at)+'</p></div>'+button(icon('arrow')+tr('viewArchive'),'room:'+room.room_id,'paper-button')+'</article>').join('')||'<div class="empty-room paper">'+icon('book')+'<h2>'+tr('noHistory')+'</h2></div>')+'</section>';
 }
 export function renderContent(source,results,ui) {
-  if(ui.page==='stats')return `<div class="page-heading"><h1>${tr('agentStats')}</h1></div>`+stats(results,ui);
+  if(ui.page==='stats')return heading('statsTitle','statsSubtitle')+stats(results,ui);
   if(!source)return empty('loading');
   const view=observation(source,ui.cursor);
   const state=ui.cursor!==null?(ui.cursor===0?tr('opening'):view.settlement?tr('settled'):tr('round',{round:ui.cursor})):esc(status(view));
@@ -64,10 +83,11 @@ export function renderContent(source,results,ui) {
 export function dialogContent(kind,id,source,results,ui) {
   const view=source?observation(source,ui.cursor):null;
   if(kind==='room-access')return {title:t('createRoom'),content:`<p class="room-access-message">${tr('createRoomAccess')}</p>`};
-  if(kind==='create-room')return {title:t('createRoom'),content:`<form id="create-room-form" class="room-form"><label>${tr('roomName')}<input name="name" maxlength="32" required autocomplete="off"></label><label>${tr('players')}<select name="players">${[2,3,4,5,6,7].map(count=>`<option value="${count}" ${count===4?'selected':''}>${count}</option>`).join('')}</select></label><p id="create-room-error" class="negative" hidden>${tr('createRoomError')}</p><button type="submit" class="quiet">${tr('createRoom')}</button></form>`};
+  if(kind==='create-room')return {title:t('createRoom'),content:`<form id="create-room-form" class="room-form"><label>${tr('roomName')}<input name="name" maxlength="32" required autocomplete="off" placeholder="${tr('roomNamePlaceholder')}"></label><label>${tr('players')}<select name="players">${[2,3,4,5,6,7].map(count=>`<option value="${count}" ${count===4?'selected':''}>${count}</option>`).join('')}</select></label><p id="create-room-error" class="negative" hidden>${tr('createRoomError')}</p><button type="submit" class="quiet">${tr('createRoom')}</button></form>`};
   if(kind==='invite-room')return {title:t('invitePlayers'),content:`<div class="invite-content"><label for="invite-link">${tr('inviteLink')}</label><div class="invite-copy"><input id="invite-link" readonly value="${esc(id)}">${button(tr('copyInvite'),'copy-invite','quiet')}</div><label>${tr('joinCommand')}</label><code class="join-command">bidbrawl join -invite "${esc(id)}"</code></div>`};
   if(kind==='room-error')return {title:t('roomActionError'),content:''};
   if(kind==='avatars')return {title:t('avatarGallery'),content:avatarGallery()};
+  if(kind==='room-info')return view?{title:t('roomInfo'),content:'<section class="room-notes"><span class="eyebrow">'+esc(source.room_id)+'</span><h3>'+esc(source.room_name)+'</h3>'+details([['players',view.players.length+' / '+view.rules.player_count],['box',view.rules.box_width+' × '+view.rules.box_height],['rounds',String(view.rules.rounds)],['publicVision',tr(ui.observer?'observerWatch':'publicWatch')]])+'<div class="room-note-actions">'+button(icon('help')+tr('rules'),'rules','paper-button')+button(icon('panel')+tr('roomSwitch'),'room-switch','paper-button')+(view.settlement?button(icon('box')+tr('viewContents'),'inventory','paper-button'):'')+button(icon('theme')+tr('paperTheme'),'toggle-theme','paper-button')+button(icon('language')+tr('language'),'toggle-language','paper-button')+button(icon('arrow')+tr('lobbyNav'),'back-lobby','paper-button')+'</div></section>'}:null;
   if(kind==='hints')return view?{title:t('hints'),content:hints(view)}:null;
   if(kind==='bids')return view?{title:t('bids'),content:bids(view)}:null;
   if(kind==='inventory')return view?.settlement?{title:t('inventory'),content:settlement(view)+inventory(view,ui)}:null;
@@ -86,10 +106,6 @@ export function dialogContent(kind,id,source,results,ui) {
     pairs.push(['cardLimit',tr('cardsCount',{count:5})]);
     pairs.push(['initialInspection',tr('inspectionRule',{count:rules.initial_inspection_count})]);
     return {title:t('rules'),content:details(pairs).replace('<dl>','<dl class="rule-grid">')+`<details class="card-rules"><summary>${tr('cardCatalog')}</summary>${(rules.cards||[]).map(localizeCard).map(card=>`<article><h3>${esc(card.name)}</h3><p>${esc(card.description)}</p></article>`).join('')}</details>`};
-  }
-  if(kind==='item'){
-    const item=view && knownItems(view,ui.observer?ui.focusPlayer:null).find(item=>item.id===id);if(!item)return null;
-    return {title:item.id,content:details([['quality',quality(item.quality)],['value',item.price===undefined?tr('unrevealed'):money(item.price)],['area',`${item.bottom_right.x-item.top_left.x} × ${item.bottom_right.y-item.top_left.y}`],['bounds',`[(${item.top_left.x}, ${item.top_left.y}), (${item.bottom_right.x}, ${item.bottom_right.y}))`]])};
   }
   const seated=kind==='agent'?view?.players.find(player=>player.id===id):null;
   const record=ui.agentProfile || results.agents.find(agent=>agent.id===(kind==='stats-agent'?id:seated?.agent_id));

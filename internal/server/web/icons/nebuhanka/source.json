@@ -1,0 +1,12 @@
+{
+  "source": "https://nebuhanka.itch.io/free-gold-coin-icons-pack",
+  "author": "Nebuhanka",
+  "asset": "SVG/1 coin.svg",
+  "symbol": "coin",
+  "designNode": "HipYl99Ul99qeGLKFbetot/79:26251",
+  "adaptations": [
+    "Muted gold palette",
+    "Removed blur glow; retained coin contours, rim and reflection",
+    "Exported from approved Figma design"
+  ]
+}

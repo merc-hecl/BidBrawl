@@ -14,5 +14,21 @@
     "registry": "https://registry.npmjs.org",
     "licence": "SIL Open Font License 1.1",
     "fontFiles": "Unmodified WOFF2; original unicode ranges retained"
+  },
+  {
+    "package": "@fontsource/caveat",
+    "version": "5.3.0",
+    "integrity": "sha512-eHTfzQxFSW9ABERRLNruHoNJmKed2J7pqTUc5lp4a4POMgXGKpxmWj3d9Hz10kmAg6iuTTLe6UagbA4bnsmfQw==",
+    "registry": "https://registry.npmjs.org",
+    "licence": "SIL Open Font License 1.1",
+    "fontFiles": "Unmodified Latin WOFF2"
+  },
+  {
+    "package": "@fontsource/kalam",
+    "version": "5.3.0",
+    "integrity": "sha512-FDkVoDfPDCSN/eO81FOYtUI67eMgpVBJmjBtAqSL0PmEhJyeFY2biC+CR+yEttksgXR9+swpFdYmQTyjwBq80Q==",
+    "registry": "https://registry.npmjs.org",
+    "licence": "SIL Open Font License 1.1",
+    "fontFiles": "Unmodified Latin WOFF2"
   }
 ]
