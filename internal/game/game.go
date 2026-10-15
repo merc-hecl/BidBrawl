@@ -237,7 +237,17 @@ func (g *Game) Join(name string, deck []string) (string, string, error) {
 			return "", "", errors.New("name already in use")
 		}
 	}
-	p := &player{id: fmt.Sprintf("p%d", len(g.players)+1), name: name, token: secret(), deck: append([]string{}, deck...), used: []string{}, hints: []Hint{}}
+	available := []int{0, 1, 2, 3, 4, 5, 6}
+	for _, p := range g.players {
+		for i, avatar := range available {
+			if avatar == *p.avatar {
+				available = append(available[:i], available[i+1:]...)
+				break
+			}
+		}
+	}
+	avatar := available[random(len(available))]
+	p := &player{id: fmt.Sprintf("p%d", len(g.players)+1), name: name, token: secret(), deck: append([]string{}, deck...), used: []string{}, hints: []Hint{}, avatar: &avatar}
 	g.players = append(g.players, p)
 	g.version++
 	return p.id, p.token, nil
@@ -257,15 +267,6 @@ func (g *Game) Start() error {
 	planned, err := g.planHints(items)
 	if err != nil {
 		return err
-	}
-	avatars := []int{0, 1, 2, 3, 4, 5, 6}
-	for i := len(avatars) - 1; i > 0; i-- {
-		j := random(i + 1)
-		avatars[i], avatars[j] = avatars[j], avatars[i]
-	}
-	for i, p := range g.players {
-		value := avatars[i]
-		p.avatar = &value
 	}
 	g.items, g.plannedHints = items, planned
 	g.phase = "bidding"

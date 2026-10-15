@@ -110,16 +110,10 @@ func (s gameSnapshot) validate() error {
 	avatars := map[int]bool{}
 	pending := 0
 	for i, p := range s.Players {
-		if s.Phase == "lobby" {
-			if p.Avatar != nil {
-				return errors.New("avatar assigned before start")
-			}
-		} else {
-			if p.Avatar == nil || *p.Avatar < 0 || *p.Avatar >= 7 || avatars[*p.Avatar] {
-				return errors.New("invalid or duplicate avatar")
-			}
-			avatars[*p.Avatar] = true
+		if p.Avatar == nil || *p.Avatar < 0 || *p.Avatar >= 7 || avatars[*p.Avatar] {
+			return errors.New("invalid or duplicate avatar")
 		}
+		avatars[*p.Avatar] = true
 		if p.ID != fmt.Sprintf("p%d", i+1) || utf8.RuneCountInString(p.Name) < 1 || utf8.RuneCountInString(p.Name) > 32 || names[p.Name] || !validSecret(p.Token, 32) || tokens[p.Token] {
 			return errors.New("invalid player identity")
 		}

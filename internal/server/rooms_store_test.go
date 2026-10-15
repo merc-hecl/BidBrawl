@@ -41,6 +41,13 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	suffix := "?room=" + id
 	checkedRequest(t, s, "POST", "/api/join"+suffix, a, `{"cards":["largest_price","item_count"]}`, 201)
 	initial := checkedRequest(t, s, "GET", "/api/state"+suffix, a, "", 200)
+	var lobbyView game.View
+	if err := json.Unmarshal(initial, &lobbyView); err != nil {
+		t.Fatal(err)
+	}
+	if len(lobbyView.Players) != 1 || lobbyView.Players[0].Avatar == nil {
+		t.Fatal("first player did not receive an avatar before the room filled")
+	}
 	_ = s.Close()
 	s = persistentServer(t, path)
 	a, b = loginAgain(t, s, ca), loginAgain(t, s, cb)
@@ -60,6 +67,9 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	}
 	if avatarView.Players[0].Avatar == nil || avatarView.Players[1].Avatar == nil || *avatarView.Players[0].Avatar == *avatarView.Players[1].Avatar {
 		t.Fatal("public snapshot is missing distinct avatars")
+	}
+	if *avatarView.Players[0].Avatar != *lobbyView.Players[0].Avatar {
+		t.Fatal("later join or start changed the first player's avatar")
 	}
 	for _, forbidden := range []string{`"self":`, `"amount":777777`, `"decisions":`, `"reason":"protocol test"`, `"settlement":`} {
 		if bytes.Contains(public, []byte(forbidden)) {
