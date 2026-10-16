@@ -54,7 +54,7 @@ button:active:not(:disabled){filter:brightness(.96)}button .icon{pointer-events:
 .positive{color:var(--green)}.negative{color:var(--red)}.mono,code{font-family:'Space Grotesk Variable',monospace}.empty{padding:28px;color:var(--muted);text-align:center}
 .in-room .site-header,.in-room .site-footer{display:none}.in-room .workspace{max-width:none;padding:0}.in-room main{height:100dvh}.in-room #error{position:fixed;top:100px;left:50%;transform:translateX(-50%);z-index:20;max-width:calc(100% - 40px);margin:0}
 .auction-world{position:relative;height:100dvh;min-height:420px;overflow:hidden;isolation:isolate}
-.canvas-viewport{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;user-select:none;background-image:radial-gradient(var(--line) .65px,transparent .85px);background-size:var(--dot-pitch,32px) var(--dot-pitch,32px);background-position:var(--camera-x,0) var(--camera-y,0)}
+.canvas-viewport{position:absolute;inset:0;overflow:hidden;cursor:grab;touch-action:none;user-select:none;background-image:radial-gradient(var(--line) .65px,transparent .85px);background-size:32px 32px;background-position:0 0}
 .canvas-viewport.is-panning{cursor:grabbing}.canvas-world{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
 .canvas-world.has-fog{background-image:url("/canvas-cells.svg")}
 .lot-item{position:absolute;z-index:1;display:flex;flex-direction:column;align-items:stretch;justify-content:space-between;text-align:left;padding:22px 25px;overflow:hidden;border:1px solid var(--line);border-radius:18px 13px 17px 14px;background:var(--paper);box-shadow:0 2px 7px #5542220b;color:var(--ink)}
