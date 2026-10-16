@@ -89,7 +89,7 @@ func TestHostReportsLockedDatabase(t *testing.T) {
 	if !errors.Is(err, bolt.ErrTimeout) {
 		t.Fatalf("expected database lock timeout, got %v", err)
 	}
-	for _, want := range []string{fmt.Sprintf("%q", path), "其他进程占用", "先停止原宿主", "更换监听端口不会释放数据库锁"} {
+	for _, want := range []string{fmt.Sprintf("%q", path), "locked by another process", "stop it before retrying", "Changing the listen port does not release the database lock"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Fatalf("missing %q in error: %v", want, err)
 		}

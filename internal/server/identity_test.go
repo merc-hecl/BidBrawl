@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -244,6 +245,22 @@ func TestIdentityDatabaseFailures(t *testing.T) {
 	if other, err := Open(g.GameConfig(), g.CardConfig(), path); err == nil {
 		_ = other.Close()
 		t.Fatal("unsupported schema silently replaced")
+	} else if !strings.Contains(err.Error(), strconv.Quote(path)) || !strings.Contains(err.Error(), `"99"`) || !strings.Contains(err.Error(), `"3"`) || !strings.Contains(err.Error(), "-data-dir") {
+		t.Fatalf("schema failure omitted its path, versions or recovery guidance: %v", err)
+	}
+	db, err = bolt.Open(path, 0600, &bolt.Options{ReadOnly: true})
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = db.View(func(tx *bolt.Tx) error {
+		if string(tx.Bucket([]byte("metadata")).Get([]byte("schema_version"))) != "99" {
+			t.Fatal("failed startup modified the unsupported database")
+		}
+		return nil
+	})
+	_ = db.Close()
+	if err != nil {
+		t.Fatal(err)
 	}
 	corrupt := filepath.Join(t.TempDir(), "corrupt.db")
 	if err = os.WriteFile(corrupt, []byte(strings.Repeat("broken", 4096)), 0600); err != nil {

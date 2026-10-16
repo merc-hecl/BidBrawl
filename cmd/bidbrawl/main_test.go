@@ -319,10 +319,10 @@ func TestHostIdentityProcess(t *testing.T) {
 			switch {
 			case strings.HasPrefix(line, "HTTP: "):
 				address = strings.TrimPrefix(line, "HTTP: ")
-			case strings.HasPrefix(line, "房主 Token: "):
-				hostToken = strings.TrimPrefix(line, "房主 Token: ")
-			case strings.HasPrefix(line, "身份数据库: "):
-				path = strings.TrimPrefix(line, "身份数据库: ")
+			case strings.HasPrefix(line, "Host token: "):
+				hostToken = strings.TrimPrefix(line, "Host token: ")
+			case strings.HasPrefix(line, "Identity database: "):
+				path = strings.TrimPrefix(line, "Identity database: ")
 			}
 		}
 		if address == "" || hostToken == "" || path != filepath.Join(dir, "accounts.db") {

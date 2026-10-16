@@ -65,12 +65,12 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	}
 	f := flag.NewFlagSet(command, flag.ContinueOnError)
 	if command == "host" {
-		listen := f.String("listen", "127.0.0.1:8787", "监听地址；局域网用 0.0.0.0:8787")
-		configPath := f.String("cards-config", "", "技能卡 JSON 配置路径；省略时使用内置配置")
-		gameConfigPath := f.String("game-config", "", "游戏 JSON 配置路径：箱体、物品尺寸、品质价格与权重、新玩家初始资产；省略时使用内置配置")
-		hintsPath := f.String("hints-config", "", "公共提示插件 JSON 配置；省略时使用内置局部事实线索")
-		dataDir := f.String("data-dir", os.Getenv("BIDBRAWL_DATA_DIR"), "账号 / 房间 / 对局数据目录；默认用户配置目录下的 BidBrawl")
-		webUI := f.Bool("webui", false, "启用 WebUI 并自动打开浏览器；默认仅运行后端")
+		listen := f.String("listen", "127.0.0.1:8787", "listen address; use 0.0.0.0:8787 for LAN access")
+		configPath := f.String("cards-config", "", "skill-card JSON configuration path; uses built-in defaults if omitted")
+		gameConfigPath := f.String("game-config", "", "game JSON configuration path: box and item dimensions, quality prices and weights, initial assets; uses built-in defaults if omitted")
+		hintsPath := f.String("hints-config", "", "public-hint JSON configuration path; uses built-in local-fact hints if omitted")
+		dataDir := f.String("data-dir", os.Getenv("BIDBRAWL_DATA_DIR"), "account, room and game data directory; defaults to BidBrawl in the user configuration directory")
+		webUI := f.Bool("webui", false, "enable WebUI and open a browser automatically; defaults to API/SSE only")
 		if e := parseFlags(f, args[1:]); e != nil {
 			return e
 		}
@@ -116,16 +116,16 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		}
 		address := browserAddress(ln.Addr())
 		fmt.Printf("HTTP: %s\n", address)
-		fmt.Printf("房主 Token: %s\n", s.HostToken)
+		fmt.Printf("Host token: %s\n", s.HostToken)
 		if databasePath != "" {
-			fmt.Printf("身份数据库: %s\n", databasePath)
+			fmt.Printf("Identity database: %s\n", databasePath)
 		}
 		h := &http.Server{Handler: s, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
 		if *webUI {
 			launchURL := observerLaunchURL(address, "", s.NewObserverLaunchCode())
 			go func() {
 				if err := launchBrowser(launchURL); err != nil {
-					fmt.Fprintln(os.Stderr, "自动打开 WebUI 失败；可用 bidbrawl ui -url <宿主地址> -token <房主 Token> 重试：", err)
+					fmt.Fprintln(os.Stderr, "Could not open WebUI automatically; retry with bidbrawl ui -url <host-address> -token <host-token>:", err)
 				}
 			}()
 		}

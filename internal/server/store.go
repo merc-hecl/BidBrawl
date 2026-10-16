@@ -30,6 +30,8 @@ type identityRecord struct {
 
 var identityBucket = []byte("accounts")
 
+const identitySchemaVersion = "3"
+
 // Open restores identities and rooms from a local database, failing rather than silently
 // starting with an empty account set if it is locked, damaged or unsupported.
 func Open(geometry game.Config, cfg cards.Config, path string) (*Server, error) {
@@ -55,7 +57,7 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 	db, err := bolt.Open(path, 0600, &bolt.Options{Timeout: time.Second})
 	if err != nil {
 		if errors.Is(err, bolt.ErrTimeout) {
-			return nil, fmt.Errorf("身份数据库 %q 正被其他进程占用（等待文件锁超时）；同一数据目录只能运行一个宿主，请使用已运行的宿主，或先停止原宿主再重试。更换监听端口不会释放数据库锁: %w", path, err)
+			return nil, fmt.Errorf("identity database %q is locked by another process (timed out waiting for the file lock); only one host can use a data directory. Use the running host, or stop it before retrying. Changing the listen port does not release the database lock: %w", path, err)
 		}
 		return nil, fmt.Errorf("open identity database %q: %w", path, err)
 	}
@@ -64,8 +66,8 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 	err = db.Update(func(tx *bolt.Tx) error {
 		if meta := tx.Bucket([]byte("metadata")); meta != nil {
 			version := string(meta.Get([]byte("schema_version")))
-			if version != "3" {
-				return errors.New("unsupported identity database schema")
+			if version != identitySchemaVersion {
+				return fmt.Errorf("unsupported identity database schema %q (expected %q); check the data directory specified by -data-dir or BIDBRAWL_DATA_DIR", version, identitySchemaVersion)
 			}
 			if tx.Bucket(identityBucket) == nil {
 				return errors.New("identity database is missing accounts")
@@ -82,7 +84,7 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 		if err != nil {
 			return err
 		}
-		if err := meta.Put([]byte("schema_version"), []byte("3")); err != nil {
+		if err := meta.Put([]byte("schema_version"), []byte(identitySchemaVersion)); err != nil {
 			return err
 		}
 		if _, err = tx.CreateBucket(identityBucket); err != nil {
@@ -124,7 +126,7 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 	}
 	if err != nil {
 		_ = db.Close()
-		return nil, fmt.Errorf("load identity database: %w", err)
+		return nil, fmt.Errorf("load identity database %q: %w", path, err)
 	}
 	return s, nil
 }
