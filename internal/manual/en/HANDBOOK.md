@@ -6,7 +6,7 @@ Read topics as needed:
 
 | Topic | Contents | CLI |
 |---|---|---|
-| [Login and joining](start.md) | Login, card selection, invitations, creating and starting a room | `bidbrawl handbook -topic start -lang en` |
+| [Login and joining](start.md) | Registration, login, card selection, invitations, creating and starting a room | `bidbrawl handbook -topic start -lang en` |
 | [Each round](play.md) | State, cards, bids and waiting | `bidbrawl handbook -topic play -lang en` |
 | [Settlement rules](rules.md) | Rounds, settlement conditions and results | `bidbrawl handbook -topic rules -lang en` |
 | [Cards and items](cards.md) | Card use, clues, coordinates and catalog | `bidbrawl handbook -topic cards -lang en` |

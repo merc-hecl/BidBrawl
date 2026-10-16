@@ -94,15 +94,16 @@ bidbrawl hints -room ROOM_ID   # 查询该房间固定的插件 ID
 
 ## 玩家接入
 
-房主在独立终端登记账号，并将各自的 credential 单独交给对应玩家：
+玩家首次游玩时自行注册账号，无需登录或房主 Token：
 
 ```powershell
 $env:BIDBRAWL_URL = 'http://127.0.0.1:8787'
-$env:BIDBRAWL_TOKEN = '<宿主管理员 Token>'
 bidbrawl register -name Atlas
 ```
 
-`accounts` 查看已登记账号；凭据遗失或泄露时，用 `rotate-credential -account ACCOUNT_ID` 补发。管理员 Token 留在房主环境中，玩家仅接收自己的 credential。
+注册返回永久 `account_id`、`name` 与仅在本次响应中展示的 `credential`。玩家自行保存凭据，注册不会自动登录；同名返回 409，不覆盖原账号。已有账号直接登录，无需重复注册。
+
+宿主管理员仍可用 `accounts` 查看账号；凭据遗失或泄露时，用 `rotate-credential -account ACCOUNT_ID` 重置。账号列表和凭据轮换仍需管理员 Token，管理员凭据不分发给玩家。
 
 玩家设置 `BIDBRAWL_URL` 与 `BIDBRAWL_CREDENTIAL`，执行 `login` 后将返回的 token 设为 `BIDBRAWL_TOKEN`。随后通过邀请链接入席，或自行建房。
 
@@ -123,7 +124,7 @@ bidbrawl register -name Atlas
 
 | 方法 / 路径 | 身份 | 输入 |
 |---|---|---|
-| POST /api/register | 宿主管理员 | name，创建永久身份并返回一次性展示的 credential |
+| POST /api/register | 无 | name，玩家自助创建永久身份并返回一次性展示的 credential |
 | GET /api/accounts | 宿主管理员 | 列出账号 ID 与昵称，不含凭据摘要 |
 | POST /api/accounts/ID/credential | 宿主管理员 | 轮换凭据，撤销该账号全部旧会话 |
 | POST /api/login | 无 | credential |
@@ -154,13 +155,13 @@ bidbrawl register -name Atlas
 
 登录 Token 使用 `Authorization: Bearer <token>`，不放 URL 中。匿名与管理员 state 为公共观察；已加入玩家的会话 state 包含该玩家 self；尚未加入的登录身份只能看公共状态。内部席位 Token 不返回给客户端。房间操作必须指定 room，不存在默认房间。
 
-reason 为报价 / 用卡请求的必填文本，不在公共结果或 SSE 中公开。观察者接口接受只读 Token 的 Bearer 头或受保护的 Cookie；该 Token 不能登记、开局、入席或报价。
+reason 为报价 / 用卡请求的必填文本，不在公共结果或 SSE 中公开。观察者接口接受只读 Token 的 Bearer 头或受保护的 Cookie；该 Token 不能管理账号、开局、入席或报价。自助注册是公开入口，参赛仍需使用自己的玩家账号登录。
 
 amount 必须明确提交整数，缺失 / null 不等于零。round 用于拒绝旧轮操作。格式错误为 400、身份错误 401、权限错误 403、房间 / 账号不存在 404、规则冲突 409、持久化失败 500。写入失败时不创建内存账号、不撤销原凭据、不改变房间或游戏状态。遇到超时或 409 先观察状态，避免重复操作。没有代报或自动判负，未齐交时等待玩家恢复。
 
 ## WebUI、前端与部署
 
-WebUI 仅在 `host -webui` 时提供。宿主通过 URL fragment 传递一次性启动码，网页立即移除 fragment，再自动兑换独立的只读观察 Cookie 与房间管理 Cookie；启动码不进入 HTTP 请求地址或持久存储。房间管理只允许建房、邀请和开局，不能登记账号、轮换凭据或替玩家行动；只读观察凭据本身仍无管理权限。之后刷新、切换房间不需要再次授权。Cookie 为 HttpOnly / SameSite=Strict。网页通过受保护的 state / SSE 获取理由；会话失效后清空理由与管理权限并恢复公共订阅。服务重启后在启用网页时自动打开新的授权页面；已有页面再次获得焦点时重新检查会话。直接访问普通地址只能获得公共信息，玩家凭据无法生成网页启动码或读取他人理由。
+WebUI 仅在 `host -webui` 时提供。宿主通过 URL fragment 传递一次性启动码，网页立即移除 fragment，再自动兑换独立的只读观察 Cookie 与房间管理 Cookie；启动码不进入 HTTP 请求地址或持久存储。房间管理只允许建房、邀请和开局，不能查看账号列表、轮换凭据或替玩家行动；网页不提供玩家注册和登录界面，玩家通过 CLI 自助注册和登录。只读观察凭据本身仍无管理权限。之后刷新、切换房间不需要再次授权。Cookie 为 HttpOnly / SameSite=Strict。网页通过受保护的 state / SSE 获取理由；会话失效后清空理由与管理权限并恢复公共订阅。服务重启后在启用网页时自动打开新的授权页面；已有页面再次获得焦点时重新检查会话。直接访问普通地址只能获得公共信息，玩家凭据无法生成网页启动码或读取他人理由。
 
 创建响应与 `invite -room ID` 返回 `invite_url`。邀请链接只标识宿主和房间，不包含任何登录凭据；接收者执行 `join -invite URL` 时仍使用自己的登录会话。房间创建者或宿主可在 CLI 生成邀请、开局；人类也可在 WebUI 完成同样流程。人类创建房间不会生成玩家身份或占用席位。未满员不能开局，已开局不能生成新邀请。
 
@@ -170,9 +171,9 @@ SSE 事件名为 `ready`、`room_created`、`room_archived`、`room_restored`、
 
 事件用于提示重新读取，不能替代 state 或作为完整历史日志。首次连接与每次重连收到 `ready` 后，应重新读取当前房间观察、rooms 和统计；服务器不重放旧事件，也不依赖 Last-Event-ID。WebUI 使用 EventSource 自动重连（重试间隔 2 秒），失败的 HTTP 同步会重试，旧房间请求在切换时取消；等待新房间数据期间保留当前画面并暂停其交互，数据到达后一次更新，避免清空内容导致闪烁。服务器每 15 秒发送一次注释心跳，慢观众的队列满后断开并要求重连同步。反向代理应关闭 SSE 缓冲并允许长连接；公共 SSE 只使用公开观察，Agent 收到相关通知后仍用自己的会话读取 state 获取私有信息。
 
-Linux 个人服务器直接 `go build -o bidbrawl ./cmd/bidbrawl`，然后运行 `./bidbrawl host -listen 0.0.0.0:8787`。没有公网匹配或穿透，不要求域名。跨不可信网络使用现有 HTTPS 反向代理或 SSH 隧道；本版本没有内置 TLS 或请求限流，身份仅由宿主管理员创建，适合可信本地 / 局域网 / 受控个人部署。
+Linux 个人服务器直接 `go build -o bidbrawl ./cmd/bidbrawl`，然后运行 `./bidbrawl host -listen 0.0.0.0:8787`。没有公网匹配或穿透，不要求域名。跨不可信网络使用现有 HTTPS 反向代理或 SSH 隧道；本版本没有内置 TLS 或请求限流，玩家可自行注册账号，适合可信本地 / 局域网 / 受控个人部署。
 
-`demo` 脚本玩家入口已移除。完整端到端验收使用真实子 Agent，通过 CLI 自主读取规则、选择卡牌和报价；主持者只负责登记 / 复用身份、开房、邀请和验收。测试数据库、凭据与对局记录放在代码库外，并在后续测试中优先复用已有账号。此电脑的测试环境为 `%LOCALAPPDATA%\BidBrawl\E2E`，连接配置见该目录的 `runtime.json`，凭据以 Windows 用户 DPAPI 加密。自动化规则 / 协议测试使用确定性样本，不作为真实 Agent 对战验收。
+`demo` 脚本玩家入口已移除。完整端到端验收使用真实子 Agent，通过 CLI 自主注册或登录、读取规则、选择卡牌和报价；主持者只负责协调身份复用、开房、邀请和验收。测试数据库、凭据与对局记录放在代码库外，并在后续测试中优先复用已有账号。此电脑的测试环境为 `%LOCALAPPDATA%\BidBrawl\E2E`，连接配置见该目录的 `runtime.json`，凭据以 Windows 用户 DPAPI 加密。自动化规则 / 协议测试使用确定性样本，不作为真实 Agent 对战验收。
 
 CLI 事件订阅示例：
 
@@ -192,7 +193,7 @@ go test -race ./...
 go vet ./...
 ```
 
-覆盖规则、几何、完整行零空隙填充、私有信息、并发暗标、宿主身份登记、跨重启登录与注销、凭据轮换 / 会话撤销、数据库锁 / 升级 / 写入失败处理、游戏快照校验、房间权限与重连、游戏与技能卡配置校验、声明式效果、房间配置快照、HTTP 客户端和 CLI 完整对局。真实宿主进程强制退出后验证暗标 / 私有线索、席位、配置、结算与历史恢复；跨重启、多房间成绩关联同一 Agent，结算不重复统计。另验证公共接口不泄露未结算数据，字体、图标和语言资源可被宿主提供。没有模型接口测试，因为项目不负责运行模型。
+覆盖规则、几何、完整行零空隙填充、私有信息、并发暗标、玩家自助注册、跨重启登录与注销、凭据轮换 / 会话撤销、数据库锁 / 升级 / 写入失败处理、游戏快照校验、房间权限与重连、游戏与技能卡配置校验、声明式效果、房间配置快照、HTTP 客户端和 CLI 完整对局。真实宿主进程强制退出后验证暗标 / 私有线索、席位、配置、结算与历史恢复；跨重启、多房间成绩关联同一 Agent，结算不重复统计。另验证公共接口不泄露未结算数据，字体、图标和语言资源可被宿主提供。没有模型接口测试，因为项目不负责运行模型。
 
 前端的词典键 / 插值一致性、英文单复数、内置与自定义卡牌翻译边界、公共回看隔离、成交轮原子揭晓、跨房间统计，以及 SSE 空闲停止请求、重连全量同步、切房取消旧请求和同步中通知不丢失可在开发时检查（Node.js 仅用于测试，不是宿主运行依赖）：
 
@@ -222,7 +223,7 @@ bidbrawl replay -room <房间ID> -frame 1 -observer
 bidbrawl watch -room <房间ID> -observer
 ```
 
-`observer-login` 使用 `BIDBRAWL_TOKEN` 中的宿主管理员 Token；观察读取只使用 `BIDBRAWL_OBSERVER_TOKEN`（也可传 `-observer-token`），不能用玩家或管理员 Token 冒充观察凭据。该只读凭据不能建房、邀请、开局、注册、入席或报价。关闭 WebUI 仅关闭网页及网页授权兑换，不关闭观察 API。
+`observer-login` 使用 `BIDBRAWL_TOKEN` 中的宿主管理员 Token；观察读取只使用 `BIDBRAWL_OBSERVER_TOKEN`（也可传 `-observer-token`），不能用玩家或管理员 Token 冒充观察凭据。该只读凭据不能建房、邀请、开局、管理账号、入席或报价。关闭 WebUI 仅关闭网页及网页授权兑换，不关闭观察 API。
 
 复盘帧 0 是开局，1…N 是已揭晓轮次；若已结算，N 帧已原子包含最终箱体，N+1 是结算展示帧。不存在的帧返回 400。省略 `-frame` 返回完整历史及全部帧；公共复盘无理由和 self，观察复盘包含截至所选帧的全员理由、技能卡 ID 和保存的卡牌定义，不包含任何玩家的原始私有技能结果。具体卡牌名称和描述见 rules.cards。
 

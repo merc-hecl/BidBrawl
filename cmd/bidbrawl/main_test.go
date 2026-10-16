@@ -177,7 +177,7 @@ func TestCLIProtocolGameFlow(t *testing.T) {
 	t.Setenv("BIDBRAWL_CREDENTIAL", "")
 	var credentials, tokens [2]string
 	for i, name := range []string{"Atlas", "Echo"} {
-		credentials[i] = cli(t, "register", "-token", s.HostToken, "-name", name)["credential"].(string)
+		credentials[i] = cli(t, "register", "-name", name)["credential"].(string)
 		tokens[i] = cli(t, "login", "-credential", credentials[i])["token"].(string)
 	}
 	t.Setenv("BIDBRAWL_TOKEN", tokens[0])
@@ -335,7 +335,7 @@ func TestHostIdentityProcess(t *testing.T) {
 	t.Setenv("BIDBRAWL_URL", address)
 	t.Setenv("BIDBRAWL_TOKEN", "")
 	t.Setenv("BIDBRAWL_CREDENTIAL", "")
-	registered := cli(t, "register", "-token", admin, "-name", "Atlas")
+	registered := cli(t, "register", "-name", "Atlas")
 	id := registered["account_id"].(string)
 	credential := registered["credential"].(string)
 	oldToken := cli(t, "login", "-credential", credential)["token"].(string)
@@ -345,7 +345,7 @@ func TestHostIdentityProcess(t *testing.T) {
 	if err := run(context.Background(), []string{"me", "-token", oldToken, "-account", id}); err == nil {
 		t.Fatal("me accepted an account selector")
 	}
-	echoCredential := cli(t, "register", "-token", admin, "-name", "Echo")["credential"].(string)
+	echoCredential := cli(t, "register", "-name", "Echo")["credential"].(string)
 	echoToken := cli(t, "login", "-credential", echoCredential)["token"].(string)
 	roomID := cli(t, "create", "-token", oldToken, "-name", "Durable game", "-players", "2")["room_id"].(string)
 	cli(t, "join", "-room", roomID, "-token", oldToken, "-cards", "item_count")
@@ -376,7 +376,7 @@ func TestHostIdentityProcess(t *testing.T) {
 	if err := run(context.Background(), []string{"me", "-token", oldToken}); err == nil {
 		t.Fatal("old session accepted after process restart")
 	}
-	if err := run(context.Background(), []string{"register", "-token", admin, "-name", "Atlas"}); err == nil {
+	if err := run(context.Background(), []string{"register", "-name", "Atlas"}); err == nil {
 		t.Fatal("registered name became available after process restart")
 	}
 	if len(cli(t, "accounts", "-token", admin)["accounts"].([]any)) != 2 {

@@ -38,7 +38,7 @@ func request(t *testing.T, s http.Handler, method, path, token, body string) (in
 }
 func accountSession(t *testing.T, s *Server, name string) (string, string) {
 	t.Helper()
-	code, b := request(t, s, "POST", "/api/register", s.HostToken, `{"name":"`+name+`"}`)
+	code, b := request(t, s, "POST", "/api/register", "", `{"name":"`+name+`"}`)
 	if code != 201 {
 		t.Fatal(code, string(b))
 	}
@@ -55,7 +55,11 @@ func accountSession(t *testing.T, s *Server, name string) (string, string) {
 func TestAuthenticationAndPrivacy(t *testing.T) {
 	g, _ := game.New(2)
 	s := testTable(g)
-	checkedRequest(t, s, "POST", "/api/register", s.HostToken, `{"name":`, 400)
+	checkedRequest(t, s, "POST", "/api/register", "", `{"name":`, 400)
+	for _, name := range []string{"", "   ", "A\nB", strings.Repeat("A", 33)} {
+		body, _ := json.Marshal(map[string]string{"name": name})
+		checkedRequest(t, s, "POST", "/api/register", "", string(body), 400)
+	}
 	tokens := []string{}
 	for _, name := range []string{"A", "B"} {
 		token, _ := accountSession(t, s, name)
@@ -115,7 +119,7 @@ func TestAuthenticationAndPrivacy(t *testing.T) {
 func TestCrossOriginMutationAndCacheProtection(t *testing.T) {
 	g, _ := game.New(2)
 	s := testTable(g)
-	r := httptest.NewRequest("POST", "http://localhost/api/join", bytes.NewBufferString(`{"name":"X","cards":[]}`))
+	r := httptest.NewRequest("POST", "http://localhost/api/register", bytes.NewBufferString(`{"name":"X"}`))
 	r.Header.Set("Origin", "https://evil.example")
 	w := httptest.NewRecorder()
 	s.ServeHTTP(w, r)
@@ -133,7 +137,7 @@ func TestAccountsRoomsAndResume(t *testing.T) {
 	a, credential := accountSession(t, s, "A")
 	b, _ := accountSession(t, s, "B")
 	outsider, _ := accountSession(t, s, "C")
-	if code, _ := request(t, s, "POST", "/api/register", s.HostToken, `{"name":"A"}`); code != 409 {
+	if code, _ := request(t, s, "POST", "/api/register", "", `{"name":"A"}`); code != 409 {
 		t.Fatal("duplicate registration accepted")
 	}
 	if code, _ := request(t, s, "POST", "/api/login", "", `{"credential":"bad"}`); code != 401 {

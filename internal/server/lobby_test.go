@@ -86,7 +86,7 @@ func TestHumanAndAgentRoomInvitationPermissions(t *testing.T) {
 	human("POST", "/api/start"+suffix, "", 200)
 	human("POST", "/api/invite"+suffix, "", 409)
 	checkedRequest(t, s, "POST", "/api/bid"+suffix, s.UIToken, `{"round":1,"amount":1,"reason":"cannot act as player"}`, 401)
-	human("POST", "/api/register", `{"name":"Cannot manage accounts"}`, 403)
+	human("GET", "/api/accounts", "", 403)
 	var agentRoom struct {
 		ID string `json:"room_id"`
 	}

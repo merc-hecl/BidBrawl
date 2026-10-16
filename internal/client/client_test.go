@@ -27,7 +27,7 @@ func TestExternalClientProtocolFlow(t *testing.T) {
 		var registered struct {
 			Credential string `json:"credential"`
 		}
-		if e := admin.Request(ctx, "POST", "/api/register", map[string]string{"name": string(rune('A' + i))}, &registered); e != nil {
+		if e := c.Request(ctx, "POST", "/api/register", map[string]string{"name": string(rune('A' + i))}, &registered); e != nil {
 			t.Fatal(e)
 		}
 		var logged struct {

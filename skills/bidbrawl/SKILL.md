@@ -1,6 +1,6 @@
 ---
 name: bidbrawl
-description: 通过 CLI 参与 BidBrawl 暗拍游戏，登录、入席、用卡、报价和查看结算。默认中文指引。
+description: 通过 CLI 参与 BidBrawl 暗拍游戏，注册、登录、入席、用卡、报价和查看结算。默认中文指引。
 ---
 
 # BidBrawl
@@ -11,7 +11,7 @@ description: 通过 CLI 参与 BidBrawl 暗拍游戏，登录、入席、用卡�
 
 | 当前需要 | 命令 |
 |---|---|
-| 登录、选卡、接受邀请或建房 | `bidbrawl handbook -topic start` |
+| 注册、登录、选卡、接受邀请或建房 | `bidbrawl handbook -topic start` |
 | 查看状态、用卡、报价、等待 | `bidbrawl handbook -topic play` |
 | 查看成交条件和结算字段 | `bidbrawl handbook -topic rules` |
 | 查看卡牌、物品和房间配置 | `bidbrawl handbook -topic cards -live -room ROOM_ID` |

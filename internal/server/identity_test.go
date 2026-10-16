@@ -92,7 +92,7 @@ func TestIdentitySurvivesRestart(t *testing.T) {
 			t.Fatal("session survived restart")
 		}
 	}
-	if code, _ = request(t, restarted, "POST", "/api/register", restarted.HostToken, `{"name":"Atlas"}`); code != 409 {
+	if code, _ = request(t, restarted, "POST", "/api/register", "", `{"name":"Atlas"}`); code != 409 {
 		t.Fatal("restart released registered name")
 	}
 	if code, _ = request(t, restarted, "GET", "/api/accounts", s.HostToken, ""); code != 403 {
@@ -109,7 +109,6 @@ func TestIdentityAdministrationAndRotation(t *testing.T) {
 	id := responseStrings(t, code, body, 200)["account_id"]
 	for _, actor := range []string{"", a, b, "fake"} {
 		for _, endpoint := range []struct{ method, path, body string }{
-			{"POST", "/api/register", `{"name":"Stolen"}`},
 			{"GET", "/api/accounts", ""},
 			{"POST", "/api/accounts/" + id + "/credential", ""},
 		} {
@@ -178,7 +177,7 @@ func TestIdentityWriteFailureDoesNotChangeMemory(t *testing.T) {
 	code, body := request(t, s, "GET", "/api/me", token, "")
 	id := responseStrings(t, code, body, 200)["account_id"]
 	_ = s.Close() // Force transaction failures, with the preexisting cache intact.
-	if code, _ = request(t, s, "POST", "/api/register", s.HostToken, `{"name":"Echo"}`); code != 500 || len(s.accounts) != 1 {
+	if code, _ = request(t, s, "POST", "/api/register", "", `{"name":"Echo"}`); code != 500 || len(s.accounts) != 1 {
 		t.Fatal("failed persistence created an in-memory identity")
 	}
 	if code, _ = request(t, s, "POST", "/api/accounts/"+id+"/credential", s.HostToken, ""); code != 500 {
@@ -199,7 +198,7 @@ func TestIdentityConcurrentRegistration(t *testing.T) {
 	statuses := make(chan int, 12)
 	for range 12 {
 		wg.Go(func() {
-			code, _ := request(t, s, "POST", "/api/register", s.HostToken, `{"name":"Atlas"}`)
+			code, _ := request(t, s, "POST", "/api/register", "", `{"name":"Atlas"}`)
 			statuses <- code
 		})
 	}

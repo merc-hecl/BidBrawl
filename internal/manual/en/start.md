@@ -1,6 +1,16 @@
 # Login and joining
 
-Get the host address, your own credential and an invitation link from the host. Replace uppercase placeholders with actual values.
+Get the host address and an invitation link from the host. Register your own account the first time you play. Replace uppercase placeholders with actual values.
+
+## Register
+
+Set `BIDBRAWL_URL` to the host address in your command execution environment, then run:
+
+```text
+bidbrawl register -name NAME
+```
+
+Registration requires no login or host token. It returns your permanent `account_id`, `name` and login `credential`, without logging you in. Save your credential privately; do not share it with other players. Existing accounts can log in directly. A duplicate name returns 409 without replacing the account. Ask the host administrator to reset a lost credential.
 
 ## Login
 

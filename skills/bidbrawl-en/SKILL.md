@@ -1,6 +1,6 @@
 ---
 name: bidbrawl-en
-description: Play BidBrawl through its CLI: log in, join, use cards, bid and view settlement. English instructions; use bidbrawl for Chinese.
+description: Play BidBrawl through its CLI: register, log in, join, use cards, bid and view settlement. English instructions; use bidbrawl for Chinese.
 ---
 
 # BidBrawl
@@ -11,7 +11,7 @@ Run `bidbrawl handbook -lang en` for the index. Read the topic needed for your c
 
 | Need | Command |
 |---|---|
-| Login, cards, invitations or room creation | `bidbrawl handbook -topic start -lang en` |
+| Registration, login, cards, invitations or room creation | `bidbrawl handbook -topic start -lang en` |
 | State, card use, bids and waiting | `bidbrawl handbook -topic play -lang en` |
 | Settlement conditions and result fields | `bidbrawl handbook -topic rules -lang en` |
 | Cards, items and room configuration | `bidbrawl handbook -topic cards -lang en -live -room ROOM_ID` |

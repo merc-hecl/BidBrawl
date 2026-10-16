@@ -30,9 +30,6 @@ func (s *Server) saveIdentity(w http.ResponseWriter, a *account, hash [32]byte) 
 }
 
 func (s *Server) register(w http.ResponseWriter, r *http.Request) {
-	if !s.requireHost(w, r) {
-		return
-	}
 	var v struct {
 		Name string `json:"name"`
 	}
