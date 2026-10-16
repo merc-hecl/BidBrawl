@@ -21,6 +21,9 @@ func (s *Server) invite(w http.ResponseWriter, r *http.Request) {
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if !s.roomExists(w, rm) {
+		return
+	}
 	if !manager && (s.sessions[token(r)] != a || rm.owner != a.ID) {
 		fail(w, 403, errors.New("room owner required"))
 		return
@@ -30,7 +33,7 @@ func (s *Server) invite(w http.ResponseWriter, r *http.Request) {
 		roomFailure(w, err)
 		return
 	}
-	if view.Phase != "lobby" {
+	if view.Phase != "lobby" || !rm.archivedAt.IsZero() {
 		fail(w, 409, errors.New("invitations require a lobby"))
 		return
 	}

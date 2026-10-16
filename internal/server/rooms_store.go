@@ -22,21 +22,26 @@ type roomRecord struct {
 	SeatAccounts map[string]string `json:"seat_accounts"`
 	CreatedAt    time.Time         `json:"created_at"`
 	SettledAt    time.Time         `json:"settled_at"`
+	ArchivedAt   time.Time         `json:"archived_at,omitempty"`
 	Game         json.RawMessage   `json:"game"`
 }
 
 func (s *persistentStore) saveRoom(rm *room) error {
-	snapshot, err := rm.game.Snapshot()
-	if err != nil {
-		return err
-	}
-	record, err := json.Marshal(roomRecord{rm.id, rm.name, rm.owner, rm.members, rm.seatAccounts, rm.createdAt, rm.settledAt, snapshot})
+	record, err := encodeRoom(rm)
 	if err != nil {
 		return err
 	}
 	return s.db.Update(func(tx *bolt.Tx) error {
 		return tx.Bucket(roomBucket).Put([]byte(rm.id), record)
 	})
+}
+
+func encodeRoom(rm *room) ([]byte, error) {
+	snapshot, err := rm.game.Snapshot()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(roomRecord{ID: rm.id, Name: rm.name, Owner: rm.owner, Members: rm.members, SeatAccounts: rm.seatAccounts, CreatedAt: rm.createdAt, SettledAt: rm.settledAt, ArchivedAt: rm.archivedAt, Game: snapshot})
 }
 
 func (s *Server) loadRooms(tx *bolt.Tx) error {
@@ -79,7 +84,10 @@ func (s *Server) loadRooms(tx *bolt.Tx) error {
 				return errors.New("seat token does not match its account")
 			}
 		}
-		s.rooms[rec.ID] = &room{rec.ID, rec.Name, rec.Owner, g, rec.Members, rec.SeatAccounts, rec.CreatedAt, rec.SettledAt}
+		if !rec.ArchivedAt.IsZero() && (view.Phase == "bidding" || rec.ArchivedAt.Before(rec.CreatedAt)) {
+			return errors.New("invalid room archive")
+		}
+		s.rooms[rec.ID] = &room{id: rec.ID, name: rec.Name, owner: rec.Owner, game: g, members: rec.Members, seatAccounts: rec.SeatAccounts, createdAt: rec.CreatedAt, settledAt: rec.SettledAt, archivedAt: rec.ArchivedAt}
 		return nil
 	})
 }
@@ -92,6 +100,13 @@ func roomFailure(w http.ResponseWriter, err error) {
 // Caller holds s.mu. Persistent rooms use a private candidate: readers cannot
 // see uncommitted bids/settlements, and failed writes leave the live state intact.
 func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) error) bool {
+	if !s.roomExists(w, rm) {
+		return false
+	}
+	if !rm.archivedAt.IsZero() {
+		fail(w, 409, errors.New("restore the archived room before acting"))
+		return false
+	}
 	before, err := publicView(rm.game)
 	if err != nil {
 		roomFailure(w, err)

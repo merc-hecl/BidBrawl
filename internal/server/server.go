@@ -35,6 +35,7 @@ type room struct {
 	seatAccounts    map[string]string
 	createdAt       time.Time
 	settledAt       time.Time
+	archivedAt      time.Time
 }
 type Server struct {
 	HostToken           string
@@ -51,6 +52,7 @@ type Server struct {
 	store               *persistentStore
 	sessions            map[string]*account
 	rooms               map[string]*room
+	deletedResults      map[string]roomResult
 	cardConfig          cards.Config
 	gameConfig          game.Config
 	hintConfig          hints.Config
@@ -76,6 +78,7 @@ func New(geometry game.Config, cfg cards.Config) *Server {
 func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Config) *Server {
 	s := &Server{HostToken: secret(), UIToken: secret(), accounts: map[string]*account{}, accountsByID: map[string]*account{}, credentials: map[[32]byte]*account{}, credentialHashes: map[string][32]byte{}, sessions: map[string]*account{}, rooms: map[string]*room{}, cardConfig: cfg, gameConfig: geometry, hintConfig: hintConfig.Clone()}
 	s.subscribers = make(map[chan roomEvent]struct{})
+	s.deletedResults = make(map[string]roomResult)
 	s.ObserverToken = secret()
 	s.observerSubscribers = make(map[chan roomEvent]struct{})
 	mux := http.NewServeMux()
@@ -86,6 +89,7 @@ func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Confi
 	mux.HandleFunc("POST /api/logout", s.logout)
 	mux.HandleFunc("GET /api/me", s.me)
 	mux.HandleFunc("GET /api/rooms", s.listRooms)
+	mux.HandleFunc("POST /api/rooms/manage", s.manageRooms)
 	mux.HandleFunc("GET /api/results", s.listResults)
 	mux.HandleFunc("GET /api/stats", s.stats)
 	mux.HandleFunc("GET /api/agents/{id}", s.agentStats)
@@ -238,7 +242,11 @@ func (s *Server) listRooms(w http.ResponseWriter, r *http.Request) {
 		b, _ := rm.game.Observe("")
 		var v game.View
 		_ = json.Unmarshal(b, &v)
-		list = append(list, map[string]any{"room_id": id, "name": rm.name, "phase": v.Phase, "players": len(v.Players), "player_count": v.Rules.PlayerCount, "created_at": rm.createdAt})
+		entry := map[string]any{"room_id": id, "name": rm.name, "phase": v.Phase, "players": len(v.Players), "player_count": v.Rules.PlayerCount, "created_at": rm.createdAt}
+		if !rm.archivedAt.IsZero() {
+			entry["archived_at"] = rm.archivedAt
+		}
+		list = append(list, entry)
 	}
 	reply(w, 200, map[string]any{"rooms": list})
 }
@@ -273,7 +281,7 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := secret()[:16]
-	for s.rooms[id] != nil {
+	for s.rooms[id] != nil || s.deletedResults[id].RoomID != "" {
 		id = secret()[:16]
 	}
 	owner := ""
@@ -316,6 +324,9 @@ func (s *Server) stateFor(w http.ResponseWriter, r *http.Request, observer bool)
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if !s.roomExists(w, rm) {
+		return
+	}
 	if a != nil {
 		if s.sessions[raw] != a {
 			fail(w, 401, errors.New("login session required"))
@@ -344,6 +355,10 @@ func (s *Server) stateFor(w http.ResponseWriter, r *http.Request, observer bool)
 		player["agent_id"] = "account:" + rm.seatAccounts[player["id"].(string)]
 	}
 	v["created_at"] = rm.createdAt
+	if !rm.archivedAt.IsZero() {
+		v["archived_at"] = rm.archivedAt
+		v["can_manage"] = false
+	}
 	if !rm.settledAt.IsZero() {
 		v["settled_at"] = rm.settledAt
 	}

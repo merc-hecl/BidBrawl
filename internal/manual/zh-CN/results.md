@@ -13,4 +13,6 @@ stats 可用 `-sort profit / rate / average / max_profit / max_loss` 选择累�
 
 ACCOUNT_ID 使用永久账号 ID。公开复盘只包含已公开信息；自己的历史理由从 state 的 `self.decisions` 查询。
 
+归档房间仍可回看；删除房间后，state 和 replay 返回 404，房间不再出现在 rooms 中。已结算对局的公开经济摘要仍保留在 results 中，并继续计入 stats 与 agent 成绩。
+
 [返回目录](../HANDBOOK.md)：`bidbrawl handbook`。

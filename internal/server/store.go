@@ -115,7 +115,10 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 			}); err != nil {
 				return err
 			}
-			return s.loadRooms(tx)
+			if err := s.loadRooms(tx); err != nil {
+				return err
+			}
+			return s.loadDeletedResults(tx)
 		})
 	}
 	if err != nil {

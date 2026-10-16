@@ -23,7 +23,7 @@ var ErrWatchComplete = errors.New("watch complete")
 
 func KnownEvent(name string) bool {
 	switch name {
-	case "ready", "room_created", "state_changed", "observer_changed", "started", "round_revealed", "settled":
+	case "ready", "room_created", "room_archived", "room_restored", "room_deleted", "state_changed", "observer_changed", "started", "round_revealed", "settled":
 		return true
 	}
 	return false

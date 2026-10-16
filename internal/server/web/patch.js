@@ -1,7 +1,9 @@
 // Preserve unchanged panels, focused controls, scroll containers and open details.
-const key=node=>node.nodeType===1 ? ['data-region','data-control','data-action','data-item','id'].map(name=>node.hasAttribute(name)?name+':'+node.getAttribute(name):'').find(Boolean)||'' : '';
+const key=node=>node.nodeType===1 ? ['data-region','data-control','data-action','data-item','data-room-select','data-room-select-all','id'].map(name=>node.hasAttribute(name)?name+':'+node.getAttribute(name):'').find(Boolean)||'' : '';
 const compatible=(a,b)=>a.nodeType===b.nodeType && a.nodeName===b.nodeName && key(a)===key(b);
 function patch(node,next) {
+  // checked is live DOM state: changing its attribute cannot reset a clicked input.
+  if(node.nodeType===1&&node.localName==='input'&&['checkbox','radio'].includes(node.type))node.checked=next.checked;
   if(node.isEqualNode(next))return;
   if(node.nodeType!==1){node.nodeValue=next.nodeValue;return;}
   for(const attr of [...node.attributes])if(!next.hasAttribute(attr.name) && !(node.localName==='details' && attr.name==='open'))node.removeAttribute(attr.name);

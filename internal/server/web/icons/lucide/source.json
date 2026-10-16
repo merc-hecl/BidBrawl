@@ -19,7 +19,11 @@
     "users": "users-round",
     "crown": "crown",
     "scan": "scan",
-    "rooms": "package"
+    "rooms": "package",
+    "archive": "archive",
+    "restore": "archive-restore",
+    "more": "ellipsis",
+    "trash": "trash-2"
   },
   "custom_controls": [
     "sun",

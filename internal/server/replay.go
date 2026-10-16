@@ -23,6 +23,9 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	if !s.roomExists(w, rm) {
+		return
+	}
 	b, err := rm.game.Observe("")
 	if observer {
 		b, err = rm.game.ObserveObserver()
@@ -43,8 +46,11 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 	}
 	full["room_id"], full["room_name"], full["owner_id"] = rm.id, rm.name, rm.owner
 	full["created_at"] = rm.createdAt
+	if !rm.archivedAt.IsZero() {
+		full["archived_at"] = rm.archivedAt
+	}
 	if observer {
-		full["can_manage"] = s.isRoomManager(r)
+		full["can_manage"] = s.isRoomManager(r) && rm.archivedAt.IsZero()
 	}
 	if !rm.settledAt.IsZero() {
 		full["settled_at"] = rm.settledAt

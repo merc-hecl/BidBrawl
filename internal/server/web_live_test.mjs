@@ -12,6 +12,26 @@ class Stream {
 }
 const tick=()=>new Promise(resolve=>setTimeout(resolve,20));
 
+test('room lifecycle events invalidate rooms and a deleted selection stops replay retries',async()=>{
+  let room='table';
+  const reads=[],updates=[];
+  const live=observe({getRoom:()=>room,EventSourceType:Stream,
+    read:async path=>{reads.push(path);if(path.includes('replay'))throw new Error('404');return {rooms:[]};},
+    onData:data=>{updates.push(data);if(data.roomMissing===room){room='';live.changeRoom();}},
+    onConnection:()=>{},onResultsError:()=>{}});
+  try{
+    Stream.latest.emit('room_deleted',{room_id:'table',rooms:true,results:false});await tick();await tick();
+    assert.ok(updates.some(data=>data.roomMissing==='table'));
+    assert.equal(reads.filter(path=>path.includes('replay')).length,1);
+    for(const event of ['room_archived','room_restored']){
+      const before=reads.length;
+      Stream.latest.emit(event,{room_id:'other',rooms:true,results:false});await tick();
+      assert.deepEqual(reads.slice(before),['/api/rooms']);
+    }
+    assert.ok(!reads.some(path=>path.includes('/stats')));
+  }finally{live.close();}
+});
+
 test('live observer reads on events, stays idle, and fully syncs on reconnect',async()=>{
   const reads=[],updates=[],connections=[];
   const live=observe({getRoom:()=> 'table',EventSourceType:Stream,

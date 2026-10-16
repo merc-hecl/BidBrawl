@@ -64,6 +64,8 @@ bidbrawl hints -room ROOM_ID   # 查询该房间固定的插件 ID
 
 默认内置 7 类局部提示，在原有轮廓、品质、品质数量、受限均价和单件价格之外，提供“品质是否存在”和“同品质最大单件面积”。每局仍在第 1、3 轮各发布一条，最多一条价格类提示。配置支持混用内置提示与外部程序。完整协议、可构建示例及权限边界见 [公共提示插件](docs/hints.md)。提示配置与尚未公开的提示保存在私有快照，公共接口只返回插件 ID 与已公开文案。当前对局快照格式升级为 5；旧格式不能恢复，不提供自动迁移，账号格式不变。
 
+大厅房间卡片右上角的省略号菜单提供归档和删除，进行中的房间除外；等待中的房间即使已有玩家入席也可操作。归档后从大厅和切换列表收起，仍可回看；恢复前暂停入席、邀请和开局。“已归档”打开独立归档页面，其列表上方的次级“批量管理”入口支持全选、批量恢复和批量删除。删除需确认，会移除房间、邀请链接和完整复盘，已完成对局的经济结算摘要及账号统计永久保留。批量操作先校验全部目标，再统一落盘；任一房间正在进行、无权管理或已不存在时，整批不执行。
+
 ## 玩家接入
 
 房主在独立终端登记账号，并将各自的 credential 单独交给对应玩家：
@@ -102,6 +104,7 @@ bidbrawl register -name Atlas
 | POST /api/logout | 会话 | — |
 | GET /api/me | 会话 | — |
 | GET /api/rooms | 无 | — |
+| POST /api/rooms/manage | 房主 / 宿主管理员 / 网页管理会话 | action 为 archive / restore / delete，room_ids 为非空、不重复 ID 数组；房主仅可管理自己的房间，进行中房间不可操作 |
 | GET /api/config | 无 | 宿主默认 game / cards 配置，无需房间 |
 | GET /api/results | 无 | 全部历史已结算房间的公开成绩摘要与创建 / 结算时间，不含未结算报价、私有卡牌或令牌 |
 | GET /api/stats?sort=profit | 无 | 全部结算局的汇总与 Agent 指标；sort 为 profit / rate / average / max_profit / max_loss |
@@ -137,7 +140,7 @@ WebUI 仅在 `host -webui` 时提供。宿主通过 URL fragment 传递一次性
 
 前端采用原生 JavaScript + CSS + SVG，静态资源通过 Go embed 放入可执行文件。观战页通过一个 `/api/events` SSE 连接接收所有房间的公共变更通知：当前房间变化时读取后端复盘快照及 frames，房间创建 / 入席 / 阶段变化时更新房间列表，结算时更新 /api/stats。连接正常且无变更时不轮询；不支持 EventSource 的浏览器退回每 5 秒同步。界面增量更新 DOM，保留未变化的面板、回看位置、筛选、输入焦点、表格滚动与展开的内容。未做帧率与弱设备性能基准。
 
-SSE 事件名为 `ready`、`room_created`、`state_changed`、`started`、`round_revealed`、`settled`。`ready` 的数据为 `{}`；其它事件的数据只含 `room_id`、公开 `version`、`rooms` / `results` 是否需要更新，不携带身份凭据、暗标金额或私有技能信息。实际成交轮揭晓与结算合为一次 `settled`。持久化宿主仅在状态成功落盘后广播；私有技能使用不在公共流中广播；观察者流在理由成功落盘后发送 observer_changed。
+SSE 事件名为 `ready`、`room_created`、`room_archived`、`room_restored`、`room_deleted`、`state_changed`、`started`、`round_revealed`、`settled`。`ready` 的数据为 `{}`；其它事件的数据只含 `room_id`、公开 `version`、`rooms` / `results` 是否需要更新，不携带身份凭据、暗标金额或私有技能信息。实际成交轮揭晓与结算合为一次 `settled`。持久化宿主仅在状态成功落盘后广播；私有技能使用不在公共流中广播；观察者流在理由成功落盘后发送 observer_changed。
 
 事件用于提示重新读取，不能替代 state 或作为完整历史日志。首次连接与每次重连收到 `ready` 后，应重新读取当前房间观察、rooms 和统计；服务器不重放旧事件，也不依赖 Last-Event-ID。WebUI 使用 EventSource 自动重连（重试间隔 2 秒），失败的 HTTP 同步会重试，旧房间请求在切换时取消；等待新房间数据期间保留当前画面并暂停其交互，数据到达后一次更新，避免清空内容导致闪烁。服务器每 15 秒发送一次注释心跳，慢观众的队列满后断开并要求重连同步。反向代理应关闭 SSE 缓冲并允许长连接；公共 SSE 只使用公开观察，Agent 收到相关通知后仍用自己的会话读取 state 获取私有信息。
 

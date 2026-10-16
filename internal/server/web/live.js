@@ -26,6 +26,7 @@ export function observe({getRoom,getObserver=()=>false,getSort=()=>'profit',onOb
       replies.forEach((reply,index)=>{
         const key=keys[index];
         if(reply.status==='fulfilled')data[key]=reply.value;
+        else if(key==='state'&&reply.reason.message==='404'){data.roomMissing=room;dirty.rooms=true;}
         else{dirty[key]=true;failed=true;if(key==='state')stateOK=false;}
         if(key==='results')onResultsError(reply.status!=='fulfilled');
       });
@@ -47,7 +48,7 @@ export function observe({getRoom,getObserver=()=>false,getSort=()=>'profit',onOb
     }
     const current=new EventSourceType(getObserver()?'/api/observer/events':'/api/events');stream=current;
     stream.addEventListener('ready',()=>{if(stopped || stream!==current)return;online=true;onConnection('connecting');refresh();});
-    for(const name of ['room_created','state_changed','observer_changed','started','round_revealed','settled'])stream.addEventListener(name,event=>{
+    for(const name of ['room_created','room_archived','room_restored','room_deleted','state_changed','observer_changed','started','round_revealed','settled'])stream.addEventListener(name,event=>{
       if(stopped || stream!==current)return;
       try{
         const change=JSON.parse(event.data);

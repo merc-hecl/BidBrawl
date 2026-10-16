@@ -37,29 +37,46 @@ func (s *Server) resultsLocked() ([]roomResult, error) {
 	for id := range s.rooms {
 		ids = append(ids, id)
 	}
+	for id := range s.deletedResults {
+		ids = append(ids, id)
+	}
 	sort.Strings(ids)
 	results := []roomResult{}
 	for _, id := range ids {
-		rm := s.rooms[id]
-		public, err := rm.game.Observe("")
+		if result, ok := s.deletedResults[id]; ok {
+			results = append(results, result)
+			continue
+		}
+		result, err := resultForRoom(s.rooms[id])
 		if err != nil {
 			return nil, err
 		}
-		var view game.View
-		if err = json.Unmarshal(public, &view); err != nil {
-			return nil, err
+		if result != nil {
+			results = append(results, *result)
 		}
-		if view.Settlement == nil {
-			continue
-		}
-		players := []resultPlayer{}
-		for _, p := range view.Players {
-			players = append(players, resultPlayer{p.ID, p.Name, "account:" + rm.seatAccounts[p.ID]})
-		}
-		r := view.Settlement
-		results = append(results, roomResult{id, rm.name, players, rm.createdAt, rm.settledAt, resultSettlement{r.WinnerID, r.Paid, r.Total, r.Profit, r.Payoffs, r.Round, r.Method}})
 	}
 	return results, nil
+}
+
+func resultForRoom(rm *room) (*roomResult, error) {
+	public, err := rm.game.Observe("")
+	if err != nil {
+		return nil, err
+	}
+	var view game.View
+	if err = json.Unmarshal(public, &view); err != nil {
+		return nil, err
+	}
+	if view.Settlement == nil {
+		return nil, nil
+	}
+	players := []resultPlayer{}
+	for _, p := range view.Players {
+		players = append(players, resultPlayer{p.ID, p.Name, "account:" + rm.seatAccounts[p.ID]})
+	}
+	r := view.Settlement
+	result := roomResult{rm.id, rm.name, players, rm.createdAt, rm.settledAt, resultSettlement{r.WinnerID, r.Paid, r.Total, r.Profit, r.Payoffs, r.Round, r.Method}}
+	return &result, nil
 }
 func (s *Server) listResults(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()

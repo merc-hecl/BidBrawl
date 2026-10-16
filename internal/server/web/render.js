@@ -3,6 +3,7 @@ import {observation} from './model.js';
 import {esc,icon,button} from './html.js';
 import {roomView,avatarGallery} from './room-ui.js';
 import {waterfall} from './illustrations.js';
+import {roomActions,roomFilters,roomDate} from './room-management.js';
 export {esc} from './html.js';
 
 const tr = (key, values) => esc(t(key, values));
@@ -18,7 +19,7 @@ export function status(source) {
 }
 export const roomGroup = room => room?.phase === 'settled' ? 'completed' : 'active';
 export function roomButtons(rooms, selected, group) {
-  return rooms.filter(room => roomGroup(room) === group).map(room => button(`<span class="room-dot ${esc(room.phase)}"></span><span>${esc(room.name)}<small>${tr('roomSeats',
+  return rooms.filter(room => !room.archived_at && roomGroup(room) === group).map(room => button(`<span class="room-dot ${esc(room.phase)}"></span><span>${esc(room.name)}<small>${tr('roomSeats',
     {count:room.players,total:room.player_count,phase:t({lobby:'phaseLobby',bidding:'phaseBidding',settled:'phaseSettled'}[room.phase])})}</small></span>`,
     'room:'+room.room_id, selected === room.room_id ? 'selected' : '', selected === room.room_id ? 'aria-current="true"' : '')).join('') || `<p class="side-empty">${tr(group === 'completed' ? 'noCompletedRooms' : 'noActiveRooms')}</p>`;
 }
@@ -57,17 +58,16 @@ function stats(results,ui) {
 }
 
 const heading=(title,subtitle,action='')=>'<div class="page-heading"><div><h1>'+tr(title)+'</h1><p>'+tr(subtitle)+'</p></div>'+action+'</div>';
-const roomDate=value=>value?esc(new Intl.DateTimeFormat(getLocale(),{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}).format(new Date(value))):'';
-function roomTile(room){
-  return '<article class="paper room-tile '+(room.phase==='lobby'?'is-waiting':'')+'"><span class="eyebrow">'+esc(room.room_id.slice(0,8))+'</span><h2>'+esc(room.name)+'</h2><p>'+tr('roomSeats',{count:room.players,total:room.player_count,phase:t({lobby:'phaseLobby',bidding:'phaseBidding',settled:'phaseSettled'}[room.phase])})+'</p><div class="seat-marks" aria-hidden="true">'+Array.from({length:room.player_count},(_,i)=>'<span class="'+(i<room.players?'occupied':'')+'">'+icon('users')+'</span>').join('')+'</div>'+button(icon('arrow')+tr(room.phase==='settled'?'viewArchive':room.phase==='lobby'?'enterRoom':'enterWatch'),'room:'+room.room_id,'paper-button')+'</article>';
+function roomTile(room,ui){
+  return '<article class="paper room-tile '+(room.phase==='lobby'?'is-waiting':'')+'" data-room-card="'+esc(room.room_id)+'">'+roomActions(room,ui)+'<span class="eyebrow">'+esc(room.room_id.slice(0,8))+'</span><h2>'+esc(room.name)+'</h2><p>'+tr('roomSeats',{count:room.players,total:room.player_count,phase:t({lobby:'phaseLobby',bidding:'phaseBidding',settled:'phaseSettled'}[room.phase])})+'</p><div class="seat-marks" aria-hidden="true">'+Array.from({length:room.player_count},(_,i)=>'<span class="'+(i<room.players?'occupied':'')+'">'+icon('users')+'</span>').join('')+'</div>'+button(icon('arrow')+tr(room.phase==='settled'?'viewArchive':room.phase==='lobby'?'enterRoom':'enterWatch'),'room:'+room.room_id,'paper-button')+'</article>';
 }
 export function roomDirectory(rooms,ui){
-  const ordered=[...rooms].sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
+  const ordered=rooms.filter(room=>!room.archived_at).sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
   const featured=ordered.find(room=>room.phase==='bidding')||ordered.find(room=>room.phase==='lobby')||ordered[0];
-  const filtered=ui.directoryFilter==='waiting'?ordered.filter(room=>room.phase==='lobby'):ordered;
+  const filtered=ui.directoryFilter==='waiting'?ordered.filter(room=>room.phase==='lobby'):ui.directoryFilter==='completed'?ordered.filter(room=>room.phase==='settled'):ordered;
   const create=ui.manage?button(icon('plus')+tr('createRoom'),'create-room','primary'):'';
   const hero='<section class="lobby-hero paper"><div class="hero-copy"><span class="eyebrow">'+tr('featured')+(featured?' · '+tr({lobby:'phaseLobby',bidding:'phaseBidding',settled:'phaseSettled'}[featured.phase]):'')+'</span><h2>'+esc(featured?.name||t('heroTitle'))+'</h2><p>'+tr('heroSubtitle')+'</p><div class="hero-note">'+icon('scan')+'<span>'+tr('heroTitle')+'</span></div>'+(featured?button(icon('arrow')+tr(featured.phase==='settled'?'viewArchive':'enterWatch'),'room:'+featured.room_id,'primary'):create)+'</div>'+waterfall()+'</section>';
-  return heading('lobbyTitle','lobbySubtitle',create)+hero+'<div class="directory-heading"><h2>'+tr('findRoom')+'</h2><div class="segmented">'+button(tr('allRooms')+' '+ordered.length,'filter:all','paper-button','aria-pressed="'+(ui.directoryFilter!=='waiting')+'"')+button(tr('waitingRooms'),'filter:waiting','paper-button','aria-pressed="'+(ui.directoryFilter==='waiting')+'"')+'</div></div><div class="room-directory">'+(filtered.map(roomTile).join('')||'<div class="empty-room paper">'+icon('box')+'<h2>'+tr('noRooms')+'</h2>'+create+'</div>')+'</div>';
+  return heading('lobbyTitle','lobbySubtitle',create)+hero+'<div class="directory-heading"><h2>'+tr('findRoom')+'</h2>'+roomFilters(rooms,ui.directoryFilter||'all')+'</div><div class="room-directory">'+(filtered.map(room=>roomTile(room,ui)).join('')||'<div class="empty-room paper">'+icon('box')+'<h2>'+tr('noRooms')+'</h2>'+create+'</div>')+'</div>';
 }
 export function historyDirectory(rooms){
   const completed=rooms.filter(room=>room.phase==='settled').sort((a,b)=>String(b.created_at||'').localeCompare(String(a.created_at||'')));
