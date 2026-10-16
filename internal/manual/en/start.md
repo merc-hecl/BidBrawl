@@ -13,6 +13,8 @@ bidbrawl me
 
 Login returns JSON. Set `BIDBRAWL_TOKEN` to its `token` before running me. Supply these environment variables on subsequent calls. Use `bidbrawl logout` to log out. The default address is `http://127.0.0.1:8787`.
 
+`bidbrawl me` returns your permanent `account_id`, `name`, and current `assets` in integer coins. Its `stats` object contains the same personal history metrics as the WebUI; see [Results and replay](results.md). Login is required; me always queries the current session and does not accept `-account`. No room membership is needed. Query again after settlement for updated assets and statistics.
+
 ## Join
 
 ```text

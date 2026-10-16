@@ -84,7 +84,8 @@ func TestCLIHandbookTopicsAndLanguages(t *testing.T) {
 }
 
 func TestCLIHandbookLiveCatalog(t *testing.T) {
-	geometry := game.Config{SchemaVersion: 1, Box: game.Dimensions{Width: 13, Height: 9}, Items: game.ItemLimits{MaxWidth: 5, MaxHeight: 2}}
+	geometry := game.DefaultConfig()
+	geometry.Box, geometry.Items = game.Dimensions{Width: 13, Height: 9}, game.ItemLimits{MaxWidth: 5, MaxHeight: 2}
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []cards.Definition{
 		{ID: "audit", Name: "Custom audit", Description: "Custom count", Effect: cards.Effect{Type: "count"}},
 	}}
@@ -165,7 +166,8 @@ func TestCLIProtocolGameFlow(t *testing.T) {
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit"}, Cards: []cards.Definition{
 		{ID: "audit", Name: "自定义全检", Description: "最大物品品质与价格", Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price"}}},
 	}}
-	geometry := game.Config{SchemaVersion: 1, Box: game.Dimensions{Width: 13, Height: 9}, Items: game.ItemLimits{MaxWidth: 5, MaxHeight: 2}}
+	geometry := game.DefaultConfig()
+	geometry.Box, geometry.Items = game.Dimensions{Width: 13, Height: 9}, game.ItemLimits{MaxWidth: 5, MaxHeight: 2}
 	g, _ := game.NewWithConfig(2, geometry, cfg)
 	s := server.New(g.GameConfig(), g.CardConfig())
 	host := httptest.NewServer(s)
@@ -337,6 +339,12 @@ func TestHostIdentityProcess(t *testing.T) {
 	id := registered["account_id"].(string)
 	credential := registered["credential"].(string)
 	oldToken := cli(t, "login", "-credential", credential)["token"].(string)
+	if own := cli(t, "me", "-token", oldToken); own["account_id"] != id || own["name"] != "Atlas" || own["assets"] != float64(100000) {
+		t.Fatal("account query omitted identity or initial assets")
+	}
+	if err := run(context.Background(), []string{"me", "-token", oldToken, "-account", id}); err == nil {
+		t.Fatal("me accepted an account selector")
+	}
 	echoCredential := cli(t, "register", "-token", admin, "-name", "Echo")["credential"].(string)
 	echoToken := cli(t, "login", "-credential", echoCredential)["token"].(string)
 	roomID := cli(t, "create", "-token", oldToken, "-name", "Durable game", "-players", "2")["room_id"].(string)
@@ -344,7 +352,7 @@ func TestHostIdentityProcess(t *testing.T) {
 	cli(t, "join", "-room", roomID, "-token", echoToken, "-cards", "")
 	cli(t, "start", "-room", roomID, "-token", oldToken)
 	cli(t, "card", "-reason", "protocol test", "-room", roomID, "-token", oldToken, "-round", "1", "-card", "item_count")
-	privateBefore := cli(t, "bid", "-reason", "protocol test", "-room", roomID, "-token", oldToken, "-round", "1", "-amount", "777777")
+	privateBefore := cli(t, "bid", "-reason", "protocol test", "-room", roomID, "-token", oldToken, "-round", "1", "-amount", "77777")
 	publicBefore := cli(t, "state", "-room", roomID, "-token", "")
 	equal := func(a, b map[string]any) bool {
 		x, _ := json.Marshal(a)
@@ -375,13 +383,28 @@ func TestHostIdentityProcess(t *testing.T) {
 		t.Fatal("host account listing did not restore identity")
 	}
 	bt := cli(t, "login", "-credential", echoCredential)["token"].(string)
-	cli(t, "bid", "-reason", "protocol test", "-room", roomID, "-token", bt, "-round", "1", "-amount", "600000")
+	cli(t, "bid", "-reason", "protocol test", "-room", roomID, "-token", bt, "-round", "1", "-amount", "60000")
 	for round := 2; round <= game.Rounds; round++ {
 		for _, token := range []string{at, bt} {
 			cli(t, "bid", "-reason", "protocol test", "-room", roomID, "-token", token, "-round", fmt.Sprint(round), "-amount", "100")
 		}
 	}
 	settledBefore := cli(t, "state", "-room", roomID, "-token", "")
+	selfID := privateBefore["self"].(map[string]any)["id"].(string)
+	payoffs := settledBefore["settlement"].(map[string]any)["payoffs"].(map[string]any)
+	expectedAssets := float64(100000) + payoffs[selfID].(float64)
+	ownBefore := cli(t, "me", "-token", at)
+	if ownBefore["assets"] != expectedAssets {
+		t.Fatal("account query returned stale assets after settlement")
+	}
+	if !equal(ownBefore["stats"].(map[string]any), cli(t, "agent", "-account", id, "-token", "")) {
+		t.Fatal("me statistics differ from player profile")
+	}
+	board := cli(t, "leaderboard", "-token", "")
+	rows := board["rankings"].([]any)
+	if board["sort"] != "profit" || board["games"] != float64(1) || len(rows) != 2 || rows[0].(map[string]any)["rank"] != float64(1) {
+		t.Fatal("public leaderboard query failed")
+	}
 	results := func() map[string]any {
 		t.Helper()
 		var out map[string]any
@@ -404,8 +427,12 @@ func TestHostIdentityProcess(t *testing.T) {
 	if err := run(context.Background(), []string{"login", "-credential", credential}); err == nil {
 		t.Fatal("old credential accepted after process restart")
 	}
-	if cli(t, "login", "-credential", rotated["credential"].(string))["account_id"] != id {
+	finalLogin := cli(t, "login", "-credential", rotated["credential"].(string))
+	if finalLogin["account_id"] != id {
 		t.Fatal("rotated identity did not survive forced process restart")
+	}
+	if own := cli(t, "me", "-token", finalLogin["token"].(string)); !equal(ownBefore, own) {
+		t.Fatal("account query lost assets or statistics after process restart")
 	}
 	if !equal(settledBefore, cli(t, "state", "-room", roomID, "-token", "")) || !equal(resultsBefore, results()) {
 		t.Fatal("forced process restart changed replay, tied winner or statistical history")

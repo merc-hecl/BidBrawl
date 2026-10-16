@@ -111,12 +111,12 @@ func TestSSELifecyclePrivacyReconnectAndShutdown(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
 	nextEvent(t, events, "started")
 	checkedRequest(t, s, "POST", "/api/card", a, `{"reason":"protocol test","round":1,"card":"largest_price"}`, 200)
-	checkedRequest(t, s, "POST", "/api/bid", a, `{"reason":"protocol test","round":1,"amount":987654}`, 200)
+	checkedRequest(t, s, "POST", "/api/bid", a, `{"reason":"protocol test","round":1,"amount":98765}`, 200)
 	e := nextEvent(t, events, "state_changed") // No card event may precede this.
 	if e.Rooms || e.Results {
 		t.Fatal("pending bid changed metadata")
 	}
-	checkedRequest(t, s, "POST", "/api/bid", b, `{"reason":"protocol test","round":1,"amount":600000}`, 200)
+	checkedRequest(t, s, "POST", "/api/bid", b, `{"reason":"protocol test","round":1,"amount":60000}`, 200)
 	nextEvent(t, events, "round_revealed")
 	for round := 2; round <= game.Rounds; round++ {
 		checkedRequest(t, s, "POST", "/api/bid", a, fmt.Sprintf(`{"reason":"protocol test","round":%d,"amount":100}`, round), 200)

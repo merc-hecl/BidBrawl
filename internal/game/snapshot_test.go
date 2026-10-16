@@ -25,7 +25,7 @@ func TestSnapshotPreservesPrivateStateAndSettlement(t *testing.T) {
 	if err := g.UseCard(tokens[0], 1, "random_shape", "protocol test"); err != nil {
 		t.Fatal(err)
 	}
-	if err := g.Submit(tokens[0], 1, 777777, "protocol test"); err != nil {
+	if err := g.Submit(tokens[0], 1, 77777, "protocol test"); err != nil {
 		t.Fatal(err)
 	}
 	compareRestore := func() *Game {
@@ -51,7 +51,7 @@ func TestSnapshotPreservesPrivateStateAndSettlement(t *testing.T) {
 	if err := restored.Submit(tokens[0], 1, 1, "protocol test"); err == nil {
 		t.Fatal("restoration forgot a sealed bid")
 	}
-	if err := restored.Submit(tokens[1], 1, 600000, "protocol test"); err != nil {
+	if err := restored.Submit(tokens[1], 1, 60000, "protocol test"); err != nil {
 		t.Fatal(err)
 	}
 	before, _ := g.Observe("")
@@ -85,6 +85,8 @@ func TestRestoreRejectsInconsistentSnapshots(t *testing.T) {
 	_ = g.UseCard(tokens[0], 1, "item_count", "protocol test")
 	data, _ := g.Snapshot()
 	for name, corrupt := range map[string]func(*gameSnapshot){
+		"negative assets":      func(s *gameSnapshot) { s.Players[0].Assets = -1 },
+		"bid above assets":     func(s *gameSnapshot) { bid := s.Players[0].Assets + 1; s.Players[0].Bid = &bid },
 		"schema":               func(s *gameSnapshot) { s.SchemaVersion = 99 },
 		"phase":                func(s *gameSnapshot) { s.Phase = "unknown" },
 		"price":                func(s *gameSnapshot) { s.Items[0].Price = -1 },

@@ -11,7 +11,7 @@ import (
 )
 
 func TestInitialInspectionIsEqualSizedPrivateAndDurable(t *testing.T) {
-	for _, cfg := range []Config{DefaultConfig(), {1, Dimensions{1, 1}, ItemLimits{1, 1}}} {
+	for _, cfg := range []Config{DefaultConfig(), geometryConfig(Dimensions{1, 1}, ItemLimits{1, 1})} {
 		g, err := NewWithConfig(7, cfg, cards.Default())
 		if err != nil {
 			t.Fatal(err)

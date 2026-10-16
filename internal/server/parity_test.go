@@ -4,9 +4,35 @@ import (
 	"bidbrawl/internal/game"
 	"encoding/json"
 	"fmt"
+	"reflect"
 	"strings"
 	"testing"
 )
+
+func TestSelfProfileAuthenticationAndEmptyLeaderboard(t *testing.T) {
+	g, _ := game.New(2)
+	s := testTable(g)
+	a, _ := accountSession(t, s, "A")
+	b, _ := accountSession(t, s, "B")
+	for _, token := range []string{"", "invalid", s.HostToken, s.ObserverToken} {
+		checkedRequest(t, s, "GET", "/api/me", token, "", 401)
+	}
+	var own accountProfile
+	raw := checkedRequest(t, s, "GET", "/api/me?account_id="+s.sessions[b].ID, a, "", 200)
+	if err := json.Unmarshal(raw, &own); err != nil {
+		t.Fatal(err)
+	}
+	if own.ID != s.sessions[a].ID || own.Name != "A" || own.Stats.ID != "account:"+own.ID || own.Stats.Games != 0 || own.Stats.Rate != nil {
+		t.Fatal("me queried another identity or invented history")
+	}
+	var board leaderboard
+	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/leaderboard", "", "", 200), &board)
+	if board.Sort != "profit" || board.Games != 0 || board.Rankings == nil || len(board.Rankings) != 0 {
+		t.Fatal("incorrect empty leaderboard")
+	}
+	checkedRequest(t, s, "POST", "/api/logout", a, "", 200)
+	checkedRequest(t, s, "GET", "/api/me", a, "", 401)
+}
 
 func TestStatisticsEconomics(t *testing.T) {
 	results := []roomResult{
@@ -107,6 +133,27 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 	if summary.Games != 1 || len(summary.Agents) != 2 || profile.Games != 1 {
 		t.Fatal("statistics missing game")
 	}
+	for _, key := range []string{"profit", "rate", "average", "max_profit", "max_loss"} {
+		var expected statistics
+		_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/stats?sort="+key, "", "", 200), &expected)
+		var board leaderboard
+		raw := checkedRequest(t, s, "GET", "/api/leaderboard?sort="+key, "", "", 200)
+		_ = json.Unmarshal(raw, &board)
+		if board.Sort != key || board.Games != expected.Games || len(board.Rankings) != len(expected.Agents) {
+			t.Fatal("leaderboard missing settled players")
+		}
+		for i, row := range board.Rankings {
+			if row.Rank != i+1 || !reflect.DeepEqual(row.agentMetrics, expected.Agents[i]) {
+				t.Fatal("leaderboard diverged from WebUI statistics")
+			}
+		}
+		for _, forbidden := range []string{`"assets"`, `"credential"`, `"token"`, `"decisions"`, `"hints"`, "secret"} {
+			if strings.Contains(string(raw), forbidden) {
+				t.Fatal("leaderboard leaked private information")
+			}
+		}
+	}
+	checkedRequest(t, s, "GET", "/api/leaderboard?sort=wins", "", "", 400)
 	for _, record := range summary.Agents {
 		if record.ID == profile.ID && (record.Profit != profile.Profit || record.Average != profile.Average) {
 			t.Fatal("agent metrics diverged")

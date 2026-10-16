@@ -50,7 +50,7 @@ func (s *Server) register(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, errors.New("name already registered"))
 		return
 	}
-	a := &account{Name: v.Name}
+	a := &account{Name: v.Name, Assets: s.gameConfig.InitialAssets}
 	for a.ID == "" || s.accountsByID[a.ID] != nil {
 		a.ID = secret()[:32]
 	}

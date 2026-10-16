@@ -86,7 +86,6 @@ func TestDeletedSettlementKeepsOnlyEconomicSummaryAcrossRestart(t *testing.T) {
 	for _, token := range []string{a, b} {
 		checkedRequest(t, s, "POST", "/api/join?room="+id, token, `{"cards":[]}`, 201)
 	}
-	checkedRequest(t, s, "POST", "/api/join?room="+lobby, a, `{"cards":[]}`, 201)
 	checkedRequest(t, s, "POST", "/api/start?room="+id, a, "", 200)
 	// Deterministic protocol fixture, not an Agent game acceptance run.
 	for round := 1; round <= game.Rounds; round++ {
@@ -94,6 +93,7 @@ func TestDeletedSettlementKeepsOnlyEconomicSummaryAcrossRestart(t *testing.T) {
 			checkedRequest(t, s, "POST", "/api/bid?room="+id, token, fmt.Sprintf(`{"round":%d,"amount":10,"reason":"private protocol fixture"}`, round), 200)
 		}
 	}
+	checkedRequest(t, s, "POST", "/api/join?room="+lobby, a, `{"cards":[]}`, 201)
 	before := checkedRequest(t, s, "GET", "/api/stats", "", "", 200)
 	results := checkedRequest(t, s, "GET", "/api/results", "", "", 200)
 	lifecycleRequest(t, s, a, "archive", []string{id, lobby}, 200)

@@ -47,16 +47,17 @@ type playerSnapshot struct {
 	Revision   int              `json:"revision"`
 	Avatar     *int             `json:"avatar"`
 	Inspection []InspectionItem `json:"initial_inspection"`
+	Assets     int64            `json:"assets"`
 }
 
 func (g *Game) Snapshot() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := gameSnapshot{SchemaVersion: 5, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
+	s := gameSnapshot{SchemaVersion: 6, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
 		Phase: g.phase, Round: g.round, Version: g.version, Players: []playerSnapshot{}, Items: g.items,
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
-		s.Players = append(s.Players, playerSnapshot{p.id, p.name, p.token, p.deck, p.used, p.hints, p.bid, p.cardRound, p.revision, p.avatar, p.inspection})
+		s.Players = append(s.Players, playerSnapshot{p.id, p.name, p.token, p.deck, p.used, p.hints, p.bid, p.cardRound, p.revision, p.avatar, p.inspection, p.assets})
 	}
 	return json.Marshal(s)
 }
@@ -74,7 +75,7 @@ func Restore(data []byte) (*Game, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return nil, errors.New("expected exactly one game snapshot")
 	}
-	if s.SchemaVersion != 5 {
+	if s.SchemaVersion != 6 {
 		return nil, errors.New("unsupported game snapshot schema")
 	}
 	g, err := NewWithHints(s.PlayerCount, s.Config, s.Cards, s.HintConfig)
@@ -89,7 +90,7 @@ func Restore(data []byte) (*Game, error) {
 	g.plannedHints = s.PlannedHints
 	g.decisions, g.settlement = s.Decisions, s.Settlement
 	for _, p := range s.Players {
-		g.players = append(g.players, &player{p.ID, p.Name, p.Token, p.Deck, p.Used, p.Hints, p.Bid, p.CardRound, p.Revision, p.Avatar, p.Inspection})
+		g.players = append(g.players, &player{p.ID, p.Name, p.Token, p.Deck, p.Used, p.Hints, p.Bid, p.CardRound, p.Revision, p.Avatar, p.Inspection, p.Assets})
 	}
 	return g, nil
 }
@@ -115,6 +116,9 @@ func (s gameSnapshot) validate() error {
 		items[item.ID] = item
 	}
 	for i, p := range s.Players {
+		if p.Assets < 0 {
+			return errors.New("invalid player assets")
+		}
 		count := 0
 		if s.Phase != "lobby" {
 			count = min(InitialInspectionCount, len(s.Items))
@@ -164,7 +168,7 @@ func (s gameSnapshot) validate() error {
 			return errors.New("invalid card allowance")
 		}
 		if p.Bid != nil {
-			if *p.Bid < 0 || *p.Bid > MaxBid {
+			if *p.Bid < 0 || *p.Bid > p.Assets {
 				return errors.New("invalid pending bid")
 			}
 			pending++
@@ -234,7 +238,7 @@ func (s gameSnapshot) validate() error {
 			return errors.New("incomplete published round")
 		}
 		for j, bid := range r.Bids {
-			if bid.PlayerID != s.Players[j].ID || bid.Amount < 0 || bid.Amount > MaxBid {
+			if bid.PlayerID != s.Players[j].ID || bid.Amount < 0 || bid.Amount > s.Players[j].Assets {
 				return errors.New("invalid published bid")
 			}
 		}
@@ -331,7 +335,7 @@ func (s gameSnapshot) validateItems() error {
 		}
 		ids[item.ID] = true
 		validPrice := false
-		for _, q := range qualities {
+		for _, q := range s.Config.Qualities {
 			if item.Quality == q.ID && item.Price >= q.Min && item.Price <= q.Max {
 				validPrice = true
 			}

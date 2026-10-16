@@ -24,6 +24,7 @@ type persistentStore struct {
 type identityRecord struct {
 	ID             string `json:"account_id"`
 	Name           string `json:"name"`
+	Assets         int64  `json:"assets"`
 	CredentialHash string `json:"credential_sha256"`
 }
 
@@ -63,7 +64,7 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 	err = db.Update(func(tx *bolt.Tx) error {
 		if meta := tx.Bucket([]byte("metadata")); meta != nil {
 			version := string(meta.Get([]byte("schema_version")))
-			if version != "2" {
+			if version != "3" {
 				return errors.New("unsupported identity database schema")
 			}
 			if tx.Bucket(identityBucket) == nil {
@@ -81,7 +82,7 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 		if err != nil {
 			return err
 		}
-		if err := meta.Put([]byte("schema_version"), []byte("2")); err != nil {
+		if err := meta.Put([]byte("schema_version"), []byte("3")); err != nil {
 			return err
 		}
 		if _, err = tx.CreateBucket(identityBucket); err != nil {
@@ -99,14 +100,14 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 				}
 				id, idErr := hex.DecodeString(rec.ID)
 				digest, hashErr := hex.DecodeString(rec.CredentialHash)
-				if string(key) != rec.ID || idErr != nil || len(id) != 16 || hashErr != nil || len(digest) != 32 || !validName(rec.Name) {
+				if string(key) != rec.ID || idErr != nil || len(id) != 16 || hashErr != nil || len(digest) != 32 || !validName(rec.Name) || rec.Assets < 0 {
 					return errors.New("invalid identity record")
 				}
 				hash := [32]byte(digest)
 				if s.accounts[rec.Name] != nil || s.credentials[hash] != nil {
 					return errors.New("duplicate identity record")
 				}
-				a := &account{ID: rec.ID, Name: rec.Name}
+				a := &account{ID: rec.ID, Name: rec.Name, Assets: rec.Assets}
 				s.accounts[a.Name] = a
 				s.accountsByID[a.ID] = a
 				s.credentials[hash] = a
@@ -128,8 +129,12 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 	return s, nil
 }
 
+func identityFor(a *account, hash [32]byte) identityRecord {
+	return identityRecord{ID: a.ID, Name: a.Name, Assets: a.Assets, CredentialHash: hex.EncodeToString(hash[:])}
+}
+
 func (s *persistentStore) saveAccount(a *account, hash [32]byte) error {
-	record, err := json.Marshal(identityRecord{ID: a.ID, Name: a.Name, CredentialHash: hex.EncodeToString(hash[:])})
+	record, err := json.Marshal(identityFor(a, hash))
 	if err != nil {
 		return err
 	}

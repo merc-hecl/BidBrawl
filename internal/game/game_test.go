@@ -102,7 +102,7 @@ func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	if e := g.UseCard(ts[1], 1, "largest_quality", "protocol test"); e == nil {
 		t.Fatal("non-deck card accepted")
 	}
-	if e := g.Submit(ts[0], 1, 987654, "protocol test"); e != nil {
+	if e := g.Submit(ts[0], 1, 98765, "protocol test"); e != nil {
 		t.Fatal(e)
 	}
 	pub := view(t, g, "")
@@ -113,7 +113,7 @@ func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	if other.Self.Bid != nil {
 		t.Fatal("other player sees own bid before submission")
 	}
-	if got := view(t, g, ts[0]); got.Self.Bid == nil || *got.Self.Bid != 987654 {
+	if got := view(t, g, ts[0]); got.Self.Bid == nil || *got.Self.Bid != 98765 {
 		t.Fatal("own bid not returned")
 	}
 	if e := g.UseCard(ts[0], 1, "item_count", "protocol test"); e == nil {
@@ -128,11 +128,11 @@ func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	if e := g.Submit("bad", 1, 1, "protocol test"); e == nil {
 		t.Fatal("unauthorized bid accepted")
 	}
-	if e := g.Submit(ts[1], 1, 600000, "protocol test"); e != nil {
+	if e := g.Submit(ts[1], 1, 60000, "protocol test"); e != nil {
 		t.Fatal(e)
 	}
 	pub = view(t, g, "")
-	if pub.Round != 2 || len(pub.History) != 1 || pub.History[0].Bids[0].Amount != 987654 {
+	if pub.Round != 2 || len(pub.History) != 1 || pub.History[0].Bids[0].Amount != 98765 {
 		t.Fatal("bids not simultaneously revealed")
 	}
 	if e := g.Submit(ts[0], 1, 1, "protocol test"); e == nil {
@@ -154,7 +154,7 @@ func TestFiveRoundsSettlementAndHints(t *testing.T) {
 		if e := g.Submit(ts[0], round, -1, "protocol test"); e == nil {
 			t.Fatal("negative bid accepted")
 		}
-		if e := g.Submit(ts[0], round, MaxBid+1, "protocol test"); e == nil {
+		if e := g.Submit(ts[0], round, g.gameConfig.InitialAssets+1, "protocol test"); e == nil {
 			t.Fatal("excess bid accepted")
 		}
 		for i, token := range ts {
@@ -214,7 +214,7 @@ func TestGeometryAndPriceRanges(t *testing.T) {
 			}
 			ids[i.ID] = true
 			valid := false
-			for _, q := range qualities {
+			for _, q := range g.gameConfig.Qualities {
 				if i.Quality == q.ID {
 					valid = i.Price >= q.Min && i.Price <= q.Max
 				}

@@ -93,11 +93,11 @@ func TestItemCountVariesEvenWithSameFilledRows(t *testing.T) {
 func TestRowTiling(t *testing.T) {
 	for _, cfg := range []Config{
 		DefaultConfig(),
-		{1, Dimensions{31, 7}, ItemLimits{7, 3}},
-		{1, Dimensions{1, 8}, ItemLimits{4, 4}},
-		{1, Dimensions{8, 1}, ItemLimits{4, 4}},
-		{1, Dimensions{1, 1}, ItemLimits{4, 4}},
-		{1, Dimensions{20, 30}, ItemLimits{1, 1}},
+		geometryConfig(Dimensions{31, 7}, ItemLimits{7, 3}),
+		geometryConfig(Dimensions{1, 8}, ItemLimits{4, 4}),
+		geometryConfig(Dimensions{8, 1}, ItemLimits{4, 4}),
+		geometryConfig(Dimensions{1, 1}, ItemLimits{4, 4}),
+		geometryConfig(Dimensions{20, 30}, ItemLimits{1, 1}),
 	} {
 		g, _ := New(2)
 		g.gameConfig, g.width, g.height = cfg, cfg.Box.Width, cfg.Box.Height
@@ -111,7 +111,7 @@ func TestRowTiling(t *testing.T) {
 }
 
 func TestRowTilingMaximumCapacity(t *testing.T) {
-	cfg := Config{1, Dimensions{64, 64}, ItemLimits{1, 1}}
+	cfg := geometryConfig(Dimensions{64, 64}, ItemLimits{1, 1})
 	g, _ := New(2)
 	g.gameConfig, g.width, g.height = cfg, cfg.Box.Width, cfg.Box.Height
 	items := g.tileRows(cfg.Box.Height)

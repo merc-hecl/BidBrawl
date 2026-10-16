@@ -1,5 +1,13 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "box": {"width": 20, "height": 30},
-  "items": {"max_width": 4, "max_height": 4}
+  "items": {"max_width": 4, "max_height": 4},
+  "qualities": [
+    {"id":"common","name":"普通","min_price":100,"max_price":300,"weight":45},
+    {"id":"uncommon","name":"优良","min_price":1000,"max_price":3000,"weight":30},
+    {"id":"rare","name":"稀有","min_price":10000,"max_price":30000,"weight":15},
+    {"id":"epic","name":"史诗","min_price":100000,"max_price":300000,"weight":8},
+    {"id":"legendary","name":"传说","min_price":1000000,"max_price":3000000,"weight":2}
+  ],
+  "initial_assets": 100000
 }

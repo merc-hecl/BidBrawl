@@ -2,6 +2,8 @@
 
 | Command | Purpose |
 |---|---|
+| `bidbrawl me` | Your account, assets and personal statistics; login required |
+| `bidbrawl leaderboard` | Global economic leaderboard; no login required |
 | `bidbrawl rooms` | Room list |
 | `bidbrawl results` | Settled games |
 | `bidbrawl stats` | Statistics across all settled games |
@@ -10,6 +12,20 @@
 | `bidbrawl replay -room ROOM_ID -frame N` | One frame: 0 is the start, followed by revealed rounds and settlement |
 
 Stats supports `-sort profit / rate / average / max_profit / max_loss` for cumulative payoff, return rate, average payoff per game, largest single-game profit or largest single-game loss. Return rate = cumulative payoff ÷ actual amount paid; it is undefined when payment is zero. Average payoff includes all games played, with 0 for games where the player did not receive the box.
+
+`me.stats` shares the WebUI player profile's metrics:
+
+| Field | Meaning |
+|---|---|
+| `games` | Settled games played, including games without receiving the box |
+| `profit` | Cumulative payoff |
+| `paid` | Actual cumulative amount paid |
+| `rate` | Return rate as a percentage; `null` when payment is zero |
+| `average` | Average payoff per game |
+| `max_profit` | Largest single-game profit, or 0 if none |
+| `max_loss` | Largest single-game loss as a negative number, or 0 if none |
+
+Use `leaderboard -sort profit / rate / average / max_profit / max_loss` to change ordering; cumulative payoff descending is the default. The response contains `sort`, global settled-game count `games`, and `rankings`. Each entry includes a sequential `rank` starting at 1, player ID, name, and the personal metrics above. Only players with settled games appear. Max loss sorts ascending (largest loss first); other metrics sort descending, undefined rates come last, and permanent account IDs break ties. The leaderboard contains no account assets, credentials, private clues or decision reasons.
 
 Use the permanent account ID for ACCOUNT_ID. Public replay contains only public information. Read your own historical reasons in state's `self.decisions`.
 

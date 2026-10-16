@@ -54,12 +54,12 @@ func run(ctx context.Context, args []string) error {
 }
 func runWithBrowser(ctx context.Context, args []string, launchBrowser func(string) error) error {
 	if len(args) == 0 {
-		fmt.Println("BidBrawl — 外部 Agent 驱动的暗拍\n命令: host | ui | register | accounts | rotate-credential | login | logout | me | rooms | create | invite | join | start | state | watch | results | stats | agent | replay | observer-login | config | cards | hints | card | bid | handbook\n用法: bidbrawl <命令> -h")
+		fmt.Println("BidBrawl — 外部 Agent 驱动的暗拍\n命令: host | ui | register | accounts | rotate-credential | login | logout | me | rooms | create | invite | join | start | state | watch | results | stats | leaderboard | agent | replay | observer-login | config | cards | hints | card | bid | handbook\n用法: bidbrawl <命令> -h")
 		return nil
 	}
 	command := args[0]
 	switch command {
-	case "host", "ui", "register", "accounts", "rotate-credential", "login", "logout", "me", "rooms", "create", "invite", "join", "start", "state", "watch", "results", "stats", "agent", "replay", "observer-login", "config", "cards", "hints", "card", "bid", "handbook":
+	case "host", "ui", "register", "accounts", "rotate-credential", "login", "logout", "me", "rooms", "create", "invite", "join", "start", "state", "watch", "results", "stats", "leaderboard", "agent", "replay", "observer-login", "config", "cards", "hints", "card", "bid", "handbook":
 	default:
 		return fmt.Errorf("unknown command: %s", command)
 	}
@@ -67,7 +67,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	if command == "host" {
 		listen := f.String("listen", "127.0.0.1:8787", "监听地址；局域网用 0.0.0.0:8787")
 		configPath := f.String("cards-config", "", "技能卡 JSON 配置路径；省略时使用内置配置")
-		gameConfigPath := f.String("game-config", "", "箱体行列数与物品占格上限 JSON 配置路径；省略时使用内置配置")
+		gameConfigPath := f.String("game-config", "", "游戏 JSON 配置路径：箱体、物品尺寸、品质价格与权重、新玩家初始资产；省略时使用内置配置")
 		hintsPath := f.String("hints-config", "", "公共提示插件 JSON 配置；省略时使用内置局部事实线索")
 		dataDir := f.String("data-dir", os.Getenv("BIDBRAWL_DATA_DIR"), "账号 / 房间 / 对局数据目录；默认用户配置目录下的 BidBrawl")
 		webUI := f.Bool("webui", false, "启用 WebUI 并自动打开浏览器；默认仅运行后端")
@@ -177,13 +177,16 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	waitTimeout := f.Duration("timeout", 0, "watch：总等待期限，例如 2m；0 表示持续订阅")
 	observer := f.Bool("observer", false, "state / replay / watch：使用人类只读观察权限")
 	observerToken := f.String("observer-token", os.Getenv("BIDBRAWL_OBSERVER_TOKEN"), "独立只读观察凭据；不得分发给参赛 Agent")
-	sortKey := f.String("sort", "profit", "stats：profit / rate / average / max_profit / max_loss")
+	sortKey := f.String("sort", "profit", "stats / leaderboard：profit / rate / average / max_profit / max_loss")
 	frame := f.Int("frame", 0, "replay：0 为开局，之后为已揭晓轮次，省略时输出完整复盘与所有帧")
 	if e := parseFlags(f, args[1:]); e != nil {
 		return e
 	}
 	explicit := map[string]bool{}
 	f.Visit(func(v *flag.Flag) { explicit[v.Name] = true })
+	if command == "me" && explicit["account"] {
+		return errors.New("me only queries the logged-in account; -account is not supported")
+	}
 	if *observer && command != "state" && command != "replay" && command != "watch" {
 		return errors.New("-observer is only used by state, replay and watch")
 	}
@@ -342,8 +345,8 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	switch command {
 	case "observer-login":
 		path = "/api/observer/login"
-	case "stats":
-		method, path = "GET", "/api/stats?sort="+neturl.QueryEscape(*sortKey)
+	case "stats", "leaderboard":
+		method, path = "GET", "/api/"+command+"?sort="+neturl.QueryEscape(*sortKey)
 	case "agent":
 		if *accountID == "" {
 			return errors.New("-account is required")

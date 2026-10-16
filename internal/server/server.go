@@ -25,8 +25,13 @@ import (
 var assets embed.FS
 
 type account struct {
-	ID   string `json:"account_id"`
-	Name string `json:"name"`
+	ID     string `json:"account_id"`
+	Name   string `json:"name"`
+	Assets int64  `json:"assets"`
+}
+type accountProfile struct {
+	account
+	Stats agentMetrics `json:"stats"`
 }
 type room struct {
 	id, name, owner string
@@ -76,7 +81,7 @@ func New(geometry game.Config, cfg cards.Config) *Server {
 }
 
 func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Config) *Server {
-	s := &Server{HostToken: secret(), UIToken: secret(), accounts: map[string]*account{}, accountsByID: map[string]*account{}, credentials: map[[32]byte]*account{}, credentialHashes: map[string][32]byte{}, sessions: map[string]*account{}, rooms: map[string]*room{}, cardConfig: cfg, gameConfig: geometry, hintConfig: hintConfig.Clone()}
+	s := &Server{HostToken: secret(), UIToken: secret(), accounts: map[string]*account{}, accountsByID: map[string]*account{}, credentials: map[[32]byte]*account{}, credentialHashes: map[string][32]byte{}, sessions: map[string]*account{}, rooms: map[string]*room{}, cardConfig: cfg, gameConfig: geometry.Clone(), hintConfig: hintConfig.Clone()}
 	s.subscribers = make(map[chan roomEvent]struct{})
 	s.deletedResults = make(map[string]roomResult)
 	s.ObserverToken = secret()
@@ -92,6 +97,7 @@ func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Confi
 	mux.HandleFunc("POST /api/rooms/manage", s.manageRooms)
 	mux.HandleFunc("GET /api/results", s.listResults)
 	mux.HandleFunc("GET /api/stats", s.stats)
+	mux.HandleFunc("GET /api/leaderboard", s.leaderboard)
 	mux.HandleFunc("GET /api/agents/{id}", s.agentStats)
 	mux.HandleFunc("GET /api/replay", s.replay)
 	mux.HandleFunc("GET /api/events", s.events)
@@ -211,7 +217,18 @@ func (s *Server) logout(w http.ResponseWriter, r *http.Request) {
 func (s *Server) me(w http.ResponseWriter, r *http.Request) {
 	a := s.requireActor(w, r)
 	if a != nil {
-		reply(w, 200, a)
+		s.mu.Lock()
+		defer s.mu.Unlock()
+		if s.sessions[token(r)] != a {
+			fail(w, 401, errors.New("login session required"))
+			return
+		}
+		stats, err := s.accountStatsLocked(a)
+		if err != nil {
+			fail(w, 500, err)
+			return
+		}
+		reply(w, 200, accountProfile{account: *a, Stats: stats})
 	}
 }
 func (s *Server) getRoom(w http.ResponseWriter, r *http.Request) *room {
@@ -344,6 +361,10 @@ func (s *Server) stateFor(w http.ResponseWriter, r *http.Request, observer bool)
 	}
 	var v map[string]any
 	_ = json.Unmarshal(b, &v)
+	if a != nil && t != "" {
+		self := v["self"].(map[string]any)
+		self["assets"], self["max_bid"] = a.Assets, a.Assets
+	}
 	v["room_id"] = rm.id
 	v["room_name"] = rm.name
 	v["owner_id"] = rm.owner
@@ -389,6 +410,20 @@ func (s *Server) join(w http.ResponseWriter, r *http.Request) {
 		fail(w, 409, errors.New("already joined this room; read state to resume"))
 		return
 	}
+	for _, other := range s.rooms {
+		if other.members[a.ID] == "" {
+			continue
+		}
+		view, err := publicView(other.game)
+		if err != nil {
+			roomFailure(w, err)
+			return
+		}
+		if view.Phase != "settled" {
+			fail(w, 409, errors.New("already joined an unfinished room: "+other.id))
+			return
+		}
+	}
 	var id string
 	if !s.mutateRoom(w, rm, func(next *room) error {
 		var t string
@@ -428,7 +463,11 @@ func (s *Server) start(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
-	if !s.mutateRoom(w, rm, func(next *room) error { return next.game.Start() }) {
+	balances := make(map[string]int64, len(rm.seatAccounts))
+	for seat, id := range rm.seatAccounts {
+		balances[seat] = s.accountsByID[id].Assets
+	}
+	if !s.mutateRoom(w, rm, func(next *room) error { return next.game.StartWithAssets(balances) }) {
 		return
 	}
 	reply(w, 200, map[string]bool{"ok": true})

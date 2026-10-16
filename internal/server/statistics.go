@@ -24,6 +24,15 @@ type statistics struct {
 	Rate   *float64       `json:"rate"`
 	Agents []agentMetrics `json:"agents"`
 }
+type rankedAgent struct {
+	Rank int `json:"rank"`
+	agentMetrics
+}
+type leaderboard struct {
+	Sort     string        `json:"sort"`
+	Games    int           `json:"games"`
+	Rankings []rankedAgent `json:"rankings"`
+}
 
 func profitRate(profit, paid int64) *float64 {
 	if paid == 0 {
@@ -102,6 +111,12 @@ func sortAgents(agents []agentMetrics, key string) error {
 	return nil
 }
 func (s *Server) stats(w http.ResponseWriter, r *http.Request) {
+	s.serveStatistics(w, r, false)
+}
+func (s *Server) leaderboard(w http.ResponseWriter, r *http.Request) {
+	s.serveStatistics(w, r, true)
+}
+func (s *Server) serveStatistics(w http.ResponseWriter, r *http.Request, ranked bool) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	results, err := s.resultsLocked()
@@ -118,7 +133,15 @@ func (s *Server) stats(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err)
 		return
 	}
-	reply(w, 200, out)
+	if ranked {
+		rows := make([]rankedAgent, 0, len(out.Agents))
+		for i, a := range out.Agents {
+			rows = append(rows, rankedAgent{Rank: i + 1, agentMetrics: a})
+		}
+		reply(w, 200, leaderboard{Sort: key, Games: out.Games, Rankings: rows})
+	} else {
+		reply(w, 200, out)
+	}
 }
 func (s *Server) agentStats(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
@@ -129,16 +152,24 @@ func (s *Server) agentStats(w http.ResponseWriter, r *http.Request) {
 		fail(w, 404, errors.New("agent not found"))
 		return
 	}
-	results, err := s.resultsLocked()
+	record, err := s.accountStatsLocked(a)
 	if err != nil {
 		fail(w, 500, err)
 		return
 	}
+	reply(w, 200, record)
+}
+
+// Caller holds s.mu. Self queries and WebUI profiles share the same metrics.
+func (s *Server) accountStatsLocked(a *account) (agentMetrics, error) {
+	results, err := s.resultsLocked()
+	if err != nil {
+		return agentMetrics{}, err
+	}
 	for _, record := range calculateStatistics(results).Agents {
-		if record.ID == "account:"+id {
-			reply(w, 200, record)
-			return
+		if record.ID == "account:"+a.ID {
+			return record, nil
 		}
 	}
-	reply(w, 200, agentMetrics{ID: "account:" + id, Name: a.Name})
+	return agentMetrics{ID: "account:" + a.ID, Name: a.Name}, nil
 }

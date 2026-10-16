@@ -5,6 +5,7 @@ import (
 	"errors"
 	"log"
 	"maps"
+	"math"
 	"net/http"
 	"time"
 
@@ -26,12 +27,21 @@ type roomRecord struct {
 	Game         json.RawMessage   `json:"game"`
 }
 
-func (s *persistentStore) saveRoom(rm *room) error {
+func (s *persistentStore) saveRoom(rm *room, accounts ...identityRecord) error {
 	record, err := encodeRoom(rm)
 	if err != nil {
 		return err
 	}
 	return s.db.Update(func(tx *bolt.Tx) error {
+		for _, a := range accounts {
+			data, err := json.Marshal(a)
+			if err != nil {
+				return err
+			}
+			if err := tx.Bucket(identityBucket).Put([]byte(a.ID), data); err != nil {
+				return err
+			}
+		}
 		return tx.Bucket(roomBucket).Put([]byte(rm.id), record)
 	})
 }
@@ -97,8 +107,9 @@ func roomFailure(w http.ResponseWriter, err error) {
 	fail(w, 500, errors.New("could not persist room state"))
 }
 
-// Caller holds s.mu. Persistent rooms use a private candidate: readers cannot
-// see uncommitted bids/settlements, and failed writes leave the live state intact.
+// Caller holds s.mu. Room mutations use a private candidate: readers cannot
+// see uncommitted bids/settlements. Account assets and settlement commit together;
+// failed writes leave both the live room and account unchanged.
 func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) error) bool {
 	if !s.roomExists(w, rm) {
 		return false
@@ -117,22 +128,19 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 		roomFailure(w, err)
 		return false
 	}
-	next := rm
-	if s.store != nil {
-		snapshot, err := rm.game.Snapshot()
-		if err != nil {
-			roomFailure(w, err)
-			return false
-		}
-		g, err := game.Restore(snapshot)
-		if err != nil {
-			roomFailure(w, err)
-			return false
-		}
-		copy := *rm
-		copy.game, copy.members, copy.seatAccounts = g, maps.Clone(rm.members), maps.Clone(rm.seatAccounts)
-		next = &copy
+	snapshot, err := rm.game.Snapshot()
+	if err != nil {
+		roomFailure(w, err)
+		return false
 	}
+	g, err := game.Restore(snapshot)
+	if err != nil {
+		roomFailure(w, err)
+		return false
+	}
+	copy := *rm
+	copy.game, copy.members, copy.seatAccounts = g, maps.Clone(rm.members), maps.Clone(rm.seatAccounts)
+	next := &copy
 	if err := change(next); err != nil {
 		fail(w, 409, err)
 		return false
@@ -150,12 +158,33 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 	if view.Phase == "settled" && next.settledAt.IsZero() {
 		next.settledAt = time.Now().UTC()
 	}
+	var winner *account
+	var updated account
+	var accounts []identityRecord
+	if before.Phase != "settled" && view.Phase == "settled" {
+		winner = s.accountsByID[next.seatAccounts[view.Settlement.WinnerID]]
+		if winner == nil {
+			roomFailure(w, errors.New("missing settlement account"))
+			return false
+		}
+		updated = *winner
+		profit := view.Settlement.Profit
+		if profit > 0 && updated.Assets > math.MaxInt64-profit || profit < 0 && updated.Assets < -profit {
+			fail(w, 409, errors.New("invalid resulting account assets"))
+			return false
+		}
+		updated.Assets += profit
+		accounts = append(accounts, identityFor(&updated, s.credentialHashes[updated.ID]))
+	}
 	if s.store != nil {
-		if err := s.store.saveRoom(next); err != nil {
+		if err := s.store.saveRoom(next, accounts...); err != nil {
 			roomFailure(w, err)
 			return false
 		}
-		*rm = *next
+	}
+	*rm = *next
+	if winner != nil {
+		winner.Assets = updated.Assets
 	}
 	s.publishRoomChange(rm.id, before, view)
 	afterObserver, _ := rm.game.ObserveObserver()

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"path/filepath"
+	"reflect"
 	"sync"
 	"testing"
 
@@ -59,7 +60,7 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/start"+suffix, b, "", 403)
 	checkedRequest(t, s, "POST", "/api/start"+suffix, a, "", 200)
 	checkedRequest(t, s, "POST", "/api/card"+suffix, a, `{"reason":"protocol test","round":1,"card":"largest_price"}`, 200)
-	private := checkedRequest(t, s, "POST", "/api/bid"+suffix, a, `{"reason":"protocol test","round":1,"amount":777777}`, 200)
+	private := checkedRequest(t, s, "POST", "/api/bid"+suffix, a, `{"reason":"protocol test","round":1,"amount":77777}`, 200)
 	public := checkedRequest(t, s, "GET", "/api/state"+suffix, "", "", 200)
 	var avatarView game.View
 	if err := json.Unmarshal(public, &avatarView); err != nil {
@@ -71,7 +72,7 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	if *avatarView.Players[0].Avatar != *lobbyView.Players[0].Avatar {
 		t.Fatal("later join or start changed the first player's avatar")
 	}
-	for _, forbidden := range []string{`"self":`, `"amount":777777`, `"decisions":`, `"reason":"protocol test"`, `"settlement":`} {
+	for _, forbidden := range []string{`"self":`, `"amount":77777`, `"decisions":`, `"reason":"protocol test"`, `"settlement":`} {
 		if bytes.Contains(public, []byte(forbidden)) {
 			t.Fatalf("public state leaked sealed or private data: %s", forbidden)
 		}
@@ -86,7 +87,7 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	}
 	checkedRequest(t, s, "POST", "/api/bid"+suffix, a, `{"reason":"protocol test","round":1,"amount":1}`, 409)
 	checkedRequest(t, s, "POST", "/api/card"+suffix, a, `{"reason":"protocol test","round":1,"card":"largest_price"}`, 409)
-	checkedRequest(t, s, "POST", "/api/bid"+suffix, b, `{"reason":"protocol test","round":1,"amount":600000}`, 200)
+	checkedRequest(t, s, "POST", "/api/bid"+suffix, b, `{"reason":"protocol test","round":1,"amount":60000}`, 200)
 	for round := 2; round <= game.Rounds; round++ {
 		for _, token := range []string{a, b} {
 			checkedRequest(t, s, "POST", "/api/bid"+suffix, token, fmt.Sprintf(`{"reason":"protocol test","round":%d,"amount":100}`, round), 200)
@@ -238,7 +239,10 @@ func TestConcurrentBidsPersistTogether(t *testing.T) {
 
 func TestRestoredRoomsKeepRulesWhenHostDefaultsChange(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "accounts.db")
-	geometry := game.Config{SchemaVersion: 1, Box: game.Dimensions{Width: 7, Height: 5}, Items: game.ItemLimits{MaxWidth: 2, MaxHeight: 3}}
+	geometry := game.DefaultConfig()
+	geometry.Box, geometry.Items = game.Dimensions{Width: 7, Height: 5}, game.ItemLimits{MaxWidth: 2, MaxHeight: 3}
+	geometry.Qualities[0].Min, geometry.Qualities[0].Max = 11, 19
+	geometry.InitialAssets = 7654321
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit"}, Cards: []cards.Definition{{ID: "audit", Name: "Audit", Description: "Custom count", Effect: cards.Effect{Type: "count"}}}}
 	g, err := game.NewWithConfig(2, geometry, cfg)
 	if err != nil {
@@ -272,7 +276,7 @@ func TestRestoredRoomsKeepRulesWhenHostDefaultsChange(t *testing.T) {
 	_ = json.Unmarshal(created, &roomInfo)
 	var view game.View
 	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state?room="+roomInfo["room_id"].(string), "", "", 200), &view)
-	if view.Rules.PlayerCount != 3 || view.Rules.GameConfig != game.DefaultConfig() || view.Rules.Cards[0].ID == "audit" {
+	if view.Rules.PlayerCount != 3 || !reflect.DeepEqual(view.Rules.GameConfig, game.DefaultConfig()) || view.Rules.Cards[0].ID == "audit" {
 		t.Fatal("new rooms did not inherit new host defaults")
 	}
 }

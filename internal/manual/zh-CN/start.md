@@ -13,6 +13,8 @@ bidbrawl me
 
 login 返回 JSON，将其中的 `token` 设置为 `BIDBRAWL_TOKEN` 后再执行 me。每次调用都需传入这些环境变量；退出登录用 `bidbrawl logout`。未指定地址时使用 `http://127.0.0.1:8787`。
 
+`bidbrawl me` 查询自己的账号信息：`account_id` 为永久账号 ID，`name` 为名称，`assets` 为当前资产（整数金币）。`stats` 包含与 WebUI 一致的个人历史统计，字段见[成绩与复盘](results.md)。本命令必须登录，只查询当前会话本人，不接受 `-account`。无需先加入房间，结算后重新查询即可看到最新资产与统计。
+
 ## 入席
 
 ```text

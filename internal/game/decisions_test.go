@@ -3,9 +3,26 @@ package game
 import (
 	"bytes"
 	"encoding/json"
+	"math"
 	"strings"
 	"testing"
 )
+
+func TestEarlySettlementWithLargeAssetBalances(t *testing.T) {
+	for _, test := range []struct {
+		high, second int64
+		want         bool
+	}{
+		{math.MaxInt64, math.MaxInt64 - 1, false},
+		{math.MaxInt64, math.MaxInt64 / 2, true},
+		{math.MaxInt64 - 2, math.MaxInt64 / 2, false},
+	} {
+		got := EarlySettlement(RoundResult{Round: 1, Bids: []Bid{{"p1", test.high}, {"p2", test.second}}})
+		if got != test.want {
+			t.Fatalf("large asset threshold: %d/%d got %v", test.high, test.second, got)
+		}
+	}
+}
 
 func TestInstantSettlementThresholdsAndPersistence(t *testing.T) {
 	for _, sample := range []struct {
@@ -14,7 +31,7 @@ func TestInstantSettlementThresholdsAndPersistence(t *testing.T) {
 		instant      bool
 	}{
 		{1, 199, 100, false}, {1, 200, 100, true}, {2, 169, 100, false}, {2, 170, 100, true},
-		{3, 149, 100, false}, {3, 150, 100, true}, {4, 1000000, 1, false}, {5, 100, 100, false},
+		{3, 149, 100, false}, {3, 150, 100, true}, {4, 100000, 1, false}, {5, 100, 100, false},
 		{1, 1, 0, true}, {1, 0, 0, false},
 	} {
 		g, tokens := fixture(t, 2)

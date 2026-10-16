@@ -66,6 +66,14 @@ func Catalog(cfg cards.Config, geometry game.Config, lang string) string {
 			b.WriteString("\n本配置没有可用技能卡。\n")
 		}
 	}
+	if lang == "en" {
+		fmt.Fprintf(&b, "\n## Prices and assets\n\nNew accounts receive %d coins once. Account assets are stored directly and updated at settlement. Your bid limit is self.max_bid (your current total assets). Only one unfinished room per account, including waiting rooms.\n\n| Quality ID | Price range (coins) | Generation weight |\n|---|---|---|\n", geometry.InitialAssets)
+	} else {
+		fmt.Fprintf(&b, "\n## 品质价格与资产\n\n新账号一次性获得 %d 金币。账号直接保存当前资产，成交时更新；报价上限见 self.max_bid（本人当前总资产）。同一账号同时只能加入一个未结算房间，包括等候中的房间。\n\n| 品质 ID | 单件价格范围（金币） | 生成权重 |\n|---|---|---|\n", geometry.InitialAssets)
+	}
+	for _, q := range geometry.Qualities {
+		fmt.Fprintf(&b, "| %s | %d–%d | %d%% |\n", q.ID, q.Min, q.Max, q.Weight)
+	}
 	return b.String()
 }
 

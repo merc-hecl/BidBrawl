@@ -40,9 +40,15 @@ func responseStrings(t *testing.T, code int, body []byte, expected int) map[stri
 	if code != expected {
 		t.Fatalf("HTTP %d, expected %d", code, expected)
 	}
-	var response map[string]string
-	if err := json.Unmarshal(body, &response); err != nil {
+	var fields map[string]any
+	if err := json.Unmarshal(body, &fields); err != nil {
 		t.Fatal(err)
+	}
+	response := map[string]string{}
+	for key, value := range fields {
+		if text, ok := value.(string); ok {
+			response[key] = text
+		}
 	}
 	return response
 }

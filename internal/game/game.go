@@ -18,7 +18,6 @@ import (
 )
 
 const Rounds = 5
-const MaxBid int64 = 1_000_000
 const InitialInspectionCount = 3
 
 // Point is an integer grid boundary: x counts columns, y counts rows.
@@ -44,8 +43,6 @@ type Quality struct {
 	Max    int64  `json:"max_price"`
 	Weight int    `json:"weight"`
 }
-
-var qualities = []Quality{{"common", "普通", 20, 100, 45}, {"uncommon", "优良", 101, 300, 30}, {"rare", "稀有", 301, 800, 15}, {"epic", "史诗", 801, 2000, 8}, {"legendary", "传说", 2001, 5000, 2}}
 
 type Hint struct {
 	Round  int            `json:"round"`
@@ -76,6 +73,7 @@ type Self struct {
 	CardUsedThisRound bool             `json:"card_used_this_round"`
 	MinBid            int64            `json:"min_bid"`
 	MaxBid            int64            `json:"max_bid"`
+	Assets            int64            `json:"assets"`
 	Decisions         []Decision       `json:"decisions"`
 	InitialInspection []InspectionItem `json:"initial_inspection"`
 	ItemReveals       []ItemReveal     `json:"item_reveals"`
@@ -127,7 +125,6 @@ type Rules struct {
 	CoordinateUnit         string             `json:"coordinate_unit"`
 	GameConfig             Config             `json:"game_config"`
 	PlayerCount            int                `json:"player_count"`
-	MaxBid                 int64              `json:"max_bid"`
 	Qualities              []Quality          `json:"qualities"`
 	Cards                  []cards.Definition `json:"cards"`
 	CardsSchemaVersion     int                `json:"cards_schema_version"`
@@ -160,6 +157,7 @@ type player struct {
 	revision        int
 	avatar          *int
 	inspection      []InspectionItem
+	assets          int64
 }
 type Game struct {
 	mu                                        sync.Mutex
@@ -204,13 +202,13 @@ func NewWithHints(maxPlayers int, geometry Config, cfg cards.Config, hintConfig 
 	if err := hintConfig.Validate(); err != nil {
 		return nil, err
 	}
-	return &Game{maxPlayers: maxPlayers, width: geometry.Box.Width, height: geometry.Box.Height, phase: "lobby", version: 1, players: []*player{}, hints: []Hint{}, history: []RoundResult{}, decisions: []Decision{}, cardConfig: cfg.Clone(), gameConfig: geometry, hintConfig: hintConfig.Clone()}, nil
+	return &Game{maxPlayers: maxPlayers, width: geometry.Box.Width, height: geometry.Box.Height, phase: "lobby", version: 1, players: []*player{}, hints: []Hint{}, history: []RoundResult{}, decisions: []Decision{}, cardConfig: cfg.Clone(), gameConfig: geometry.Clone(), hintConfig: hintConfig.Clone()}, nil
 }
 
 func (g *Game) GameConfig() Config {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	return g.gameConfig
+	return g.gameConfig.Clone()
 }
 
 func (g *Game) CardConfig() cards.Config {
@@ -273,12 +271,15 @@ func (g *Game) Join(name string, deck []string) (string, string, error) {
 		}
 	}
 	avatar := available[random(len(available))]
-	p := &player{id: fmt.Sprintf("p%d", len(g.players)+1), name: name, token: secret(), deck: append([]string{}, deck...), used: []string{}, hints: []Hint{}, avatar: &avatar}
+	p := &player{id: fmt.Sprintf("p%d", len(g.players)+1), name: name, token: secret(), deck: append([]string{}, deck...), used: []string{}, hints: []Hint{}, avatar: &avatar, assets: g.gameConfig.InitialAssets}
 	g.players = append(g.players, p)
 	g.version++
 	return p.id, p.token, nil
 }
-func (g *Game) Start() error {
+func (g *Game) Start() error { return g.StartWithAssets(nil) }
+
+// StartWithAssets fixes each seat's account balance for this auction.
+func (g *Game) StartWithAssets(balances map[string]int64) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	if g.phase != "lobby" {
@@ -286,6 +287,17 @@ func (g *Game) Start() error {
 	}
 	if len(g.players) != g.maxPlayers {
 		return fmt.Errorf("waiting for all %d configured players", g.maxPlayers)
+	}
+	if balances != nil {
+		if len(balances) != len(g.players) {
+			return errors.New("missing player assets")
+		}
+		for _, p := range g.players {
+			balance, ok := balances[p.id]
+			if !ok || balance < 0 {
+				return errors.New("invalid player assets")
+			}
+		}
 	}
 	// Generate both clues before changing live state. Plugin failure leaves the
 	// lobby untouched; future clues remain private until their scheduled round.
@@ -295,6 +307,11 @@ func (g *Game) Start() error {
 		return err
 	}
 	g.items, g.plannedHints = items, planned
+	if balances != nil {
+		for _, p := range g.players {
+			p.assets = balances[p.id]
+		}
+	}
 	// A fresh partial Fisher-Yates shuffle gives each player the same per-item
 	// inclusion probability without letting earlier players consume the pool.
 	for _, p := range g.players {
@@ -321,8 +338,8 @@ func (g *Game) generate() []Item {
 		i := &items[index]
 		i.ID = secret()[:16]
 		v := random(100)
-		q := qualities[0]
-		for _, candidate := range qualities {
+		q := g.gameConfig.Qualities[0]
+		for _, candidate := range g.gameConfig.Qualities {
 			v -= candidate.Weight
 			if v < 0 {
 				q = candidate
@@ -425,7 +442,7 @@ func (g *Game) cardEffect(effect cards.Effect) map[string]any {
 			return map[string]any{"count": len(g.items)}
 		}
 		counts := map[string]int{}
-		for _, q := range qualities {
+		for _, q := range g.gameConfig.Qualities {
 			counts[q.ID] = 0
 		}
 		for _, i := range g.items {
@@ -506,8 +523,8 @@ func (g *Game) Submit(token string, round int, amount int64, reason string) erro
 	if g.phase != "bidding" || g.round != round {
 		return errors.New("not the current bidding round")
 	}
-	if amount < 0 || amount > MaxBid {
-		return fmt.Errorf("bid must be an integer between 0 and %d", MaxBid)
+	if amount < 0 || amount > p.assets {
+		return fmt.Errorf("bid must be an integer between 0 and your total assets (%d)", p.assets)
 	}
 	if p.bid != nil {
 		return errors.New("already bid this round")
@@ -554,7 +571,7 @@ func EarlySettlement(r RoundResult) bool {
 			second = b.Amount
 		}
 	}
-	return high > 0 && high > second && high*10 >= second*numerator
+	return high > 0 && high > second && new(big.Int).Mul(big.NewInt(high), big.NewInt(10)).Cmp(new(big.Int).Mul(big.NewInt(second), big.NewInt(numerator))) >= 0
 }
 func (g *Game) settle(r RoundResult) {
 	var high int64 = -1
@@ -597,8 +614,8 @@ func (g *Game) ObserveObserver() ([]byte, error) {
 }
 func (g *Game) observe(token string, observer bool) ([]byte, error) {
 	v := View{Version: g.version, Phase: g.phase, Round: g.round, Players: []PlayerInfo{}, PublicHints: g.hints, History: g.history, Settlement: g.settlement,
-		Rules: Rules{Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig, PlayerCount: g.maxPlayers, MaxBid: MaxBid, Qualities: qualities, Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck, PublicHintPlugins: g.hintConfig.IDs(),
-			Description: "Bid on a hidden box with 2–7 players over up to 5 rounds. All bids are revealed together. In rounds 1/2/3, a unique positive highest bid settles at >= 2x/1.7x/1.5x the second-highest bid. Round 4 continues; round 5 settles at the highest bid, with uniform random choice among ties, including all-zero bids. The winner pays that round's bid and receives the box; payoff is total value minus price, others receive 0. Public clues appear in rounds 1 and 3. Before bidding, optionally use one carried, unused card; results are private. Each card/bid requires a reason. Read state for the current round and your submitted bid; watch for updates. See bidbrawl handbook for commands."}}
+		Rules: Rules{Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig.Clone(), PlayerCount: g.maxPlayers, Qualities: append([]Quality{}, g.gameConfig.Qualities...), Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck, PublicHintPlugins: g.hintConfig.IDs(),
+			Description: "Bid on a hidden box with 2–7 players over up to 5 rounds. All bids are revealed together. In rounds 1/2/3, a unique positive highest bid settles at >= 2x/1.7x/1.5x the second-highest bid. Round 4 continues; round 5 settles at the highest bid, with uniform random choice among ties, including all-zero bids. The winner pays that round's bid and receives the box; payoff is total value minus price, others receive 0. Public clues appear in rounds 1 and 3. Before bidding, optionally use one carried, unused card; results are private. Each card/bid requires a reason. Read state for the current round and your submitted bid; watch for updates. Bids cannot exceed your current account assets, updated at settlement. An account may join only one unfinished room at a time, including waiting rooms. See bidbrawl handbook for commands."}}
 	v.Rules.EarlyMultipliers = []float64{2, 1.7, 1.5, 0, 0}
 	v.Rules.InitialInspectionCount = InitialInspectionCount
 	v.Rules.Description += " At start, every player independently samples min(initial_inspection_count, item count) distinct items uniformly without replacement. Each item has the same inclusion probability for every player regardless of quality; players may sample overlapping items. Your self.initial_inspection contains only sampled item IDs, shapes and qualities, never prices."
@@ -636,7 +653,11 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		v.Self = &Self{p.id, p.deck, p.used, p.hints, p.bid, p.cardRound == g.round, 0, MaxBid, own, p.inspection, reveals}
+		balance := p.assets
+		if g.settlement != nil {
+			balance += g.settlement.Payoffs[p.id]
+		}
+		v.Self = &Self{ID: p.id, Deck: p.deck, Used: p.used, Hints: p.hints, Bid: p.bid, CardUsedThisRound: p.cardRound == g.round, MaxBid: balance, Assets: balance, Decisions: own, InitialInspection: p.inspection, ItemReveals: reveals}
 	}
 	return json.Marshal(v)
 }
