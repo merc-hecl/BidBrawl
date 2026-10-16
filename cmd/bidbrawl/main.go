@@ -90,10 +90,6 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 			}
 			geometry = loaded
 		}
-		databasePath, e := identityDBPath(*dataDir)
-		if e != nil {
-			return e
-		}
 		hintConfig := hints.Default()
 		if *hintsPath != "" {
 			loaded, err := hints.Load(*hintsPath)
@@ -101,6 +97,10 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 				return err
 			}
 			hintConfig = loaded
+		}
+		databasePath, e := identityDBPath(*dataDir)
+		if e != nil {
+			return e
 		}
 		s, e := server.OpenWithHints(geometry, cfg, hintConfig, databasePath)
 		if e != nil {

@@ -40,7 +40,11 @@ func Load(path string) (Config, error) {
 		return Config{}, err
 	}
 	defer f.Close()
-	return Parse(f)
+	cfg, err := Parse(f)
+	if err != nil {
+		return Config{}, fmt.Errorf("hints config %s: %w", path, err)
+	}
+	return cfg, nil
 }
 
 func Parse(r io.Reader) (Config, error) {

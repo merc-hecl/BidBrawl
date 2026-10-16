@@ -104,19 +104,19 @@ func (c Config) Validate() error {
 		return errors.New("qualities must contain each of the five supported tiers exactly once")
 	}
 	weight := 0
-	for _, q := range c.Qualities {
+	for i, q := range c.Qualities {
 		seen, known := ids[q.ID]
 		if !known || seen || strings.TrimSpace(q.Name) == "" || len([]rune(q.Name)) > 32 {
-			return errors.New("invalid or duplicate quality ID or name")
+			return fmt.Errorf("qualities[%d]: invalid or duplicate quality ID or name", i)
 		}
 		ids[q.ID] = true
 		if q.Min < 0 || q.Max < q.Min || q.Max > 1_000_000_000 || q.Weight < 0 || q.Weight > 100 {
-			return errors.New("quality prices must satisfy 0 <= min_price <= max_price <= 1000000000; weight must be 0 to 100")
+			return fmt.Errorf("qualities[%d]: prices must satisfy 0 <= min_price <= max_price <= 1000000000; weight must be 0 to 100", i)
 		}
 		weight += q.Weight
 	}
 	if weight != 100 {
-		return errors.New("quality weights must add up to 100")
+		return errors.New("qualities[].weight must add up to 100")
 	}
 	return nil
 }
