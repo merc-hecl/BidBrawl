@@ -116,24 +116,11 @@ func mustSnapshot(t *testing.T, g *Game) []byte {
 func TestCatalogIsDataDrivenAndInvalidFilesFail(t *testing.T) {
 	cfg := DefaultConfig()
 	catalog := Catalog(cfg)
-	if len(catalog) != 1008 {
-		t.Fatal("catalog incomplete")
+	if err := cfg.Validate(); err != nil {
+		t.Fatal(err)
 	}
-	// A category-only outline must retain uncertainty about quality and price.
-	for _, item := range catalog {
-		if item.Category == "easter_egg" {
-			continue
-		}
-		ambiguous := false
-		for _, other := range catalog {
-			if item.Category == other.Category && item.Width == other.Width && item.Height == other.Height && item.Quality != other.Quality {
-				ambiguous = true
-				break
-			}
-		}
-		if !ambiguous {
-			t.Fatalf("category and footprint uniquely identify quality: %s", item.ID)
-		}
+	if len(catalog) != len(builtinCatalog.Items) {
+		t.Fatal("default limits exclude built-in templates")
 	}
 	g, _ := New(2)
 	items := g.generate()

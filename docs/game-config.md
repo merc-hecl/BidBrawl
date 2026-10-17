@@ -1,10 +1,12 @@
 # 游戏与物品配置
 
-物品模板可选 `translations`，按语言代码提供名称，例如 `"translations": {"en": "Collector's glass bottle"}`。WebUI 图鉴按当前语言显示该字段；没有对应翻译时保留 `name`。内置物品的英文名同样存放于目录 JSON，不在界面代码中维护。
+物品模板可选 `translations`，按语言代码提供名称，例如 `"translations": {"en": "Cut-crystal decanter"}`。WebUI 图鉴按当前语言显示该字段；没有对应翻译时保留 `name`。内置物品的英文名同样存放于目录 JSON，不在界面代码中维护。
 
 `-game-config` 加载尺寸、品质区间、权重、初始资金、门票与专长；默认配置见 internal/game/default.json，离线导出用 `bidbrawl config -defaults`。初始现金 300000，只影响新注册账号。五档价格为 100–300 / 400–1200 / 1500–4500 / 6000–12000 / 18000–40000，权重 45/30/15/8/2。
 
-物品目录独立存放于 internal/game/items.json，含 categories、warehouses、items。宿主 `-items-config PATH` 可替换物品模板列表（使用现有20个常规品类及彩蛋、五档品质）；也可在 game-config 的 catalog 数组中配置模板。每档至少有一个常规 1×1 模板，确保任意剩余空间可填充。当前内置1000个常规模板及8个彩蛋模板。字段为 id、name、category、quality、width、height、value_percent，可选 tags（如 clock）。后者是该档价格区间内 0–100 的位置，回收价 = min_price + floor((max_price-min_price)×value_percent/100)。原始目录不使用市场价；实际价格由 catalog / state.rules.catalog 展示。无立绘依赖。
+物品目录独立存放于 internal/game/items.json，含 categories、warehouses、items。宿主 `-items-config PATH` 可替换物品模板列表（使用现有20个常规品类及彩蛋、五档品质）；也可在 game-config 的 catalog 数组中配置模板。每档至少有一个常规 1×1 模板，确保任意剩余空间可填充。当前内置560个独立常规模板及8个彩蛋模板。字段为 id、name、category、quality、width、height、value_percent，可选 tags（如 clock）。后者是该档价格区间内 0–100 的位置，回收价 = min_price + floor((max_price-min_price)×value_percent/100)。原始目录不使用市场价；实际价格由 catalog / state.rules.catalog 展示。无立绘依赖。
+
+每件具体物品只有一个固定品质，名称以材料、用途、型号、工艺或来源区分，不给同一原型套五档通用品质前缀。品质是本游戏的回收价值档位，不是现实鉴定评级；附来源记录、签名或证书的名称属于游戏内设定。尺寸按收纳占格表达，卷轴、折叠件、成套物品按存放状态设计，不是实际长度比例。常见轮廓跨品质保留多种候选，类别与尺寸可以进一步缩小范围，独特组合允许直接定位；不再强制每个类别的每种尺寸都有五档版本。各档模板数量不决定品质出现率，仍先按配置权重抽品质，再选可放入的物品。
 
 生成时先选占用行数，按原 skyline 顺序找到可填位置，再按品质权重抽档、从可放入的该档模板中抽取。主题对应品类在候选池中权重三倍；其余品类仍可能出现。固定模板决定形状与价值，不再先生成任意矩形再贴物品名称。所有占用行完整覆盖、底部可留空。目录和规则随房间快照保存，重启不会重抽。
 
