@@ -1,5 +1,7 @@
 # 游戏与物品配置
 
+物品模板可选 `translations`，按语言代码提供名称，例如 `"translations": {"en": "Collector's glass bottle"}`。WebUI 图鉴按当前语言显示该字段；没有对应翻译时保留 `name`。内置物品的英文名同样存放于目录 JSON，不在界面代码中维护。
+
 `-game-config` 加载尺寸、品质区间、权重、初始资金、门票与专长；默认配置见 internal/game/default.json，离线导出用 `bidbrawl config -defaults`。初始现金 300000，只影响新注册账号。五档价格为 100–300 / 400–1200 / 1500–4500 / 6000–12000 / 18000–40000，权重 45/30/15/8/2。
 
 物品目录独立存放于 internal/game/items.json，含 categories、warehouses、items。宿主 `-items-config PATH` 可替换物品模板列表（使用现有20个常规品类及彩蛋、五档品质）；也可在 game-config 的 catalog 数组中配置模板。每档至少有一个常规 1×1 模板，确保任意剩余空间可填充。当前内置1000个常规模板及8个彩蛋模板。字段为 id、name、category、quality、width、height、value_percent，可选 tags（如 clock）。后者是该档价格区间内 0–100 的位置，回收价 = min_price + floor((max_price-min_price)×value_percent/100)。原始目录不使用市场价；实际价格由 catalog / state.rules.catalog 展示。无立绘依赖。

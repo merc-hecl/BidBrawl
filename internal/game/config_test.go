@@ -10,6 +10,20 @@ import (
 	"bidbrawl/internal/cards"
 )
 
+func TestCatalogTranslationsAreDataAndCloneIndependently(t *testing.T) {
+	cfg := DefaultConfig()
+	for _, item := range Catalog(cfg) {
+		if item.Translations["en"] == "" {
+			t.Fatalf("missing catalog translation: %s", item.ID)
+		}
+	}
+	cloned := cfg.Clone()
+	cloned.Catalog[0].Translations["en"] = "Changed clone"
+	if cfg.Catalog[0].Translations["en"] == "Changed clone" {
+		t.Fatal("catalog translation map aliases its clone")
+	}
+}
+
 func geometryConfig(box Dimensions, items ItemLimits) Config {
 	cfg := DefaultConfig()
 	cfg.Box, cfg.Items = box, items

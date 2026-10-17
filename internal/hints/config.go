@@ -129,3 +129,17 @@ func (c Config) IDs() []string {
 	}
 	return ids
 }
+
+// Definitions exposes clue capabilities without local executable paths or arguments.
+type Definition struct {
+	ID      string `json:"id"`
+	Builtin string `json:"builtin,omitempty"`
+}
+
+func (c Config) Definitions() []Definition {
+	out := make([]Definition, 0, len(c.Plugins))
+	for _, p := range c.Plugins {
+		out = append(out, Definition{ID: p.ID, Builtin: p.Builtin})
+	}
+	return out
+}

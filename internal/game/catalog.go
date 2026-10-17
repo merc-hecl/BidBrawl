@@ -16,16 +16,17 @@ type Category struct {
 	Name string `json:"name"`
 }
 type ItemTemplate struct {
-	ID           string   `json:"id"`
-	Name         string   `json:"name"`
-	Category     string   `json:"category"`
-	Quality      string   `json:"quality"`
-	Width        int      `json:"width"`
-	Height       int      `json:"height"`
-	Price        int64    `json:"price"`
-	ValuePercent int      `json:"value_percent"`
-	FixedPrice   int64    `json:"fixed_price,omitempty"`
-	Tags         []string `json:"tags,omitempty"`
+	Translations map[string]string `json:"translations,omitempty"`
+	ID           string            `json:"id"`
+	Name         string            `json:"name"`
+	Category     string            `json:"category"`
+	Quality      string            `json:"quality"`
+	Width        int               `json:"width"`
+	Height       int               `json:"height"`
+	Price        int64             `json:"price"`
+	ValuePercent int               `json:"value_percent"`
+	FixedPrice   int64             `json:"fixed_price,omitempty"`
+	Tags         []string          `json:"tags,omitempty"`
 }
 type Warehouse struct {
 	ID              string `json:"id"`

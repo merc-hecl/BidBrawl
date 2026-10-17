@@ -9,15 +9,20 @@ import {patchContent} from './patch.js';
 import {restoreSession} from './session.js';
 import {archivedDirectory,deleteRoomsDialog,roomNotice} from './room-management.js';
 import {syncCanvas,canvasAction} from './canvas.js';
+import {renderHandbook,newHandbookState,hostReference} from './handbook.js';
 
 const $=id=>document.getElementById(id);
 const text=(id,value)=>{const node=$(id),next=String(value);if(node.textContent!==next)node.textContent=next;};
 const initialRoom=new URLSearchParams(location.search).get('room')||'';
 const initialPage=new URLSearchParams(location.search).get('page');
+const book=newHandbookState(new URLSearchParams(location.search).get('section'));
 const ui={room:initialRoom,roomGroup:null,page:initialRoom?'room':['history','stats','archives'].includes(initialPage)?initialPage:'rooms',cursor:null,sort:'profit',quality:'all',search:'',observer:false,manage:false,focusPlayer:null,focusItem:null,inspector:null,activityTab:'actions',actionRound:null,actionFilter:'all',actionID:null,roomMenu:null,bulkMode:false,selectedRooms:new Set(),roomBusy:false,roomError:'',deleteTargets:[],notice:null};
 let source=null,rooms=[],results={games:0,profit:0,paid:0,rate:null,agents:[]},connection='connecting',resultsFailed=false;
 let lastContent='',lastRooms='',lastContentObserver=false;
 let managing=false,activeDialog=null,closeDirectoryOnLoad=false;
+let reference=null,referencePending=false,referenceFailed=false;
+ui.book=book;ui.bookRoom=initialPage==='handbook'?initialRoom:'';
+if(initialPage==='handbook')ui.page='handbook';
 const dialog=document.querySelector('dialog');
 setLocale(initialLocale(),false);
 
@@ -55,7 +60,9 @@ function redraw() {
   const side=roomButtons(rooms,ui.room,ui.roomGroup||'active');
   if(lastRooms!==side){patchContent($('rooms'),side);lastRooms=side;}
   // Keep the rendered room intact until its replacement snapshot arrives.
-  const html=contentPending&&lastContentObserver===ui.observer?lastContent:(ui.page==='rooms'?roomDirectory(rooms,ui):ui.page==='archives'?archivedDirectory(rooms,ui):ui.page==='history'?historyDirectory(rooms):renderContent(source,results,ui))+roomNotice(ui.notice,ui);
+  const bookRules=ui.bookRoom?(source?.room_id===ui.bookRoom?source.rules:null):reference;
+  const bookFailed=ui.bookRoom?connection==='disconnected':referenceFailed;
+  const html=contentPending&&lastContentObserver===ui.observer?lastContent:(ui.page==='handbook'?renderHandbook(bookRules,ui.book,{pending:!bookRules&&!bookFailed,failed:bookFailed,roomName:ui.bookRoom?(source?.room_name||ui.bookRoom):''}):ui.page==='rooms'?roomDirectory(rooms,ui):ui.page==='archives'?archivedDirectory(rooms,ui):ui.page==='history'?historyDirectory(rooms):renderContent(source,results,ui))+roomNotice(ui.notice,ui);
   if(lastContent!==html){
     patchContent($('content'),html);lastContent=html;
   }
@@ -90,20 +97,36 @@ function showDialog(kind,id) {
 }
 dialog.addEventListener('close',()=>{activeDialog=null;});
 function navigate(page){
+  if(page==='handbook'&&ui.page!=='handbook'){
+    const context=ui.page==='room'?ui.room:'';
+    if(context!==ui.bookRoom)ui.book=newHandbookState(ui.book.section);else ui.book.detail=false;
+    ui.bookRoom=context;
+  }
   ui.roomMenu=null;ui.bulkMode=false;ui.selectedRooms.clear();
   closeMobileSidebar();hideTip();dialog.close();ui.page=page;ui.cursor=null;ui.focusItem=null;ui.focusPlayer=null;
-  const url=new URL(location.href);url.searchParams.delete('room');if(page==='rooms')url.searchParams.delete('page');else url.searchParams.set('page',page);history.replaceState(null,'',url);redraw();
+  const url=new URL(location.href);url.searchParams.delete('room');url.searchParams.delete('section');if(page==='rooms')url.searchParams.delete('page');else url.searchParams.set('page',page);
+  if(page==='handbook'){url.searchParams.set('section',ui.book.section);if(ui.bookRoom)url.searchParams.set('room',ui.bookRoom);}
+  history.replaceState(null,'',url);redraw();
+  if(page==='handbook')window.scrollTo({top:0,behavior:'instant'});
+  if(page==='handbook'&&!ui.bookRoom)loadReference();
+}
+async function loadReference(){
+  if(reference||referencePending)return;
+  referencePending=true;referenceFailed=false;redraw();
+  try{reference=hostReference(await readJSON('/api/config',AbortSignal.timeout(5000)));}
+  catch{referenceFailed=true;}
+  finally{referencePending=false;if(ui.page==='handbook')redraw();}
 }
 function chooseRoom(id,fromDirectory=false) {
   if(!fromDirectory)closeMobileSidebar();
   closeDirectoryOnLoad=fromDirectory;hideTip();ui.focusPlayer=null;ui.focusItem=null;
   ui.page='room';
   ui.roomGroup=roomGroup(rooms.find(room=>room.room_id===id));
+  const url=new URL(location.href);url.searchParams.set('room',id);url.searchParams.delete('page');url.searchParams.delete('section');history.replaceState(null,'',url);
   if(id===ui.room){if(source?.room_id===id)closeMobileSidebar();redraw();return;}
   ui.room=id;ui.cursor=null;ui.actionRound=null;ui.actionID=null;ui.quality='all';ui.search='';
   connection='connecting';
   dialog.close();
-  const url=new URL(location.href);url.searchParams.set('room',id);url.searchParams.delete('page');history.replaceState(null,'',url);
   redraw();live.changeRoom();
 }
 function closeInspection(){
@@ -120,6 +143,17 @@ document.addEventListener('click',event=>{
   const action=event.target.closest('[data-action]')?.dataset.action;
   if(!action)return;
   const separator=action.indexOf(':'),kind=separator<0?action:action.slice(0,separator),id=separator<0?'':action.slice(separator+1);
+  if(kind==='handbook'){navigate('handbook');return;}
+  if(kind==='book-section'){
+    ui.book=newHandbookState(id);const url=new URL(location.href);url.searchParams.set('section',ui.book.section);history.replaceState(null,'',url);redraw();window.scrollTo({top:0,behavior:'instant'});return;
+  }
+  if(kind==='book-filter'){ui.book.filter=id;ui.book.entry=null;ui.book.detail=false;redraw();return;}
+  if(kind==='book-page'){ui.book.page=Math.max(0,Number(id)||0);ui.book.entry=null;ui.book.detail=false;redraw();return;}
+  if(kind==='book-entry'){ui.book.listScroll=window.scrollY;ui.book.entry=id;ui.book.detail=true;redraw();if(matchMedia('(max-width:700px)').matches){window.scrollTo({top:0,behavior:'instant'});document.querySelector('.handbook-detail h2')?.focus({preventScroll:true});}return;}
+  if(kind==='book-list'){const selected=ui.book.entry;ui.book.detail=false;redraw();window.scrollTo({top:ui.book.listScroll||0,behavior:'instant'});document.querySelector(`[data-action="book-entry:${CSS.escape(selected||'')}"]`)?.focus({preventScroll:true});return;}
+  if(kind==='book-clear'){ui.book=newHandbookState(ui.book.section);redraw();return;}
+  if(kind==='book-exit'){if(ui.bookRoom)chooseRoom(ui.bookRoom);else navigate('rooms');return;}
+  if(kind==='book-retry'){if(ui.bookRoom)live.refresh({state:true});else loadReference();return;}
   if(kind==='activity-tab'){ui.activityTab=id;redraw();return;}
   if(kind==='action-round'){ui.actionRound=Number(id);ui.actionID=null;redraw();updateDialog();return;}
   if(kind==='action-detail'){ui.actionID=Number(id);showDialog('activities');return;}
@@ -182,6 +216,8 @@ document.addEventListener('keydown',event=>{
   }
 });
 document.addEventListener('change',event=>{
+  const bookControl=event.target.dataset.control;
+  if(['book-category','book-quality','book-footprint'].includes(bookControl)){ui.book[bookControl.slice(5)]=event.target.value;ui.book.page=0;ui.book.entry=null;ui.book.detail=false;redraw();return;}
   if(ui.manage&&ui.bulkMode&&ui.page==='archives'){
     if(event.target.hasAttribute('data-room-select-all')){ui.selectedRooms=new Set(event.target.checked?rooms.filter(room=>room.archived_at).map(room=>room.room_id):[]);redraw();return;}
     if(event.target.dataset.roomSelect){const id=event.target.dataset.roomSelect;if(event.target.checked)ui.selectedRooms.add(id);else ui.selectedRooms.delete(id);redraw();return;}
@@ -191,6 +227,7 @@ document.addEventListener('change',event=>{
   if(['quality','sort'].includes(key)){ui[key]=event.target.value;if(key==='sort')live.refresh({results:true});else{redraw();updateDialog();}}
 });
 document.addEventListener('input',event=>{
+  if(event.target.dataset.control==='book-search'){ui.book.search=event.target.value;ui.book.page=0;ui.book.entry=null;ui.book.detail=false;redraw();return;}
   if(event.target.dataset.control==='search'){ui.search=event.target.value;updateDialog();}
 });
 $('language-button').addEventListener('click',()=>{setLocale(getLocale()==='en'?'zh-CN':'en');hideTip();redraw();updateDialog();});
@@ -256,6 +293,7 @@ function refreshSession(){
   if(!sessionUpdate)sessionUpdate=restoreSession().then(session=>{ui.manage=session.manage_rooms;if(!ui.manage){ui.roomMenu=null;ui.bulkMode=false;ui.selectedRooms.clear();}setObserver(session.authenticated);redraw();updateDialog();}).finally(()=>{sessionUpdate=null;});
 }
 refreshSession();
+if(ui.page==='handbook'&&!ui.bookRoom)loadReference();
 addEventListener('focus',refreshSession);
 addEventListener('pagehide',()=>live.close());
 addEventListener('pageshow',event=>{if(event.persisted)location.reload();});

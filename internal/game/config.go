@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"maps"
 	"os"
 	"slices"
 	"strings"
@@ -43,6 +44,7 @@ func (c Config) Clone() Config {
 	c.Catalog = slices.Clone(c.Catalog)
 	for i := range c.Catalog {
 		c.Catalog[i].Tags = slices.Clone(c.Catalog[i].Tags)
+		c.Catalog[i].Translations = maps.Clone(c.Catalog[i].Translations)
 	}
 	c.Specialties = cloneSpecialties(c.Specialties)
 	return c
