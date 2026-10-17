@@ -24,7 +24,7 @@ func request(t *testing.T, s http.Handler, method, path, token, body string) (in
 	t.Helper()
 	if !strings.Contains(path, "?") {
 		switch path {
-		case "/api/state", "/api/observer/state", "/api/start", "/api/join", "/api/bid", "/api/card":
+		case "/api/state", "/api/observer/state", "/api/start", "/api/join", "/api/bid", "/api/card", "/api/withdraw":
 			path += "?room=table"
 		}
 	}
@@ -63,6 +63,7 @@ func TestAuthenticationAndPrivacy(t *testing.T) {
 	tokens := []string{}
 	for _, name := range []string{"A", "B"} {
 		token, _ := accountSession(t, s, name)
+		purchaseJoinCards(t, s, token, `{"cards":["largest_price"]}`)
 		code, b := request(t, s, "POST", "/api/join", token, `{"cards":["largest_price"]}`)
 		if code != 201 {
 			t.Fatal(code, string(b))
@@ -163,10 +164,12 @@ func TestAccountsRoomsAndResume(t *testing.T) {
 		t.Fatal("started empty room")
 	}
 	for _, token := range []string{a, b} {
+		purchaseJoinCards(t, s, token, `{"cards":["item_count"]}`)
 		if code, _ := request(t, s, "POST", "/api/join"+suffix, token, `{"cards":["item_count"]}`); code != 201 {
 			t.Fatal(code)
 		}
 	}
+	purchaseJoinCards(t, s, a, `{"cards":[]}`)
 	if code, _ := request(t, s, "POST", "/api/join"+suffix, a, `{"cards":[]}`); code != 409 {
 		t.Fatal("double seat accepted")
 	}
@@ -222,5 +225,20 @@ func TestAccountsRoomsAndResume(t *testing.T) {
 	_ = json.Unmarshal(data, &listing)
 	if len(listing.Rooms) != 2 {
 		t.Fatal("new room not listed")
+	}
+}
+
+func purchaseJoinCards(t *testing.T, s *Server, token, body string) {
+	t.Helper()
+	var v struct {
+		Cards []string `json:"cards"`
+	}
+	_ = json.Unmarshal([]byte(body), &v)
+	for _, id := range v.Cards {
+		input, _ := json.Marshal(map[string]any{"card": id, "quantity": 1})
+		status, data := request(t, s, "POST", "/api/buy", token, string(input))
+		if status != 200 {
+			t.Fatalf("purchase before join: %d %s", status, data)
+		}
 	}
 }

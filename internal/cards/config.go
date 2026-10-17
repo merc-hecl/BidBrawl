@@ -23,6 +23,9 @@ type Effect struct {
 	Selector string   `json:"selector,omitempty"`
 	Fields   []string `json:"fields,omitempty"`
 	GroupBy  string   `json:"group_by,omitempty"`
+	Category string   `json:"category,omitempty"`
+	Quality  string   `json:"quality,omitempty"`
+	Count    int      `json:"count,omitempty"`
 }
 
 type Definition struct {
@@ -30,6 +33,7 @@ type Definition struct {
 	Name        string `json:"name"`
 	Description string `json:"description"`
 	Effect      Effect `json:"effect"`
+	Price       int64  `json:"price"`
 }
 
 type Config struct {
@@ -98,6 +102,9 @@ func (c Config) Validate() error {
 	}
 	known := map[string]bool{}
 	for _, card := range c.Cards {
+		if card.Price <= 0 || card.Price > 1_000_000_000 {
+			return errors.New("card price must be 1 to 1000000000")
+		}
 		if !validID.MatchString(card.ID) || known[card.ID] {
 			return fmt.Errorf("invalid or duplicate card id: %q", card.ID)
 		}
@@ -129,7 +136,7 @@ func validText(s string, max int) bool {
 func (e Effect) validate() error {
 	switch e.Type {
 	case "reveal":
-		if e.Selector != "random" && e.Selector != "largest" && e.Selector != "smallest" {
+		if e.Selector != "random" && e.Selector != "largest" && e.Selector != "smallest" && e.Selector != "highest" {
 			return errors.New("reveal selector must be random, largest or smallest")
 		}
 		if len(e.Fields) < 1 || len(e.Fields) > 3 || e.GroupBy != "" {
@@ -137,17 +144,33 @@ func (e Effect) validate() error {
 		}
 		seen := map[string]bool{}
 		for _, field := range e.Fields {
-			if (field != "quality" && field != "price" && field != "shape") || seen[field] {
+			if (field != "quality" && field != "price" && field != "shape" && field != "identity" && field != "category") || seen[field] {
 				return fmt.Errorf("unknown or duplicate reveal field: %s", field)
 			}
 			seen[field] = true
 		}
 	case "count":
-		if e.Selector != "" || len(e.Fields) != 0 || (e.GroupBy != "" && e.GroupBy != "quality") {
+		if e.Selector != "" || len(e.Fields) != 0 || (e.GroupBy != "" && e.GroupBy != "quality" && e.GroupBy != "category") {
 			return errors.New("count accepts only optional group_by=quality")
+		}
+	case "value", "area":
+		if e.Selector != "" || len(e.Fields) != 0 || e.GroupBy != "" {
+			return errors.New("value/area only accept filters")
 		}
 	default:
 		return fmt.Errorf("unknown effect type: %q", e.Type)
+	}
+	if e.Count != 0 && e.Type != "reveal" {
+		return errors.New("count is only used by reveal")
+	}
+	if e.Count < 0 || e.Count > 20 {
+		return errors.New("count must be 0 to 20")
+	}
+	if e.Quality != "" && e.Quality != "common" && e.Quality != "uncommon" && e.Quality != "rare" && e.Quality != "epic" && e.Quality != "legendary" {
+		return errors.New("unknown quality filter")
+	}
+	if e.Category != "" && e.Category != "household" && e.Category != "electronics" && e.Category != "tools" && e.Category != "art" && e.Category != "jewelry" && e.Category != "transport" {
+		return errors.New("unknown category filter")
 	}
 	return nil
 }

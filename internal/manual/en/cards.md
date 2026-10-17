@@ -26,3 +26,5 @@ bidbrawl handbook -topic cards -lang en -live -room ROOM_ID
 The first appends built-in default dimensions and cards to this page; the second appends the room's actual configuration. Use `-live` without `-room` for host configuration. You can also query `config -room ROOM_ID` and `cards -room ROOM_ID` separately. Built-in card text is translated; host-customized text is displayed as supplied.
 
 [Index](HANDBOOK.md): `bidbrawl handbook -lang en`.
+
+Buy cards with `buy -card ID -quantity N` before bidding. Ownership is required to carry them; use consumes one copy, unused copies remain. Random reveals target unknown attributes; exhausted pools yield no new items. `catalog` shows text-only item templates (category, quality, footprint and buyback value). Templates are stored in JSON. Public clues and private specialty intel complement paid cards.

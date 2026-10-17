@@ -41,6 +41,7 @@ func TestRoomManagementPermissionsAndAtomicSelection(t *testing.T) {
 	id := lifecycleRoom(t, s, a, "Occupied lobby")
 	other := lifecycleRoom(t, s, b, "Other owner")
 	suffix := "?room=" + id
+	purchaseJoinCards(t, s, a, `{"cards":[]}`)
 	checkedRequest(t, s, "POST", "/api/join"+suffix, a, `{"cards":[]}`, 201)
 	for _, token := range []string{"", s.ObserverToken} {
 		lifecycleRequest(t, s, token, "delete", []string{id}, 401)
@@ -65,6 +66,7 @@ func TestRoomManagementPermissionsAndAtomicSelection(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/start"+suffix, a, "", 409)
 	checkedRequest(t, s, "POST", "/api/invite"+suffix, a, "", 409)
 	lifecycleRequest(t, s, a, "restore", []string{id}, 200)
+	purchaseJoinCards(t, s, b, `{"cards":[]}`)
 	checkedRequest(t, s, "POST", "/api/join"+suffix, b, `{"cards":[]}`, 201)
 	checkedRequest(t, s, "POST", "/api/start"+suffix, a, "", 200)
 	for _, action := range []string{"archive", "restore", "delete"} {
@@ -84,6 +86,7 @@ func TestDeletedSettlementKeepsOnlyEconomicSummaryAcrossRestart(t *testing.T) {
 	id := lifecycleRoom(t, s, a, "Completed room")
 	lobby := lifecycleRoom(t, s, a, "Joined waiting room")
 	for _, token := range []string{a, b} {
+		purchaseJoinCards(t, s, token, `{"cards":[]}`)
 		checkedRequest(t, s, "POST", "/api/join?room="+id, token, `{"cards":[]}`, 201)
 	}
 	checkedRequest(t, s, "POST", "/api/start?room="+id, a, "", 200)
@@ -93,6 +96,7 @@ func TestDeletedSettlementKeepsOnlyEconomicSummaryAcrossRestart(t *testing.T) {
 			checkedRequest(t, s, "POST", "/api/bid?room="+id, token, fmt.Sprintf(`{"round":%d,"amount":10,"reason":"private protocol fixture"}`, round), 200)
 		}
 	}
+	purchaseJoinCards(t, s, a, `{"cards":[]}`)
 	checkedRequest(t, s, "POST", "/api/join?room="+lobby, a, `{"cards":[]}`, 201)
 	before := checkedRequest(t, s, "GET", "/api/stats", "", "", 200)
 	results := checkedRequest(t, s, "GET", "/api/results", "", "", 200)

@@ -1,14 +1,83 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {catalogs,t,setLocale,localizeCard} from './web/i18n.js';
+import {catalogs,t,setLocale,localizeCard,localizeName} from './web/i18n.js';
 import {normalizeView,observation,knownItems} from './web/model.js';
 import {renderContent,roomDirectory,dialogContent} from './web/render.js';
-import {itemInfo} from './web/room-ui.js';
+import {itemInfo,crate} from './web/room-ui.js';
+import {actionDetail,actionRows,activityTabs} from './web/actions.js';
+
+test('activity calls remain individually inspectable, escaped and observer-only',()=>{
+ const v={rules:{cards:[]},round:2,phase:'bidding',history:[],public_hints:[],activities:[
+  {id:1,player_id:'p1',round:2,action:'state',source:'server',status:'success'},
+  {id:2,player_id:'p1',round:2,action:'state',source:'server',status:'success'},
+  {id:3,player_id:'p2',round:2,action:'bid',reason:'other-player-secret',source:'server',status:'success',params:{amount:123}},
+  {id:4,player_id:'p1',round:2,action:'withdraw',reason:'<script>unsafe</script>',source:'server',status:'rejected',params:{},result:{message:'<img bad>'}}
+ ]};
+ const rows=actionRows(v,'p1',2);
+ assert.ok(rows.includes('× 2')&&rows.includes('action-detail:1')&&rows.includes('action-detail:2'));
+ assert.ok(!rows.includes('other-player-secret')&&!rows.includes('<script>'));
+ assert.ok(rows.includes('&lt;script&gt;'));
+ assert.ok(!actionDetail(v.activities[3],v).includes(t('withdrawAccepted')));
+ const tabs=activityTabs(v,{actionRound:2});
+ assert.match(tabs,/data-action="action-round:3"[^>]*disabled/);
+ assert.deepEqual(normalizeView(v,false).activities,[]);
+ assert.equal(normalizeView(v,true).activities.length,4);
+});
+
+test('egg outline requires learned category and retains exact rectangular bounds',()=>{
+ const item={id:'egg',quality:'legendary',price:17500000,top_left:{x:2,y:3},bottom_right:{x:3,y:4}};
+ const v={room_id:'r',rules:{box_width:20,box_height:30},players:[],history:[],public_hints:[],settlement:{items:[item]}};
+ const state={observer:false,focusItem:null};
+ assert.ok(!crate(v,state).includes('is-easter-egg'));
+ item.category='easter_egg';
+ const html=crate(v,state);
+ assert.ok(html.includes('is-easter-egg')&&html.includes('data-col="2" data-row="3" data-w="1" data-h="1"'));
+});
+
+test('action details present game facts in both languages without technical payloads',async()=>{
+ const {cards}=JSON.parse(await readFile(new URL('../cards/default.json',import.meta.url),'utf8'));
+ const {categories,warehouses}=JSON.parse(await readFile(new URL('../game/items.json',import.meta.url),'utf8'));
+ const specialties=JSON.parse(await readFile(new URL('../game/specialties.json',import.meta.url),'utf8'));
+ const view={rules:{cards,categories,warehouses,specialties},history:[]};
+ const base={id:24,round:0,source:'system',status:'success',tool:'auction',at:'2026-10-17T08:37:25Z',params:{},duration_ms:42};
+ try{for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  const ticket=actionDetail({...base,action:'ticket',cost:5000},view);
+  assert.ok(ticket.includes(t('ticketPaid'))&&ticket.includes(t('outcome_ticket'))&&ticket.includes(t('opening')));
+  assert.match(ticket,/5,000/);
+  assert.ok(!ticket.includes('auction')||locale==='en');
+  assert.ok(!ticket.includes('{}')&&!ticket.includes('<code>')&&!ticket.includes('42 ms'));
+  const free=actionDetail({...base,action:'ticket',cost:0},view);
+  assert.match(free,/class="action-detail-amount">0</);
+  const card=actionDetail({...base,round:3,source:'server',action:'card',params:{card:'quality_counts'},cost:12000,result:{data:{counts:{rare:2,legendary:1}}}},view);
+  for(const key of ['card.quality_counts.name','card.quality_counts.description','wholeCrate','qualityCounts','rare','legendary'])assert.ok(card.includes(t(key)),key);
+  const bid={...base,round:3,source:'server',action:'bid',tool:'POST /api/bid',params:{round:3,amount:232000},reason:'Player-authored reason'};
+  const pending=actionDetail(bid,view),revealed=actionDetail(bid,{...view,history:[{round:3}]});
+  assert.ok(pending.includes(t('offerLocked'))&&!pending.includes(t('offerRevealed')));
+  assert.ok(revealed.includes(t('offerRevealed'))&&!revealed.includes(t('offerLocked')));
+  assert.ok(revealed.includes(t('sealedOffer'))&&revealed.includes('232,000')&&revealed.includes(bid.reason));
+  assert.ok(!revealed.includes('/api/')&&!revealed.includes('POST')&&!revealed.includes('amount:'));
+  const handbook=actionDetail({...base,source:'cli',action:'handbook',status:'reported',params:{topic:'play',lang:'en'}},view);
+  assert.ok(handbook.includes(t('topic_play'))&&handbook.includes(t('languageEnglish'))&&handbook.includes(t('source_cli')));
+  const loadout=actionDetail({...base,action:'loadout',params:{specialty:'appraisal',category:'electronics',cards:[]}},view);
+  for(const key of ['specialty.appraisal.name','category.electronics.name','noCarriedCards'])assert.ok(loadout.includes(t(key)),key);
+  const purchase=actionDetail({...base,action:'buy',params:{card:'quality_counts',quantity:2}},view);
+  assert.ok(purchase.includes(t('cardQuantity',{count:2}))&&purchase.includes(t('purchasedCard')));
+  for(const [kind,list] of Object.entries({category:categories,specialty:specialties,warehouse:warehouses}))for(const definition of list){
+   assert.equal(catalogs['zh-CN'][`${kind}.${definition.id}.name`],definition.name);
+   assert.equal(localizeName(kind,definition),t(`${kind}.${definition.id}.name`));
+   assert.equal(localizeName(kind,{...definition,name:'Custom name'}),'Custom name');
+  }
+  const rejected=actionDetail({...base,action:'loadout',status:'rejected',params:{cards:'invalid',round:'invalid',debug:'raw-payload'},result:{message:'POST /api/loadout failed'}},view);
+  assert.ok(rejected.includes(t('actionRejected'))&&!rejected.includes('raw-payload')&&!rejected.includes('/api/'));
+  if(locale==='en')for(const html of [ticket,free,card,pending,revealed,handbook,loadout,purchase,rejected])assert.doesNotMatch(html,/[\u4e00-\u9fff]/);
+ }}finally{setLocale('zh-CN',false);}
+});
 
 const emptyStats={games:0,profit:0,paid:0,rate:null,agents:[]};
 // Fixture frames represent the server projection consumed by the renderer.
-function withFrames(s){return {...s,frames:Array.from({length:s.history.length+(s.settlement?2:1)},(_,i)=>({...s,phase:s.settlement&&i>=s.history.length?'settled':'bidding',round:Math.min(i+1,s.round),history:s.history.slice(0,i),public_hints:s.public_hints.filter(h=>h.round<=i+1),decisions:s.decisions.filter(d=>d.round<=i),settlement:i>=s.history.length?s.settlement:undefined}))};}
+function withFrames(s){s={...s,activities:(s.decisions||[]).map((d,i)=>({...d,id:i+1,source:'server',status:'success',params:d.action==='card'?{card:d.card_id}:{amount:100},tool:'POST /api/'+d.action,at:'2026-10-17T08:00:00Z'}))};return {...s,frames:Array.from({length:s.history.length+1},(_,i)=>({...s,phase:s.settlement&&i>=s.history.length?'settled':i===0?'opening':'revealed',round:i,history:s.history.slice(0,i),activities:s.activities.filter(e=>e.round<=i),public_hints:s.public_hints.filter(h=>h.round<=i),decisions:s.decisions.filter(d=>d.round<=i),settlement:i>=s.history.length?s.settlement:undefined}))};}
 const ui={room:'r',page:'room',cursor:2,sort:'profit',quality:'all',search:'',focusPlayer:'p1'};
 let source={room_id:'r',room_name:'<Room>',phase:'settled',round:5,rules:{initial_inspection_count:3,rounds:5,box_width:20,box_height:30,player_count:2},players:[{id:'p1',name:'<Atlas>',avatar:5,submitted:true},{id:'p2',name:'Echo',avatar:1,submitted:true}],history:Array.from({length:5},(_,i)=>({round:i+1,bids:[{player_id:'p1',amount:100+i},{player_id:'p2',amount:200+i}]})),public_hints:[{round:1,kind:'random_shape',data:{title:'随机物品轮廓',message:'物品 known 占 1 × 1 格。',fact:{type:'random_shape',item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}},translations:{en:{title:'Random item shape',message:'Item known occupies 1 × 1 cells.'}}}},{round:3,kind:'quality_count',data:{title:'指定品质数量',message:'箱内稀有品质物品共有 2 件。',fact:{type:'quality_count',quality:'rare',count:2}}}],settlement:{winner_id:'p2',paid:204,total_value:300,profit:96,tied_players:['p2'],items:[{id:'known',quality:'rare',price:100,top_left:{x:0,y:0},bottom_right:{x:1,y:1}},{id:'hidden-item',quality:'common',price:200,top_left:{x:1,y:0},bottom_right:{x:2,y:1}}],round:5,method:'final',payoffs:{p1:0,p2:96}},decisions:[]};
 
@@ -122,6 +191,41 @@ test('instant sale replay and observer reasons do not expose later rounds or exe
   assert.ok(!renderContent(early,emptyStats,{...ui,cursor:null,observer:false}).includes('Estimate and risk'));
 });
 
+test('settling round has a single timeline step and selection in both languages',()=>{
+  for(const locale of ['zh-CN','en']){
+    setLocale(locale,false);
+    for(const round of [1,3,5]){
+      const settled=withFrames({...source,round,history:source.history.slice(0,round),settlement:{...source.settlement,round}});
+      for(const cursor of [null,round]){
+        const html=renderContent(settled,emptyStats,{...ui,cursor});
+        const timeline=html.match(/<nav class="room-timeline"[^>]*>(.*?)<\/nav>/s)[1];
+        assert.equal((timeline.match(new RegExp(`data-action="step:${round}"`,'g'))||[]).length,1);
+        assert.equal((timeline.match(/aria-pressed="true"/g)||[]).length,1);
+        assert.ok(timeline.includes(`aria-label="${t('round',{round})} · ${t('settlement')}"`));
+      }
+    }
+  }
+});
+
+test('opening and revealed round labels use matching terms; live selects only the current entry',()=>{
+ for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  const aligned=withFrames({...source,rules:{...source.rules,early_settlement_multipliers:[2,1.6,1.3,1.1,0]}});
+  for(let cursor=0;cursor<5;cursor++){
+   const html=renderContent(aligned,emptyStats,{...ui,cursor});
+   const phase=html.match(/<div class="room-phase paper">(.*?)<\/div>/s)[1];
+   assert.ok(phase.includes(cursor===0?t('opening'):t('round',{round:cursor})));
+   if(cursor===0)assert.ok(!phase.includes(t('roundThreshold',{ratio:2}))&&!phase.includes(t('finalPriceRule')));
+   else assert.ok(phase.includes(t('roundThreshold',{ratio:[2,1.6,1.3,1.1][cursor-1]})));
+  }
+  const live=withFrames({...aligned,phase:'bidding',round:2,history:aligned.history.slice(0,1),settlement:undefined});
+  const html=renderContent(live,emptyStats,{...ui,cursor:null});
+  const timeline=html.match(/<nav class="room-timeline"[^>]*>(.*?)<\/nav>/s)[1];
+  assert.equal((timeline.match(/aria-pressed="true"/g)||[]).length,1);
+  assert.match(timeline,/data-action="latest"[^>]*aria-pressed="true"/);
+ }
+});
+
 test('player pane shows only selected player and round reasons and explains restricted access',()=>{
   const recorded=withFrames({...source,decisions:[
     {round:1,player_id:'p1',action:'bid',reason:'first-round-rationale'},
@@ -130,18 +234,18 @@ test('player pane shows only selected player and round reasons and explains rest
   const first=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:1,observer:true});
   assert.ok(first.includes('first-round-rationale'));
   assert.ok(!first.includes('second-round-rationale'));
-  assert.ok(first.includes('data-action="bids"'));
+  assert.ok(first.includes('data-action="activities"'));
   const second=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:2,observer:true,focusPlayer:'p2'});
   assert.ok(second.includes('second-round-rationale'));
   assert.ok(!second.includes('first-round-rationale'));
-  const final=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:6,observer:true});
+  const final=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:5,observer:true});
   assert.ok(!final.includes('first-round-rationale')&&!final.includes('second-round-rationale'));
   const opening=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:0,observer:true});
-  assert.ok(opening.includes(t('openingDecision'))&&!opening.includes('first-round-rationale'));
+  assert.ok(opening.includes(t('noActivities'))&&!opening.includes('first-round-rationale'));
   const latest=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:null,observer:true});
   assert.ok(!latest.includes('first-round-rationale')&&!latest.includes('second-round-rationale'));
   const anonymous=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:1,observer:false});
-  assert.ok(anonymous.includes(t('openFromHost'))&&!anonymous.includes('data-action="observer-login"'));
+  assert.ok(anonymous.includes(t('activityRestricted'))&&!anonymous.includes('data-action="observer-login"'));
   assert.ok(!anonymous.includes('first-round-rationale')&&!anonymous.includes('second-round-rationale'));
 });
 
@@ -150,8 +254,9 @@ test('observer skill names and help use the saved card definition safely in both
   for(const locale of ['zh-CN','en']){
     setLocale(locale,false);
     const html=renderContent(played,emptyStats,{...ui,page:'room',cursor:1,observer:true});
-    assert.ok(html.includes(t('card.largest_quality.name'))&&html.includes(t('card.largest_quality.description')));
-    assert.ok(html.includes('data-action="card:largest_quality"')&&html.includes('role="tooltip"'));
+    assert.ok(html.includes(t('card.largest_quality.name')));
+    const call=actionDetail(played.activities[0],played);
+    assert.ok(call.includes(t('card.largest_quality.description'))&&call.includes('data-action="card:largest_quality"'));
     const detail=dialogContent('card','largest_quality',played,emptyStats,{...ui,observer:true});
     assert.equal(detail.title,t('card.largest_quality.name'));
     assert.ok(detail.content.includes(t('card.largest_quality.description')));
@@ -159,7 +264,8 @@ test('observer skill names and help use the saved card definition safely in both
   }
   const custom=withFrames({...played,rules:{...source.rules,cards:[{id:'custom',name:'<Card>',description:'<img src=x onerror=alert(1)>',effect:{type:'item_count'}}]},decisions:[{round:1,player_id:'p1',action:'card',card_id:'custom',reason:'estimate'}]});
   const html=renderContent(custom,emptyStats,{...ui,page:'room',cursor:1,observer:true});
-  assert.ok(html.includes('&lt;Card&gt;')&&html.includes('&lt;img src=x onerror=alert(1)&gt;'));
+  assert.ok(html.includes('&lt;Card&gt;'));
+  assert.ok(actionDetail(custom.activities[0],custom).includes('&lt;img src=x onerror=alert(1)&gt;'));
   assert.ok(!html.includes('<img src=x'));
   const anonymous=renderContent(custom,emptyStats,{...ui,page:'room',cursor:1,observer:false});
   assert.ok(!anonymous.includes('Card')&&!anonymous.includes('onerror'));

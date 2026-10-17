@@ -87,7 +87,7 @@ func TestCLIHandbookLiveCatalog(t *testing.T) {
 	geometry := game.DefaultConfig()
 	geometry.Box, geometry.Items = game.Dimensions{Width: 13, Height: 9}, game.ItemLimits{MaxWidth: 5, MaxHeight: 2}
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []cards.Definition{
-		{ID: "audit", Name: "Custom audit", Description: "Custom count", Effect: cards.Effect{Type: "count"}},
+		{ID: "audit", Name: "Custom audit", Description: "Custom count", Price: 1, Effect: cards.Effect{Type: "count"}},
 	}}
 	s := server.New(geometry, cfg)
 	host := httptest.NewServer(s)
@@ -152,6 +152,9 @@ func TestCLIJoinCardSelection(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			credential := cli(t, "register", "-name", tc.name)["credential"].(string)
 			token := cli(t, "login", "-credential", credential)["token"].(string)
+			if tc.want != "" {
+				cli(t, "buy", "-token", token, "-card", tc.want)
+			}
 			args := append([]string{"join", "-room", room, "-token", token}, tc.args...)
 			cli(t, args...)
 			deck := cli(t, "state", "-room", room, "-token", token)["self"].(map[string]any)["deck"].([]any)
@@ -164,7 +167,7 @@ func TestCLIJoinCardSelection(t *testing.T) {
 
 func TestCLIProtocolGameFlow(t *testing.T) {
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit"}, Cards: []cards.Definition{
-		{ID: "audit", Name: "自定义全检", Description: "最大物品品质与价格", Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price"}}},
+		{ID: "audit", Name: "自定义全检", Description: "最大物品品质与价格", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price"}}},
 	}}
 	geometry := game.DefaultConfig()
 	geometry.Box, geometry.Items = game.Dimensions{Width: 13, Height: 9}, game.ItemLimits{MaxWidth: 5, MaxHeight: 2}
@@ -197,6 +200,7 @@ func TestCLIProtocolGameFlow(t *testing.T) {
 	for i, token := range tokens {
 		t.Setenv("BIDBRAWL_TOKEN", token)
 		if i == 0 {
+			cli(t, "buy", "-card", "audit")
 			cli(t, "join", "-invite", invitation, "-cards", "audit")
 		} else {
 			cli(t, "join", "-invite", invitation, "-cards", "")
@@ -221,7 +225,7 @@ func TestCLIProtocolGameFlow(t *testing.T) {
 	for round := 1; round <= game.Rounds; round++ {
 		for i, token := range tokens {
 			t.Setenv("BIDBRAWL_TOKEN", token)
-			amount := 900 + 100*i
+			amount := 990 + 10*i
 			if round == game.Rounds {
 				amount = 20 + i
 			}
@@ -254,7 +258,7 @@ func TestCLIProtocolGameFlow(t *testing.T) {
 		t.Fatal("opening leaked private/future data")
 	}
 	full := cli(t, "replay", "-room", room, "-observer", "-observer-token", observer)
-	if len(full["frames"].([]any)) != 7 {
+	if len(full["frames"].([]any)) != 6 {
 		t.Fatal("missing replay frames")
 	}
 	view := cli(t, "state", "-room", room, "-observer", "-observer-token", observer)
@@ -339,7 +343,7 @@ func TestHostIdentityProcess(t *testing.T) {
 	id := registered["account_id"].(string)
 	credential := registered["credential"].(string)
 	oldToken := cli(t, "login", "-credential", credential)["token"].(string)
-	if own := cli(t, "me", "-token", oldToken); own["account_id"] != id || own["name"] != "Atlas" || own["assets"] != float64(100000) {
+	if own := cli(t, "me", "-token", oldToken); own["account_id"] != id || own["name"] != "Atlas" || own["assets"] != float64(game.DefaultConfig().InitialAssets) {
 		t.Fatal("account query omitted identity or initial assets")
 	}
 	if err := run(context.Background(), []string{"me", "-token", oldToken, "-account", id}); err == nil {
@@ -348,6 +352,7 @@ func TestHostIdentityProcess(t *testing.T) {
 	echoCredential := cli(t, "register", "-name", "Echo")["credential"].(string)
 	echoToken := cli(t, "login", "-credential", echoCredential)["token"].(string)
 	roomID := cli(t, "create", "-token", oldToken, "-name", "Durable game", "-players", "2")["room_id"].(string)
+	cli(t, "buy", "-token", oldToken, "-card", "item_count")
 	cli(t, "join", "-room", roomID, "-token", oldToken, "-cards", "item_count")
 	cli(t, "join", "-room", roomID, "-token", echoToken, "-cards", "")
 	cli(t, "start", "-room", roomID, "-token", oldToken)
@@ -355,6 +360,11 @@ func TestHostIdentityProcess(t *testing.T) {
 	privateBefore := cli(t, "bid", "-reason", "protocol test", "-room", roomID, "-token", oldToken, "-round", "1", "-amount", "77777")
 	publicBefore := cli(t, "state", "-room", roomID, "-token", "")
 	equal := func(a, b map[string]any) bool {
+		for _, v := range []map[string]any{a, b} {
+			if self, ok := v["self"].(map[string]any); ok {
+				delete(self, "activities")
+			}
+		}
 		x, _ := json.Marshal(a)
 		y, _ := json.Marshal(b)
 		return bytes.Equal(x, y)
@@ -391,8 +401,8 @@ func TestHostIdentityProcess(t *testing.T) {
 	}
 	settledBefore := cli(t, "state", "-room", roomID, "-token", "")
 	selfID := privateBefore["self"].(map[string]any)["id"].(string)
-	payoffs := settledBefore["settlement"].(map[string]any)["payoffs"].(map[string]any)
-	expectedAssets := float64(100000) + payoffs[selfID].(float64)
+	cashChanges := settledBefore["settlement"].(map[string]any)["cash_changes"].(map[string]any)
+	expectedAssets := float64(game.DefaultConfig().InitialAssets-game.DefaultConfig().TicketFee) - 1200 + cashChanges[selfID].(float64)
 	ownBefore := cli(t, "me", "-token", at)
 	if ownBefore["assets"] != expectedAssets {
 		t.Fatal("account query returned stale assets after settlement")

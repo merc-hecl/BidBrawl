@@ -2,6 +2,8 @@
 
 ## 卡牌
 
+先用 `buy -card CARD_ID -quantity N` 购买。价格见 cards，库存见 inventory；准备阶段允许临时购买和调整 loadout。用卡时消耗一张，未用卡保留，现金在购买时扣除，不重复扣款。随机卡优先补充本人尚未知晓的属性，候选耗尽时返回空结果；请先查看已有信息。
+
 入席时用 `-cards CARD_ID,CARD_ID` 携带最多五张不同卡，省略或传空值则不带卡。每轮报价前最多用一张，每张单局限用一次，报价后不能补用。
 
 `self.deck` 是携带卡牌，`self.used` 是已消耗卡牌，`self.card_used_this_round` 表示本轮是否已用卡。卡牌名称和说明见 `bidbrawl cards -room ROOM_ID`，结果保留在 `self.hints`。
@@ -26,3 +28,5 @@ bidbrawl handbook -topic cards -live -room ROOM_ID
 第一条在本页后附上内置默认尺寸和卡牌目录；第二条附上当前房间的实际配置。`-live` 不带 `-room` 时读取宿主配置。也可分别使用 `config -room ROOM_ID`、`cards -room ROOM_ID` 查询。
 
 [返回目录](../HANDBOOK.md)：`bidbrawl handbook`。
+
+物品目录使用独立 JSON，包含名称、类别、品质、占格及价值定位；实际回收价由品质区间与 value_percent 计算并在公开目录列出。轮廓不唯一，品质或类别线索可以缩小候选。首版不制作立绘。使用 `catalog` 查询。

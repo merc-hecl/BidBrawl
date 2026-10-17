@@ -160,11 +160,11 @@ func (s *Server) loadDeletedResults(tx *bolt.Tx) error {
 		if err := json.Unmarshal(data, &result); err != nil {
 			return err
 		}
-		if result.RoomID == "" || string(key) != result.RoomID || s.rooms[result.RoomID] != nil || !validName(result.RoomName) || result.CreatedAt.IsZero() || result.SettledAt.Before(result.CreatedAt) || len(result.Players) < 2 || len(result.Players) > 7 || result.Settlement.Profit != result.Settlement.Total-result.Settlement.Paid {
+		if result.RoomID == "" || string(key) != result.RoomID || s.rooms[result.RoomID] != nil || !validName(result.RoomName) || result.CreatedAt.IsZero() || result.SettledAt.Before(result.CreatedAt) || len(result.Players) < 2 || len(result.Players) > 7 || result.Settlement.Profit != result.Settlement.GrossProfit-totalCardCost(result.Settlement.CardCosts)-totalCardCost(result.Settlement.TicketCosts) {
 			return errors.New("invalid retained room result")
 		}
 		settlement := result.Settlement
-		if settlement.Paid < 0 || settlement.Total < 0 || settlement.Round < 1 || settlement.Round > 5 || settlement.Method != "instant" && settlement.Method != "final" || len(settlement.Payoffs) != len(result.Players) {
+		if settlement.Paid < 0 || settlement.Total < 0 || settlement.Round < 1 || settlement.Round > 5 || settlement.Method != "instant" && settlement.Method != "final" && settlement.Method != "unsold" || len(settlement.Payoffs) != len(result.Players) {
 			return errors.New("invalid retained settlement")
 		}
 		seats, agents := map[string]bool{}, map[string]bool{}
@@ -174,18 +174,26 @@ func (s *Server) loadDeletedResults(tx *bolt.Tx) error {
 				return errors.New("invalid retained result identity")
 			}
 			seats[player.ID], agents[player.AgentID] = true, true
-			expected := int64(0)
+			expected := -settlement.CardCosts[player.ID] - settlement.TicketCosts[player.ID]
 			if player.ID == settlement.WinnerID {
-				expected = settlement.Profit
+				expected += settlement.GrossProfit
 			}
 			if payoff, ok := settlement.Payoffs[player.ID]; !ok || payoff != expected {
 				return errors.New("inconsistent retained payoffs")
 			}
 		}
-		if !seats[settlement.WinnerID] {
+		if settlement.Method != "unsold" && !seats[settlement.WinnerID] {
 			return errors.New("invalid retained winner")
 		}
 		s.deletedResults[result.RoomID] = result
 		return nil
 	})
+}
+
+func totalCardCost(costs map[string]int64) int64 {
+	var total int64
+	for _, n := range costs {
+		total += n
+	}
+	return total
 }

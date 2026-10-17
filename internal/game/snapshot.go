@@ -18,46 +18,56 @@ import (
 // randomness, pending bids, private hints and seat tokens so a restart cannot
 // reroll a box, repeat a skill or change an already settled tie.
 type gameSnapshot struct {
-	SchemaVersion int              `json:"schema_version"`
-	PlayerCount   int              `json:"player_count"`
-	Config        Config           `json:"game_config"`
-	Cards         cards.Config     `json:"card_config"`
-	HintConfig    hints.Config     `json:"hint_config"`
-	PlannedHints  []Hint           `json:"planned_hints"`
-	Phase         string           `json:"phase"`
-	Round         int              `json:"round"`
-	Version       int              `json:"version"`
-	Players       []playerSnapshot `json:"players"`
-	Items         []Item           `json:"items"`
-	Hints         []Hint           `json:"public_hints"`
-	History       []RoundResult    `json:"history"`
-	Decisions     []Decision       `json:"decisions"`
-	Settlement    *Settlement      `json:"settlement"`
+	LoadoutChanges int              `json:"loadout_changes"`
+	Warehouse      string           `json:"warehouse"`
+	SchemaVersion  int              `json:"schema_version"`
+	PlayerCount    int              `json:"player_count"`
+	Config         Config           `json:"game_config"`
+	Cards          cards.Config     `json:"card_config"`
+	HintConfig     hints.Config     `json:"hint_config"`
+	PlannedHints   []Hint           `json:"planned_hints"`
+	Phase          string           `json:"phase"`
+	Round          int              `json:"round"`
+	Version        int              `json:"version"`
+	Players        []playerSnapshot `json:"players"`
+	Items          []Item           `json:"items"`
+	Hints          []Hint           `json:"public_hints"`
+	History        []RoundResult    `json:"history"`
+	Decisions      []Decision       `json:"decisions"`
+	Settlement     *Settlement      `json:"settlement"`
 }
 
 type playerSnapshot struct {
-	ID         string           `json:"id"`
-	Name       string           `json:"name"`
-	Token      string           `json:"token"`
-	Deck       []string         `json:"deck"`
-	Used       []string         `json:"used"`
-	Hints      []Hint           `json:"hints"`
-	Bid        *int64           `json:"bid"`
-	CardRound  int              `json:"card_round"`
-	Revision   int              `json:"revision"`
-	Avatar     *int             `json:"avatar"`
-	Inspection []InspectionItem `json:"initial_inspection"`
-	Assets     int64            `json:"assets"`
+	WithdrawRound int              `json:"withdraw_round"`
+	TicketCost    int64            `json:"ticket_cost"`
+	Specialty     string           `json:"specialty"`
+	Category      string           `json:"category"`
+	Signals       []Hint           `json:"intelligence"`
+	Withdrawn     bool             `json:"withdrawn"`
+	CardCost      int64            `json:"card_cost"`
+	CardPrices    map[string]int64 `json:"card_prices"`
+	ID            string           `json:"id"`
+	Name          string           `json:"name"`
+	Token         string           `json:"token"`
+	Deck          []string         `json:"deck"`
+	Used          []string         `json:"used"`
+	Hints         []Hint           `json:"hints"`
+	Bid           *int64           `json:"bid"`
+	CardRound     int              `json:"card_round"`
+	Revision      int              `json:"revision"`
+	Avatar        *int             `json:"avatar"`
+	Inspection    []InspectionItem `json:"initial_inspection"`
+	Assets        int64            `json:"assets"`
 }
 
 func (g *Game) Snapshot() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := gameSnapshot{SchemaVersion: 6, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
+	s := gameSnapshot{SchemaVersion: 8, LoadoutChanges: g.loadoutChanges, Warehouse: g.warehouse, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
 		Phase: g.phase, Round: g.round, Version: g.version, Players: []playerSnapshot{}, Items: g.items,
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
-		s.Players = append(s.Players, playerSnapshot{p.id, p.name, p.token, p.deck, p.used, p.hints, p.bid, p.cardRound, p.revision, p.avatar, p.inspection, p.assets})
+		s.Players = append(s.Players, playerSnapshot{WithdrawRound: p.withdrawRound, TicketCost: p.ticketCost, ID: p.id, Name: p.name, Token: p.token, Deck: p.deck, Used: p.used, Hints: p.hints, Bid: p.bid, CardRound: p.cardRound, Revision: p.revision, Avatar: p.avatar, Inspection: p.inspection, Assets: p.assets, Specialty: p.specialty, Category: p.category, Signals: p.signals, Withdrawn: p.withdrawn, CardCost: p.cardCost, CardPrices: p.cardPrices})
 	}
 	return json.Marshal(s)
 }
@@ -75,7 +85,7 @@ func Restore(data []byte) (*Game, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return nil, errors.New("expected exactly one game snapshot")
 	}
-	if s.SchemaVersion != 6 {
+	if s.SchemaVersion != 8 {
 		return nil, errors.New("unsupported game snapshot schema")
 	}
 	g, err := NewWithHints(s.PlayerCount, s.Config, s.Cards, s.HintConfig)
@@ -85,12 +95,14 @@ func Restore(data []byte) (*Game, error) {
 	if err := s.validate(); err != nil {
 		return nil, fmt.Errorf("invalid game snapshot: %w", err)
 	}
+	g.warehouse = s.Warehouse
+	g.loadoutChanges = s.LoadoutChanges
 	g.phase, g.round, g.version = s.Phase, s.Round, s.Version
 	g.items, g.hints, g.history = s.Items, s.Hints, s.History
 	g.plannedHints = s.PlannedHints
 	g.decisions, g.settlement = s.Decisions, s.Settlement
 	for _, p := range s.Players {
-		g.players = append(g.players, &player{p.ID, p.Name, p.Token, p.Deck, p.Used, p.Hints, p.Bid, p.CardRound, p.Revision, p.Avatar, p.Inspection, p.Assets})
+		g.players = append(g.players, &player{withdrawRound: p.WithdrawRound, ticketCost: p.TicketCost, id: p.ID, name: p.Name, token: p.Token, deck: p.Deck, used: p.Used, hints: p.Hints, bid: p.Bid, cardRound: p.CardRound, revision: p.Revision, avatar: p.Avatar, inspection: p.Inspection, assets: p.Assets, specialty: p.Specialty, category: p.Category, signals: p.Signals, withdrawn: p.Withdrawn, cardCost: p.CardCost, cardPrices: p.CardPrices})
 	}
 	return g, nil
 }
@@ -101,7 +113,7 @@ func validSecret(value string, length int) bool {
 }
 
 func (s gameSnapshot) validate() error {
-	if len(s.Players) > s.PlayerCount || s.Version < 1 {
+	if !ValidWarehouse(s.Warehouse) || len(s.Players) > s.PlayerCount || s.Version < 1 {
 		return errors.New("invalid player count or version")
 	}
 	known := map[string]bool{}
@@ -116,7 +128,12 @@ func (s gameSnapshot) validate() error {
 		items[item.ID] = item
 	}
 	for i, p := range s.Players {
-		if p.Assets < 0 {
+		if p.TicketCost != func() int64 {
+			if s.Phase == "lobby" {
+				return 0
+			}
+			return s.Config.TicketFee
+		}() || p.Withdrawn != (p.WithdrawRound > 0) || p.WithdrawRound > s.Round || p.Assets < 0 || !validSelection(s.Config.Specialties, p.Specialty, p.Category) || p.CardCost < 0 {
 			return errors.New("invalid player assets")
 		}
 		count := 0
@@ -164,11 +181,31 @@ func (s gameSnapshot) validate() error {
 			}
 			used[id], lastRound = true, h.Round
 		}
+		var spent int64
+		for _, id := range p.Used {
+			price, ok := p.CardPrices[id]
+			if !ok {
+				for _, d := range s.Cards.Cards {
+					if d.ID == id {
+						price = d.Price
+					}
+				}
+			}
+			spent += price
+		}
+		if spent != p.CardCost {
+			return errors.New("card cost mismatch")
+		}
+		for _, h := range p.Signals {
+			if h.Source != "specialty" || h.Kind != p.Specialty || h.Round < 1 || h.Round > s.Round || h.Data == nil {
+				return errors.New("invalid specialty intelligence")
+			}
+		}
 		if p.CardRound != lastRound {
 			return errors.New("invalid card allowance")
 		}
 		if p.Bid != nil {
-			if *p.Bid < 0 || *p.Bid > p.Assets {
+			if *p.Bid < 0 || *p.Bid > p.Assets || *p.Bid == 0 && !p.Withdrawn {
 				return errors.New("invalid pending bid")
 			}
 			pending++
@@ -178,7 +215,7 @@ func (s gameSnapshot) validate() error {
 		if len(s.PlannedHints) != 0 {
 			return errors.New("clues generated before start")
 		}
-		if s.Round != 0 || len(s.Items) != 0 || len(s.Hints) != 0 || len(s.History) != 0 || len(s.Decisions) != 0 || s.Settlement != nil || pending != 0 || s.Version != 1+len(s.Players) {
+		if s.Round != 0 || len(s.Items) != 0 || len(s.Hints) != 0 || len(s.History) != 0 || len(s.Decisions) != 0 || s.Settlement != nil || pending != 0 || s.Version != 1+len(s.Players)+s.LoadoutChanges {
 			return errors.New("invalid lobby state")
 		}
 		return nil
@@ -238,7 +275,7 @@ func (s gameSnapshot) validate() error {
 			return errors.New("incomplete published round")
 		}
 		for j, bid := range r.Bids {
-			if bid.PlayerID != s.Players[j].ID || bid.Amount < 0 || bid.Amount > s.Players[j].Assets {
+			if bid.PlayerID != s.Players[j].ID || bid.Amount < 0 || bid.Amount > s.Players[j].Assets || bid.Amount == 0 && (s.Players[j].WithdrawRound == 0 || s.Players[j].WithdrawRound > r.Round) {
 				return errors.New("invalid published bid")
 			}
 		}
@@ -250,16 +287,16 @@ func (s gameSnapshot) validate() error {
 		return err
 	}
 	if s.Phase == "bidding" {
-		if s.Settlement != nil || pending == s.PlayerCount || s.Version != 2+len(s.Players)+historyCount*s.PlayerCount+pending {
+		if s.Settlement != nil || pending == s.PlayerCount || s.Version != 2+len(s.Players)+historyCount*s.PlayerCount+pending+s.LoadoutChanges {
 			return errors.New("invalid bidding state")
 		}
 		return nil
 	}
-	if pending != s.PlayerCount || s.Version != 2+len(s.Players)+s.Round*s.PlayerCount || s.Round < Rounds && !EarlySettlement(s.History[s.Round-1]) {
+	if pending != s.PlayerCount || s.Version != 2+len(s.Players)+s.Round*s.PlayerCount+s.LoadoutChanges || s.Round < Rounds && !EarlySettlement(s.History[s.Round-1]) && s.Settlement.Method != "unsold" {
 		return errors.New("invalid settled state")
 	}
 	r := s.Settlement
-	if r == nil || r.Round != s.Round || (r.Method != "instant" || s.Round == Rounds) && (r.Method != "final" || s.Round != Rounds) || !slices.Equal(r.Items, s.Items) || len(r.Payoffs) != s.PlayerCount {
+	if r == nil || r.Round != s.Round || (r.Method != "instant" || s.Round == Rounds) && (r.Method != "final" || s.Round != Rounds) && r.Method != "unsold" || !slices.Equal(r.Items, s.Items) || len(r.Payoffs) != s.PlayerCount {
 		return errors.New("invalid settlement")
 	}
 	var total int64
@@ -278,13 +315,40 @@ func (s gameSnapshot) validate() error {
 			ties = append(ties, bid.PlayerID)
 		}
 	}
-	if !contains(ties, r.WinnerID) || !slices.Equal(ties, r.Tied) || r.Paid != high || r.Total != total || r.Profit != total-high {
+	var costTotal int64
+	var ticketTotal int64
+	var eggValue int64
+	for _, i := range s.Items {
+		if i.Category == "easter_egg" {
+			eggValue += i.Price
+		}
+	}
+	for _, p := range s.Players {
+		costTotal += p.CardCost
+		ticketTotal += p.TicketCost
+	}
+	gross := int64(0)
+	if high > 0 {
+		gross = total - high
+	}
+	if (high > 0 && !contains(ties, r.WinnerID) || high == 0 && (r.WinnerID != "" || r.Method != "unsold")) || !slices.Equal(ties, r.Tied) || r.Paid != high || r.Total != total || r.GrossProfit != gross || r.TotalCardCost != costTotal || r.TotalTicketCost != ticketTotal || r.EasterEggValue != eggValue || r.Profit != gross-costTotal-ticketTotal {
 		return errors.New("inconsistent settlement totals or winner")
 	}
 	for _, p := range s.Players {
-		expected := int64(0)
+		expected := -p.CardCost - p.TicketCost
+		if r.TicketCosts[p.ID] != p.TicketCost {
+			return errors.New("invalid ticket cost")
+		}
+		if r.CardCosts[p.ID] != p.CardCost {
+			return errors.New("invalid card cost")
+		}
+		cash := int64(0)
 		if p.ID == r.WinnerID {
-			expected = r.Profit
+			cash = -r.Paid
+			expected += r.GrossProfit
+		}
+		if r.CashChanges[p.ID] != cash {
+			return errors.New("invalid cash change")
 		}
 		if payoff, ok := r.Payoffs[p.ID]; !ok || payoff != expected {
 			return errors.New("inconsistent payoff")
@@ -300,17 +364,25 @@ func (s gameSnapshot) validateDecisions() error {
 			expected[fmt.Sprintf("%d:%s:card", h.Round, p.ID)] = true
 		}
 		for _, r := range s.History {
-			expected[fmt.Sprintf("%d:%s:bid", r.Round, p.ID)] = true
+			action := "bid"
+			if p.WithdrawRound == r.Round {
+				action = "withdraw"
+			}
+			expected[fmt.Sprintf("%d:%s:%s", r.Round, p.ID, action)] = true
 		}
 		if s.Phase == "bidding" && p.Bid != nil {
-			expected[fmt.Sprintf("%d:%s:bid", s.Round, p.ID)] = true
+			action := "bid"
+			if p.WithdrawRound == s.Round {
+				action = "withdraw"
+			}
+			expected[fmt.Sprintf("%d:%s:%s", s.Round, p.ID, action)] = true
 		}
 	}
 	seen := map[string]bool{}
 	lastRound := 0
 	for _, d := range s.Decisions {
 		key := fmt.Sprintf("%d:%s:%s", d.Round, d.PlayerID, d.Action)
-		if ValidateReason(d.Reason) != nil || d.Round < lastRound || d.Round > s.Round || !expected[key] || seen[key] || d.Action == "card" && seen[fmt.Sprintf("%d:%s:bid", d.Round, d.PlayerID)] {
+		if ValidateReason(d.Reason) != nil || d.Round < lastRound || d.Round > s.Round || !expected[key] || seen[key] || d.Action == "card" && (seen[fmt.Sprintf("%d:%s:bid", d.Round, d.PlayerID)] || seen[fmt.Sprintf("%d:%s:withdraw", d.Round, d.PlayerID)]) {
 			return errors.New("invalid decision history")
 		}
 		lastRound, seen[key] = d.Round, true
@@ -335,10 +407,23 @@ func (s gameSnapshot) validateItems() error {
 		}
 		ids[item.ID] = true
 		validPrice := false
+		templateValid := false
+		for _, t := range Catalog(s.Config) {
+			if t.ID == item.TemplateID && t.Name == item.Name && t.Category == item.Category && t.Quality == item.Quality && t.Price == item.Price && t.Width == width && t.Height == height {
+				templateValid = true
+				break
+			}
+		}
+		if !templateValid {
+			return errors.New("invalid catalog item")
+		}
 		for _, q := range s.Config.Qualities {
 			if item.Quality == q.ID && item.Price >= q.Min && item.Price <= q.Max {
 				validPrice = true
 			}
+		}
+		if item.Category == "easter_egg" && item.Price == 17500000 {
+			validPrice = true
 		}
 		if !validPrice {
 			return errors.New("invalid item quality or price")

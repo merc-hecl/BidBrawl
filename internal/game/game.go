@@ -27,6 +27,9 @@ type Point struct {
 	Y int `json:"y"`
 }
 type Item struct {
+	TemplateID  string `json:"template_id"`
+	Name        string `json:"name"`
+	Category    string `json:"category"`
 	ID          string `json:"id"`
 	Quality     string `json:"quality"`
 	Price       int64  `json:"price"`
@@ -63,8 +66,17 @@ type PlayerInfo struct {
 	Name      string `json:"name"`
 	Submitted bool   `json:"submitted"`
 	Avatar    *int   `json:"avatar,omitempty"`
+	Specialty string `json:"specialty"`
+	Category  string `json:"category,omitempty"`
+	Withdrawn bool   `json:"withdrawn"`
 }
 type Self struct {
+	TicketCost        int64            `json:"ticket_cost"`
+	Intelligence      []Hint           `json:"intelligence"`
+	Specialty         string           `json:"specialty"`
+	Category          string           `json:"category,omitempty"`
+	CardCost          int64            `json:"card_cost"`
+	Withdrawn         bool             `json:"withdrawn"`
 	ID                string           `json:"id"`
 	Deck              []string         `json:"deck"`
 	Used              []string         `json:"used"`
@@ -90,6 +102,10 @@ type InspectionItem struct {
 // A single-item skill locates its target. Quality and price are included only
 // when the skill learned them; aggregate results do not locate any items.
 type ItemReveal struct {
+	Source      string `json:"source,omitempty"`
+	Name        string `json:"name,omitempty"`
+	Category    string `json:"category,omitempty"`
+	TemplateID  string `json:"template_id,omitempty"`
 	Round       int    `json:"round"`
 	ItemID      string `json:"item_id"`
 	Quality     string `json:"quality,omitempty"`
@@ -108,17 +124,30 @@ type ObserverDecision struct {
 	CardID string `json:"card_id,omitempty"`
 }
 type Settlement struct {
-	WinnerID string           `json:"winner_id"`
-	Paid     int64            `json:"paid"`
-	Total    int64            `json:"total_value"`
-	Profit   int64            `json:"profit"`
-	Payoffs  map[string]int64 `json:"payoffs"`
-	Tied     []string         `json:"tied_players"`
-	Items    []Item           `json:"items"`
-	Round    int              `json:"round"`
-	Method   string           `json:"method"`
+	TicketCosts     map[string]int64 `json:"ticket_costs"`
+	TotalTicketCost int64            `json:"total_ticket_cost"`
+	EasterEggValue  int64            `json:"easter_egg_value"`
+	TotalCardCost   int64            `json:"total_card_cost"`
+	CardCosts       map[string]int64 `json:"card_costs"`
+	GrossProfit     int64            `json:"gross_profit"`
+	CashChanges     map[string]int64 `json:"cash_changes"`
+	WinnerID        string           `json:"winner_id"`
+	Paid            int64            `json:"paid"`
+	Total           int64            `json:"total_value"`
+	Profit          int64            `json:"profit"`
+	Payoffs         map[string]int64 `json:"payoffs"`
+	Tied            []string         `json:"tied_players"`
+	Items           []Item           `json:"items"`
+	Round           int              `json:"round"`
+	Method          string           `json:"method"`
 }
 type Rules struct {
+	TicketFee              int64              `json:"ticket_fee"`
+	Specialties            []Specialty        `json:"specialties"`
+	Categories             []Category         `json:"categories"`
+	Catalog                []ItemTemplate     `json:"catalog"`
+	Warehouse              string             `json:"warehouse"`
+	Warehouses             []Warehouse        `json:"warehouses"`
 	Rounds                 int                `json:"rounds"`
 	Width                  int                `json:"box_width"`
 	Height                 int                `json:"box_height"`
@@ -135,6 +164,9 @@ type Rules struct {
 	InitialInspectionCount int                `json:"initial_inspection_count"`
 }
 type View struct {
+	PlayerCosts        map[string]PlayerCosts      `json:"player_costs,omitempty"`
+	Context            map[string]any              `json:"context"`
+	Intelligence       map[string][]Hint           `json:"intelligence,omitempty"`
 	Version            int                         `json:"version"`
 	Phase              string                      `json:"phase"`
 	Round              int                         `json:"round"`
@@ -148,18 +180,31 @@ type View struct {
 	InitialInspections map[string][]InspectionItem `json:"initial_inspections,omitempty"`
 	ItemReveals        map[string][]ItemReveal     `json:"item_reveals,omitempty"`
 }
+type PlayerCosts struct {
+	CardCost   int64 `json:"card_cost"`
+	TicketCost int64 `json:"ticket_cost"`
+}
 type player struct {
-	id, name, token string
-	deck, used      []string
-	hints           []Hint
-	bid             *int64
-	cardRound       int
-	revision        int
-	avatar          *int
-	inspection      []InspectionItem
-	assets          int64
+	cardPrices          map[string]int64
+	specialty, category string
+	signals             []Hint
+	withdrawRound       int
+	ticketCost          int64
+	withdrawn           bool
+	cardCost            int64
+	id, name, token     string
+	deck, used          []string
+	hints               []Hint
+	bid                 *int64
+	cardRound           int
+	revision            int
+	avatar              *int
+	inspection          []InspectionItem
+	assets              int64
 }
 type Game struct {
+	loadoutChanges                            int
+	warehouse                                 string
 	mu                                        sync.Mutex
 	maxPlayers, width, height, round, version int
 	phase                                     string
@@ -202,7 +247,13 @@ func NewWithHints(maxPlayers int, geometry Config, cfg cards.Config, hintConfig 
 	if err := hintConfig.Validate(); err != nil {
 		return nil, err
 	}
-	return &Game{maxPlayers: maxPlayers, width: geometry.Box.Width, height: geometry.Box.Height, phase: "lobby", version: 1, players: []*player{}, hints: []Hint{}, history: []RoundResult{}, decisions: []Decision{}, cardConfig: cfg.Clone(), gameConfig: geometry.Clone(), hintConfig: hintConfig.Clone()}, nil
+	if geometry.Specialties == nil {
+		geometry.Specialties = cloneSpecialties(Specialties)
+	}
+	if geometry.Catalog == nil {
+		geometry.Catalog = append([]ItemTemplate{}, builtinCatalog.Items...)
+	}
+	return &Game{warehouse: "mixed", maxPlayers: maxPlayers, width: geometry.Box.Width, height: geometry.Box.Height, phase: "lobby", version: 1, players: []*player{}, hints: []Hint{}, history: []RoundResult{}, decisions: []Decision{}, cardConfig: cfg.Clone(), gameConfig: geometry.Clone(), hintConfig: hintConfig.Clone()}, nil
 }
 
 func (g *Game) GameConfig() Config {
@@ -271,7 +322,10 @@ func (g *Game) Join(name string, deck []string) (string, string, error) {
 		}
 	}
 	avatar := available[random(len(available))]
-	p := &player{id: fmt.Sprintf("p%d", len(g.players)+1), name: name, token: secret(), deck: append([]string{}, deck...), used: []string{}, hints: []Hint{}, avatar: &avatar, assets: g.gameConfig.InitialAssets}
+	p := &player{specialty: "analysis", signals: []Hint{}, id: fmt.Sprintf("p%d", len(g.players)+1), name: name, token: secret(), deck: append([]string{}, deck...), used: []string{}, hints: []Hint{}, avatar: &avatar, assets: g.gameConfig.InitialAssets}
+	if findSpecialty(g.gameConfig.Specialties, p.specialty) == nil {
+		p.specialty = g.gameConfig.Specialties[0].ID
+	}
 	g.players = append(g.players, p)
 	g.version++
 	return p.id, p.token, nil
@@ -294,8 +348,15 @@ func (g *Game) StartWithAssets(balances map[string]int64) error {
 		}
 		for _, p := range g.players {
 			balance, ok := balances[p.id]
-			if !ok || balance < 0 {
+			if !ok || balance < g.gameConfig.TicketFee {
 				return errors.New("invalid player assets")
+			}
+		}
+	}
+	if balances == nil {
+		for _, p := range g.players {
+			if p.assets < g.gameConfig.TicketFee {
+				return errors.New("insufficient cash for ticket")
 			}
 		}
 	}
@@ -312,6 +373,10 @@ func (g *Game) StartWithAssets(balances map[string]int64) error {
 			p.assets = balances[p.id]
 		}
 	}
+	for _, p := range g.players {
+		p.assets -= g.gameConfig.TicketFee
+		p.ticketCost = g.gameConfig.TicketFee
+	}
 	// A fresh partial Fisher-Yates shuffle gives each player the same per-item
 	// inclusion probability without letting earlier players consume the pool.
 	for _, p := range g.players {
@@ -327,30 +392,15 @@ func (g *Game) StartWithAssets(balances map[string]int64) error {
 	}
 	g.phase = "bidding"
 	g.round = 1
+	for _, p := range g.players {
+		g.giveIntelligence(p)
+	}
 	g.hints = append(g.hints, g.plannedHints[0])
 	g.version++
 	return nil
 }
 
-func (g *Game) generate() []Item {
-	items := g.tileRows(1 + random(g.height))
-	for index := range items {
-		i := &items[index]
-		i.ID = secret()[:16]
-		v := random(100)
-		q := g.gameConfig.Qualities[0]
-		for _, candidate := range g.gameConfig.Qualities {
-			v -= candidate.Weight
-			if v < 0 {
-				q = candidate
-				break
-			}
-		}
-		i.Quality = q.ID
-		i.Price = q.Min + int64(random(int(q.Max-q.Min+1)))
-	}
-	return items
-}
+func (g *Game) generate() []Item { return g.generateCatalog() }
 func (g *Game) planHints(items []Item) ([]Hint, error) {
 	request := hints.Request{ProtocolVersion: 1, BoxWidth: g.width, BoxHeight: g.height, Items: []hints.Item{}}
 	for _, i := range items {
@@ -411,47 +461,7 @@ func (g *Game) total() int64 {
 }
 
 // Evaluate approved primitives, never card IDs or executable configuration.
-func (g *Game) cardEffect(effect cards.Effect) map[string]any {
-	switch effect.Type {
-	case "reveal":
-		i := g.items[0]
-		if effect.Selector == "random" {
-			i = g.items[random(len(g.items))]
-		} else {
-			for _, candidate := range g.items {
-				better := effect.Selector == "largest" && candidate.area() > i.area() || effect.Selector == "smallest" && candidate.area() < i.area()
-				if better || candidate.area() == i.area() && candidate.ID < i.ID {
-					i = candidate
-				}
-			}
-		}
-		data := map[string]any{"item_id": i.ID}
-		for _, field := range effect.Fields {
-			switch field {
-			case "quality":
-				data["quality"] = i.Quality
-			case "price":
-				data["price"] = i.Price
-			case "shape":
-				data["top_left"], data["bottom_right"] = i.TopLeft, i.BottomRight
-			}
-		}
-		return data
-	case "count":
-		if effect.GroupBy == "" {
-			return map[string]any{"count": len(g.items)}
-		}
-		counts := map[string]int{}
-		for _, q := range g.gameConfig.Qualities {
-			counts[q.ID] = 0
-		}
-		for _, i := range g.items {
-			counts[i.Quality]++
-		}
-		return map[string]any{"counts": counts}
-	}
-	panic("unvalidated card effect")
-}
+func (g *Game) cardEffect(e cards.Effect) map[string]any { return g.effect(e, nil) }
 func (g *Game) find(token string) *player {
 	for _, p := range g.players {
 		if p.token == token {
@@ -487,6 +497,9 @@ func (g *Game) UseCard(token string, round int, card, reason string) error {
 	if g.phase != "bidding" || g.round != round {
 		return errors.New("not the current bidding round")
 	}
+	if p.withdrawn {
+		return errors.New("already withdrawn")
+	}
 	if p.bid != nil {
 		return errors.New("cannot use a card after bidding")
 	}
@@ -503,7 +516,16 @@ func (g *Game) UseCard(token string, round int, card, reason string) error {
 			break
 		}
 	}
-	p.hints = append(p.hints, Hint{Round: round, Kind: card, Source: card, Data: g.cardEffect(effect)})
+	p.hints = append(p.hints, Hint{Round: round, Kind: card, Source: card, Data: g.effect(effect, p)})
+	for _, d := range g.cardConfig.Cards {
+		if d.ID == card {
+			price, ok := p.cardPrices[card]
+			if !ok {
+				price = d.Price
+			}
+			p.cardCost += price
+		}
+	}
 	p.used = append(p.used, card)
 	p.cardRound = round
 	p.revision++
@@ -523,12 +545,13 @@ func (g *Game) Submit(token string, round int, amount int64, reason string) erro
 	if g.phase != "bidding" || g.round != round {
 		return errors.New("not the current bidding round")
 	}
-	if amount < 0 || amount > p.assets {
-		return fmt.Errorf("bid must be an integer between 0 and your total assets (%d)", p.assets)
+	if amount < 1 || amount > p.assets {
+		return fmt.Errorf("bid must be a positive integer up to your available cash; use withdraw to exit (%d)", p.assets)
 	}
 	if p.bid != nil {
 		return errors.New("already bid this round")
 	}
+
 	p.bid = &amount
 	g.decisions = append(g.decisions, Decision{round, p.id, "bid", reason})
 	g.version++
@@ -537,29 +560,77 @@ func (g *Game) Submit(token string, round int, amount int64, reason string) erro
 			return nil
 		}
 	}
-	result := RoundResult{Round: g.round, Bids: []Bid{}}
-	for _, other := range g.players {
-		result.Bids = append(result.Bids, Bid{other.id, *other.bid})
+	return g.resolveRound()
+}
+
+// Withdraw is an explicit decision; zero is reserved for published automatic skips.
+func (g *Game) Withdraw(token string, round int, reason string) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	p := g.find(token)
+	if p == nil {
+		return ErrUnauthorized
 	}
-	g.history = append(g.history, result)
-	if g.round == Rounds || EarlySettlement(result) {
-		g.settle(result)
-		return nil
+	if err := ValidateReason(reason); err != nil {
+		return err
 	}
-	g.round++
-	for _, other := range g.players {
-		other.bid = nil
+	if g.phase != "bidding" || round != g.round {
+		return errors.New("not the current bidding round")
 	}
-	if g.round == 3 {
-		g.hints = append(g.hints, g.plannedHints[1])
+	if p.withdrawn || p.bid != nil {
+		return errors.New("already withdrawn or bid this round")
 	}
-	return nil
+	p.withdrawn = true
+	p.withdrawRound = round
+	zero := int64(0)
+	p.bid = &zero
+	g.decisions = append(g.decisions, Decision{round, p.id, "withdraw", reason})
+	g.version++
+	return g.resolveRound()
+}
+
+func (g *Game) resolveRound() error {
+	for {
+		result := RoundResult{Round: g.round, Bids: []Bid{}}
+		for _, p := range g.players {
+			if p.bid == nil {
+				return nil
+			}
+			result.Bids = append(result.Bids, Bid{p.id, *p.bid})
+		}
+		g.history = append(g.history, result)
+		allZero := true
+		for _, b := range result.Bids {
+			if b.Amount > 0 {
+				allZero = false
+			}
+		}
+		if g.round == Rounds || EarlySettlement(result) || allZero {
+			g.settle(result)
+			return nil
+		}
+		g.round++
+		if g.round == 3 {
+			g.hints = append(g.hints, g.plannedHints[1])
+		}
+		for _, p := range g.players {
+			p.bid = nil
+			if p.withdrawn {
+				zero := int64(0)
+				p.bid = &zero
+				g.decisions = append(g.decisions, Decision{g.round, p.id, "bid", "已弃权，自动跳过。"})
+				g.version++
+			} else {
+				g.giveIntelligence(p)
+			}
+		}
+	}
 }
 
 // A unique positive highest bid must meet the exact rational threshold.
-// Ties (including all-zero bids) continue until the ordinary final round.
+// Positive ties continue until the final round; resolveRound handles all-zero unsold.
 func EarlySettlement(r RoundResult) bool {
-	numerator := map[int]int64{1: 20, 2: 17, 3: 15}[r.Round]
+	numerator := map[int]int64{1: 20, 2: 16, 3: 13, 4: 11}[r.Round]
 	if numerator == 0 || len(r.Bids) < 2 {
 		return false
 	}
@@ -585,18 +656,44 @@ func (g *Game) settle(r RoundResult) {
 		}
 	}
 	sort.Strings(ties)
-	winner := ties[random(len(ties))]
+	winner := ""
+	if high > 0 {
+		winner = ties[random(len(ties))]
+	}
 	total := g.total()
 	payoffs := map[string]int64{}
-	for _, p := range g.players {
-		payoffs[p.id] = 0
+	costs, cash := map[string]int64{}, map[string]int64{}
+	tickets := map[string]int64{}
+	var ticketTotal int64
+	var eggValue int64
+	for _, i := range g.items {
+		if i.Category == "easter_egg" {
+			eggValue += i.Price
+		}
 	}
-	payoffs[winner] = total - high
+	var costTotal int64
+	for _, p := range g.players {
+		costs[p.id] = p.cardCost
+		tickets[p.id] = p.ticketCost
+		ticketTotal += p.ticketCost
+		costTotal += p.cardCost
+		cash[p.id] = 0
+		payoffs[p.id] = -p.cardCost - p.ticketCost
+	}
+	gross := int64(0)
+	if winner != "" {
+		gross = total - high
+		payoffs[winner] += gross
+		cash[winner] = -high
+	}
 	method := "final"
 	if r.Round < Rounds {
 		method = "instant"
 	}
-	g.settlement = &Settlement{WinnerID: winner, Paid: high, Total: total, Profit: total - high, Payoffs: payoffs, Tied: ties, Items: g.items, Round: r.Round, Method: method}
+	if winner == "" {
+		method = "unsold"
+	}
+	g.settlement = &Settlement{TicketCosts: tickets, TotalTicketCost: ticketTotal, EasterEggValue: eggValue, TotalCardCost: costTotal, CardCosts: costs, GrossProfit: gross, CashChanges: cash, WinnerID: winner, Paid: high, Total: total, Profit: gross - costTotal - ticketTotal, Payoffs: payoffs, Tied: ties, Items: g.items, Round: r.Round, Method: method}
 	g.phase = "settled"
 }
 
@@ -613,20 +710,23 @@ func (g *Game) ObserveObserver() ([]byte, error) {
 	return g.observe("", true)
 }
 func (g *Game) observe(token string, observer bool) ([]byte, error) {
-	v := View{Version: g.version, Phase: g.phase, Round: g.round, Players: []PlayerInfo{}, PublicHints: g.hints, History: g.history, Settlement: g.settlement,
-		Rules: Rules{Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig.Clone(), PlayerCount: g.maxPlayers, Qualities: append([]Quality{}, g.gameConfig.Qualities...), Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck, PublicHintPlugins: g.hintConfig.IDs(),
-			Description: "Bid on a hidden box with 2–7 players over up to 5 rounds. All bids are revealed together. In rounds 1/2/3, a unique positive highest bid settles at >= 2x/1.7x/1.5x the second-highest bid. Round 4 continues; round 5 settles at the highest bid, with uniform random choice among ties, including all-zero bids. The winner pays that round's bid and receives the box; payoff is total value minus price, others receive 0. Public clues appear in rounds 1 and 3. Before bidding, optionally use one carried, unused card; results are private. Each card/bid requires a reason. Read state for the current round and your submitted bid; watch for updates. Bids cannot exceed your current account assets, updated at settlement. An account may join only one unfinished room at a time, including waiting rooms. See bidbrawl handbook for commands."}}
-	v.Rules.EarlyMultipliers = []float64{2, 1.7, 1.5, 0, 0}
+	v := View{Version: g.version, Phase: g.phase, Round: g.round, Players: []PlayerInfo{}, Context: g.publicContext(), PublicHints: g.hints, History: g.history, Settlement: g.settlement,
+		Rules: Rules{TicketFee: g.gameConfig.TicketFee, Specialties: g.gameConfig.Specialties, Categories: Categories, Catalog: Catalog(g.gameConfig), Warehouse: g.warehouse, Warehouses: Warehouses, Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig.Clone(), PlayerCount: g.maxPlayers, Qualities: append([]Quality{}, g.gameConfig.Qualities...), Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck, PublicHintPlugins: g.hintConfig.IDs(),
+			Description: "2–7 players. Five sealed-offer rounds; after each round all bids are published together. A unique positive highest bid settles at >= 2/1.6/1.3/1.1 times the runner-up in rounds 1–4. Round 5 chooses the highest bid, uniformly among ties. Offers must be positive; withdraw explicitly before bidding to permanently exit. Everyone withdrawing ends unsold. Tickets are charged once on start, nonrefundable and with no extra exit fine. Winner pays cash and receives items in their warehouse; sell to system outside bidding to obtain cash. Profit deducts consumed card costs and tickets for every player. Buy cards before bidding; one carried unused card per round. Configure a specialty in preparation; private intelligence grows by round. Reasons are private. Public clues arrive in rounds 1 and 3. Cash, not total inventory wealth, limits bids."}}
+	v.Rules.EarlyMultipliers = []float64{2, 1.6, 1.3, 1.1, 0}
 	v.Rules.InitialInspectionCount = InitialInspectionCount
-	v.Rules.Description += " At start, every player independently samples min(initial_inspection_count, item count) distinct items uniformly without replacement. Each item has the same inclusion probability for every player regardless of quality; players may sample overlapping items. Your self.initial_inspection contains only sampled item IDs, shapes and qualities, never prices."
-	v.Rules.Description += " Every single-item skill also reveals its target's shape and position in self.item_reveals, together with only the quality or price fields learned by that skill. Count skills do not uncover positions."
+
 	if observer {
+		v.PlayerCosts = map[string]PlayerCosts{}
+		v.Intelligence = map[string][]Hint{}
 		v.Decisions = g.observerDecisions()
 		v.InitialInspections = make(map[string][]InspectionItem, len(g.players))
 		v.ItemReveals = make(map[string][]ItemReveal, len(g.players))
 		for _, p := range g.players {
+			v.PlayerCosts[p.id] = PlayerCosts{CardCost: p.cardCost, TicketCost: p.ticketCost}
 			v.Version += p.revision
 			v.InitialInspections[p.id] = p.inspection
+			v.Intelligence[p.id] = append(append([]Hint{}, p.signals...), p.hints...)
 			var err error
 			v.ItemReveals[p.id], err = g.itemReveals(p)
 			if err != nil {
@@ -635,7 +735,7 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 		}
 	}
 	for _, p := range g.players {
-		v.Players = append(v.Players, PlayerInfo{p.id, p.name, p.bid != nil, p.avatar})
+		v.Players = append(v.Players, PlayerInfo{ID: p.id, Name: p.name, Submitted: p.bid != nil, Avatar: p.avatar, Specialty: p.specialty, Category: p.category, Withdrawn: g.publishedWithdrawal(p.id)})
 	}
 	if token != "" {
 		p := g.find(token)
@@ -655,16 +755,16 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 		}
 		balance := p.assets
 		if g.settlement != nil {
-			balance += g.settlement.Payoffs[p.id]
+			balance += g.settlement.CashChanges[p.id]
 		}
-		v.Self = &Self{ID: p.id, Deck: p.deck, Used: p.used, Hints: p.hints, Bid: p.bid, CardUsedThisRound: p.cardRound == g.round, MaxBid: balance, Assets: balance, Decisions: own, InitialInspection: p.inspection, ItemReveals: reveals}
+		v.Self = &Self{TicketCost: p.ticketCost, Intelligence: p.signals, Specialty: p.specialty, Category: p.category, CardCost: p.cardCost, Withdrawn: p.withdrawn, ID: p.id, Deck: p.deck, Used: p.used, Hints: p.hints, Bid: p.bid, CardUsedThisRound: g.phase == "bidding" && p.cardRound == g.round, MaxBid: balance, Assets: balance, Decisions: own, InitialInspection: p.inspection, ItemReveals: reveals}
 	}
 	return json.Marshal(v)
 }
 
 func (g *Game) itemReveals(p *player) ([]ItemReveal, error) {
 	reveals := []ItemReveal{}
-	for _, hint := range p.hints {
+	for _, hint := range append(append([]Hint{}, p.hints...), p.signals...) {
 		// Whitelist learned attributes from the durable result, then locate only
 		// that target. Never copy an item's hidden quality or price.
 		data, err := json.Marshal(hint.Data)
@@ -676,6 +776,28 @@ func (g *Game) itemReveals(p *player) ([]ItemReveal, error) {
 			return nil, err
 		}
 		if reveal.ItemID == "" {
+			list, _ := hint.Data["items"].([]any)
+			if typed, ok := hint.Data["items"].([]map[string]any); ok {
+				for _, d := range typed {
+					list = append(list, d)
+				}
+			}
+			for _, d := range list {
+				data, _ := json.Marshal(d)
+				var r ItemReveal
+				if json.Unmarshal(data, &r) == nil && r.ItemID != "" {
+					for _, i := range g.items {
+						if i.ID == r.ItemID {
+							a, b := i.TopLeft, i.BottomRight
+							r.TopLeft, r.BottomRight = &a, &b
+						}
+					}
+					r.Round = hint.Round
+					r.Source = hint.Source
+					inferEggPrice(&r)
+					reveals = append(reveals, r)
+				}
+			}
 			continue
 		}
 		for _, item := range g.items {
@@ -685,9 +807,18 @@ func (g *Game) itemReveals(p *player) ([]ItemReveal, error) {
 			}
 		}
 		reveal.Round = hint.Round
+		reveal.Source = hint.Source
+		inferEggPrice(&reveal)
 		reveals = append(reveals, reveal)
 	}
 	return reveals, nil
+}
+
+func inferEggPrice(r *ItemReveal) {
+	if r.Category == "easter_egg" && r.Price == nil {
+		price := int64(17500000)
+		r.Price = &price
+	}
 }
 
 // Card identity comes from the durable skill-use record; raw results stay private.
@@ -711,4 +842,15 @@ func (g *Game) observerDecisions() []ObserverDecision {
 		result = append(result, view)
 	}
 	return result
+}
+
+func (g *Game) publishedWithdrawal(id string) bool {
+	for _, r := range g.history {
+		for _, b := range r.Bids {
+			if b.PlayerID == id && b.Amount == 0 {
+				return true
+			}
+		}
+	}
+	return false
 }

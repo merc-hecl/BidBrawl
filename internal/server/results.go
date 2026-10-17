@@ -14,13 +14,18 @@ type resultPlayer struct {
 	AgentID string `json:"agent_id"`
 }
 type resultSettlement struct {
-	WinnerID string           `json:"winner_id"`
-	Paid     int64            `json:"paid"`
-	Total    int64            `json:"total_value"`
-	Profit   int64            `json:"profit"`
-	Payoffs  map[string]int64 `json:"payoffs"`
-	Round    int              `json:"round"`
-	Method   string           `json:"method"`
+	TicketCosts    map[string]int64 `json:"ticket_costs"`
+	EasterEggValue int64            `json:"easter_egg_value"`
+	CardCosts      map[string]int64 `json:"card_costs"`
+	GrossProfit    int64            `json:"gross_profit"`
+	CashChanges    map[string]int64 `json:"cash_changes"`
+	WinnerID       string           `json:"winner_id"`
+	Paid           int64            `json:"paid"`
+	Total          int64            `json:"total_value"`
+	Profit         int64            `json:"profit"`
+	Payoffs        map[string]int64 `json:"payoffs"`
+	Round          int              `json:"round"`
+	Method         string           `json:"method"`
 }
 type roomResult struct {
 	RoomID     string           `json:"room_id"`
@@ -75,7 +80,7 @@ func resultForRoom(rm *room) (*roomResult, error) {
 		players = append(players, resultPlayer{p.ID, p.Name, "account:" + rm.seatAccounts[p.ID]})
 	}
 	r := view.Settlement
-	result := roomResult{rm.id, rm.name, players, rm.createdAt, rm.settledAt, resultSettlement{r.WinnerID, r.Paid, r.Total, r.Profit, r.Payoffs, r.Round, r.Method}}
+	result := roomResult{rm.id, rm.name, players, rm.createdAt, rm.settledAt, resultSettlement{TicketCosts: r.TicketCosts, EasterEggValue: r.EasterEggValue, WinnerID: r.WinnerID, Paid: r.Paid, Total: r.Total, Profit: r.Profit, Payoffs: r.Payoffs, Round: r.Round, Method: r.Method, CardCosts: r.CardCosts, GrossProfit: r.GrossProfit, CashChanges: r.CashChanges}}
 	return &result, nil
 }
 func (s *Server) listResults(w http.ResponseWriter, r *http.Request) {

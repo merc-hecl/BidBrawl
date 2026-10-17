@@ -40,6 +40,7 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	_ = json.Unmarshal(created, &roomInfo)
 	id := roomInfo["room_id"].(string)
 	suffix := "?room=" + id
+	purchaseJoinCards(t, s, a, `{"cards":["largest_price","item_count"]}`)
 	checkedRequest(t, s, "POST", "/api/join"+suffix, a, `{"cards":["largest_price","item_count"]}`, 201)
 	initial := checkedRequest(t, s, "GET", "/api/state"+suffix, a, "", 200)
 	var lobbyView game.View
@@ -52,10 +53,11 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	_ = s.Close()
 	s = persistentServer(t, path)
 	a, b = loginAgain(t, s, ca), loginAgain(t, s, cb)
-	if restored := checkedRequest(t, s, "GET", "/api/state"+suffix, a, "", 200); !bytes.Equal(initial, restored) {
+	if restored := checkedRequest(t, s, "GET", "/api/state"+suffix, a, "", 200); !sameGameProjection(initial, restored) {
 		t.Fatal("lobby membership or room metadata changed on restart")
 	}
 	checkedRequest(t, s, "POST", "/api/join"+suffix, a, `{"cards":[]}`, 409)
+	purchaseJoinCards(t, s, b, `{"cards":[]}`)
 	checkedRequest(t, s, "POST", "/api/join"+suffix, b, `{"cards":[]}`, 201)
 	checkedRequest(t, s, "POST", "/api/start"+suffix, b, "", 403)
 	checkedRequest(t, s, "POST", "/api/start"+suffix, a, "", 200)
@@ -81,7 +83,7 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	s = persistentServer(t, path)
 	a, b = loginAgain(t, s, ca), loginAgain(t, s, cb)
 	for token, expected := range map[string][]byte{a: private, "": public, s.HostToken: public, loginAgain(t, s, outsiderCredential): public} {
-		if restored := checkedRequest(t, s, "GET", "/api/state"+suffix, token, "", 200); !bytes.Equal(expected, restored) {
+		if restored := checkedRequest(t, s, "GET", "/api/state"+suffix, token, "", 200); !sameGameProjection(expected, restored) {
 			t.Fatal("restored private/public observation changed")
 		}
 	}
@@ -124,6 +126,7 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	// A second game after restart reverses seats; both histories must associate
 	// the same agents with their permanent account IDs rather than p1/p2.
 	for _, token := range []string{b, a} {
+		purchaseJoinCards(t, s, token, `{"cards":[]}`)
 		checkedRequest(t, s, "POST", "/api/join", token, `{"cards":[]}`, 201)
 	}
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
@@ -165,6 +168,7 @@ func TestFailedRoomWritesAreNotAcknowledgedOrPublished(t *testing.T) {
 	s := persistentServer(t, path)
 	a, ca := accountSession(t, s, "A")
 	b, cb := accountSession(t, s, "B")
+	purchaseJoinCards(t, s, a, `{"cards":["item_count"]}`)
 	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["item_count"]}`, 201)
 	_ = s.Close()
 	lobby := checkedRequest(t, s, "GET", "/api/state", "", "", 200)
@@ -175,6 +179,7 @@ func TestFailedRoomWritesAreNotAcknowledgedOrPublished(t *testing.T) {
 	}
 	s = persistentServer(t, path)
 	a, b = loginAgain(t, s, ca), loginAgain(t, s, cb)
+	purchaseJoinCards(t, s, b, `{"cards":[]}`)
 	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":[]}`, 201)
 	_ = s.Close()
 	lobby = checkedRequest(t, s, "GET", "/api/state", "", "", 200)
@@ -189,7 +194,7 @@ func TestFailedRoomWritesAreNotAcknowledgedOrPublished(t *testing.T) {
 	private := checkedRequest(t, s, "GET", "/api/state", a, "", 200)
 	checkedRequest(t, s, "POST", "/api/card", a, `{"reason":"protocol test","round":1,"card":"item_count"}`, 500)
 	checkedRequest(t, s, "POST", "/api/bid", a, `{"reason":"protocol test","round":1,"amount":1}`, 500)
-	if !bytes.Equal(private, checkedRequest(t, s, "GET", "/api/state", a, "", 200)) {
+	if !sameGameProjection(private, checkedRequest(t, s, "GET", "/api/state", a, "", 200)) {
 		t.Fatal("failed write consumed a card or sealed a bid")
 	}
 	s = persistentServer(t, path)
@@ -218,6 +223,7 @@ func TestConcurrentBidsPersistTogether(t *testing.T) {
 	for _, name := range []string{"A", "B"} {
 		token, _ := accountSession(t, s, name)
 		tokens = append(tokens, token)
+		purchaseJoinCards(t, s, token, `{"cards":[]}`)
 		checkedRequest(t, s, "POST", "/api/join", token, `{"cards":[]}`, 201)
 	}
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
@@ -243,7 +249,7 @@ func TestRestoredRoomsKeepRulesWhenHostDefaultsChange(t *testing.T) {
 	geometry.Box, geometry.Items = game.Dimensions{Width: 7, Height: 5}, game.ItemLimits{MaxWidth: 2, MaxHeight: 3}
 	geometry.Qualities[0].Min, geometry.Qualities[0].Max = 11, 19
 	geometry.InitialAssets = 7654321
-	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit"}, Cards: []cards.Definition{{ID: "audit", Name: "Audit", Description: "Custom count", Effect: cards.Effect{Type: "count"}}}}
+	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit"}, Cards: []cards.Definition{{ID: "audit", Name: "Audit", Description: "Custom count", Price: 1, Effect: cards.Effect{Type: "count"}}}}
 	g, err := game.NewWithConfig(2, geometry, cfg)
 	if err != nil {
 		t.Fatal(err)
@@ -259,6 +265,7 @@ func TestRestoredRoomsKeepRulesWhenHostDefaultsChange(t *testing.T) {
 	}
 	s.rooms["table"] = rm
 	a, credential := accountSession(t, s, "A")
+	purchaseJoinCards(t, s, a, `{"cards":["audit"]}`)
 	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["audit"]}`, 201)
 	before := checkedRequest(t, s, "GET", "/api/state", a, "", 200)
 	_ = s.Close()
@@ -268,7 +275,7 @@ func TestRestoredRoomsKeepRulesWhenHostDefaultsChange(t *testing.T) {
 		t.Fatal(err)
 	}
 	a = loginAgain(t, s, credential)
-	if !bytes.Equal(before, checkedRequest(t, s, "GET", "/api/state", a, "", 200)) {
+	if !sameGameProjection(before, checkedRequest(t, s, "GET", "/api/state", a, "", 200)) {
 		t.Fatal("changed host defaults overwrote an existing room")
 	}
 	created := checkedRequest(t, s, "POST", "/api/create", a, `{"name":"New defaults","players":3}`, 201)

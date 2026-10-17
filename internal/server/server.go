@@ -25,15 +25,19 @@ import (
 var assets embed.FS
 
 type account struct {
-	ID     string `json:"account_id"`
-	Name   string `json:"name"`
-	Assets int64  `json:"assets"`
+	CardStock map[string][]int64 `json:"cards"`
+	Warehouse []storedItem       `json:"warehouse"`
+	ReliefAt  string             `json:"relief_claimed_at,omitempty"`
+	ID        string             `json:"account_id"`
+	Name      string             `json:"name"`
+	Assets    int64              `json:"assets"`
 }
 type accountProfile struct {
 	account
 	Stats agentMetrics `json:"stats"`
 }
 type room struct {
+	activities      []activity
 	id, name, owner string
 	game            *game.Game
 	members         map[string]string
@@ -93,6 +97,11 @@ func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Confi
 	mux.HandleFunc("POST /api/login", s.login)
 	mux.HandleFunc("POST /api/logout", s.logout)
 	mux.HandleFunc("GET /api/me", s.me)
+	mux.HandleFunc("GET /api/inventory", s.inventory)
+	mux.HandleFunc("POST /api/buy", s.buy)
+	mux.HandleFunc("POST /api/sell", s.sell)
+	mux.HandleFunc("POST /api/relief", s.relief)
+	mux.HandleFunc("POST /api/loadout", s.loadout)
 	mux.HandleFunc("GET /api/rooms", s.listRooms)
 	mux.HandleFunc("POST /api/rooms/manage", s.manageRooms)
 	mux.HandleFunc("GET /api/results", s.listResults)
@@ -102,7 +111,7 @@ func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Confi
 	mux.HandleFunc("GET /api/replay", s.replay)
 	mux.HandleFunc("GET /api/events", s.events)
 	mux.HandleFunc("GET /api/config", func(w http.ResponseWriter, r *http.Request) {
-		reply(w, 200, map[string]any{"game": s.gameConfig, "cards": s.cardConfig, "public_hint_plugins": s.hintConfig.IDs()})
+		reply(w, 200, map[string]any{"game": s.gameConfig, "cards": s.cardConfig, "public_hint_plugins": s.hintConfig.IDs(), "specialties": s.gameConfig.Specialties, "categories": game.Categories, "catalog": game.Catalog(s.gameConfig), "warehouses": game.Warehouses})
 	})
 	mux.HandleFunc("POST /api/invite", s.invite)
 	mux.HandleFunc("POST /api/observer/launch", s.observerLaunch)
@@ -118,6 +127,8 @@ func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Confi
 	mux.HandleFunc("POST /api/start", s.start)
 	mux.HandleFunc("POST /api/card", s.card)
 	mux.HandleFunc("POST /api/bid", s.bid)
+	mux.HandleFunc("POST /api/withdraw", s.withdraw)
+	mux.HandleFunc("POST /api/activity", s.reportActivity)
 	web, _ := fs.Sub(assets, "web")
 	files := http.FileServer(http.FS(web))
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
@@ -143,7 +154,7 @@ func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Confi
 				return
 			}
 		}
-		mux.ServeHTTP(w, r)
+		s.auditRequest(mux, w, r)
 	})
 	return s
 }
@@ -259,13 +270,13 @@ func (s *Server) listRooms(w http.ResponseWriter, r *http.Request) {
 		b, _ := rm.game.Observe("")
 		var v game.View
 		_ = json.Unmarshal(b, &v)
-		entry := map[string]any{"room_id": id, "name": rm.name, "phase": v.Phase, "players": len(v.Players), "player_count": v.Rules.PlayerCount, "created_at": rm.createdAt}
+		entry := map[string]any{"room_id": id, "name": rm.name, "phase": v.Phase, "players": len(v.Players), "player_count": v.Rules.PlayerCount, "created_at": rm.createdAt, "ticket_fee": v.Rules.TicketFee}
 		if !rm.archivedAt.IsZero() {
 			entry["archived_at"] = rm.archivedAt
 		}
 		list = append(list, entry)
 	}
-	reply(w, 200, map[string]any{"rooms": list})
+	reply(w, 200, map[string]any{"rooms": list, "warehouses": game.Warehouses})
 }
 func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 	var a *account
@@ -276,8 +287,10 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var v struct {
-		Name    string `json:"name"`
-		Players int    `json:"players"`
+		Name      string `json:"name"`
+		Players   int    `json:"players"`
+		Warehouse string `json:"warehouse"`
+		Ticket    *int64 `json:"ticket_fee"`
 	}
 	if !decode(w, r, &v) {
 		return
@@ -286,10 +299,20 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, errors.New("room name must contain 1 to 32 non-control characters"))
 		return
 	}
-	g, e := game.NewWithHints(v.Players, s.gameConfig, s.cardConfig, s.hintConfig)
+	geometry := s.gameConfig.Clone()
+	if v.Ticket != nil {
+		geometry.TicketFee = *v.Ticket
+	}
+	g, e := game.NewWithHints(v.Players, geometry, s.cardConfig, s.hintConfig)
 	if e != nil {
 		fail(w, 400, e)
 		return
+	}
+	if v.Warehouse != "" {
+		if err := g.SetWarehouse(v.Warehouse); err != nil {
+			fail(w, 400, err)
+			return
+		}
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -364,6 +387,7 @@ func (s *Server) stateFor(w http.ResponseWriter, r *http.Request, observer bool)
 	if a != nil && t != "" {
 		self := v["self"].(map[string]any)
 		self["assets"], self["max_bid"] = a.Assets, a.Assets
+		self["cash"] = a.Assets
 	}
 	v["room_id"] = rm.id
 	v["room_name"] = rm.name
@@ -383,6 +407,11 @@ func (s *Server) stateFor(w http.ResponseWriter, r *http.Request, observer bool)
 	if !rm.settledAt.IsZero() {
 		v["settled_at"] = rm.settledAt
 	}
+	if observer {
+		v["activities"] = activityView(rm, "", 6)
+	} else if a != nil && t != "" {
+		v["self"].(map[string]any)["activities"] = activityView(rm, seatForAccount(rm, a.ID), 6)
+	}
 	reply(w, 200, v)
 }
 func (s *Server) join(w http.ResponseWriter, r *http.Request) {
@@ -391,7 +420,9 @@ func (s *Server) join(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var v struct {
-		Cards []string `json:"cards"`
+		Cards     []string `json:"cards"`
+		Specialty string   `json:"specialty"`
+		Category  string   `json:"category"`
 	}
 	if !decode(w, r, &v) {
 		return
@@ -424,6 +455,10 @@ func (s *Server) join(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	if err := s.checkDeck(a, v.Cards); err != nil {
+		fail(w, 409, err)
+		return
+	}
 	var id string
 	if !s.mutateRoom(w, rm, func(next *room) error {
 		var t string
@@ -432,6 +467,9 @@ func (s *Server) join(w http.ResponseWriter, r *http.Request) {
 		if err == nil {
 			next.members[a.ID] = t
 			next.seatAccounts[id] = a.ID
+			if v.Specialty != "" {
+				err = next.game.Configure(t, v.Specialty, v.Category, v.Cards)
+			}
 		}
 		return err
 	}) {
@@ -463,11 +501,24 @@ func (s *Server) start(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	prices := map[string]map[string]int64{}
 	balances := make(map[string]int64, len(rm.seatAccounts))
 	for seat, id := range rm.seatAccounts {
-		balances[seat] = s.accountsByID[id].Assets
+		actor := s.accountsByID[id]
+		raw, _ := rm.game.Observe(rm.members[id])
+		var own game.View
+		_ = json.Unmarshal(raw, &own)
+		if err := s.checkDeck(actor, own.Self.Deck); err != nil {
+			fail(w, 409, err)
+			return
+		}
+		prices[seat] = map[string]int64{}
+		for _, card := range own.Self.Deck {
+			prices[seat][card] = actor.CardStock[card][0]
+		}
+		balances[seat] = actor.Assets
 	}
-	if !s.mutateRoom(w, rm, func(next *room) error { return next.game.StartWithAssets(balances) }) {
+	if !s.mutateRoom(w, rm, func(next *room) error { next.game.SetCardPrices(prices); return next.game.StartWithAssets(balances) }) {
 		return
 	}
 	reply(w, 200, map[string]bool{"ok": true})
@@ -508,6 +559,22 @@ func (s *Server) card(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if s.playerAction(w, r, func(g *game.Game, t string) error { return g.UseCard(t, v.Round, v.Card, v.Reason) }) {
+		s.state(w, r)
+	}
+}
+func (s *Server) withdraw(w http.ResponseWriter, r *http.Request) {
+	var v struct {
+		Round  int    `json:"round"`
+		Reason string `json:"reason"`
+	}
+	if !decode(w, r, &v) {
+		return
+	}
+	if err := game.ValidateReason(v.Reason); err != nil {
+		fail(w, 400, err)
+		return
+	}
+	if s.playerAction(w, r, func(g *game.Game, t string) error { return g.Withdraw(t, v.Round, v.Reason) }) {
 		s.state(w, r)
 	}
 }

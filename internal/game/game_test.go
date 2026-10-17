@@ -141,7 +141,7 @@ func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	if e := g.UseCard(ts[0], 2, "largest_price", "protocol test"); e == nil {
 		t.Fatal("card reused")
 	}
-	if e := g.Submit(ts[0], 2, 0, "protocol test"); e != nil {
+	if e := g.Submit(ts[0], 2, 1, "protocol test"); e != nil {
 		t.Fatal("decreasing bid should be allowed", e)
 	}
 }
@@ -183,8 +183,8 @@ func TestFiveRoundsSettlementAndHints(t *testing.T) {
 	if v.Phase != "settled" || len(v.History) != 5 || r == nil {
 		t.Fatal("missing settlement")
 	}
-	if r.WinnerID != "p4" || r.Paid != 103 || r.Profit != r.Total-103 {
-		t.Fatalf("bad settlement: %+v", r)
+	if r.WinnerID != "p4" || r.Paid != 103 || r.Profit != r.Total-103-r.TotalTicketCost-r.TotalCardCost {
+		t.Fatal("incorrect net settlement")
 	}
 	if v.PublicHints[0].Kind == v.PublicHints[1].Kind {
 		t.Fatal("duplicate public hint kind")
@@ -196,7 +196,7 @@ func TestFiveRoundsSettlementAndHints(t *testing.T) {
 	if total != r.Total {
 		t.Fatal("total mismatch")
 	}
-	if r.Payoffs["p1"] != 0 || r.Payoffs["p4"] != r.Profit {
+	if r.Payoffs["p1"] != -g.gameConfig.TicketFee || r.Payoffs["p4"] != r.Total-r.Paid-g.gameConfig.TicketFee {
 		t.Fatal("wrong payoffs")
 	}
 	if e := g.Submit(ts[0], 5, 0, "protocol test"); e == nil {
@@ -219,6 +219,9 @@ func TestGeometryAndPriceRanges(t *testing.T) {
 					valid = i.Price >= q.Min && i.Price <= q.Max
 				}
 			}
+			if i.Category == "easter_egg" {
+				valid = i.Price == 17500000 && i.Quality == "legendary"
+			}
 			if !valid {
 				t.Fatal("invalid quality/price")
 			}
@@ -238,7 +241,7 @@ func TestConcurrentSubmissionsAndTies(t *testing.T) {
 				if e != nil {
 					errs <- e
 				}
-				if e := g.Submit(token, r, 0, "protocol test"); e != nil {
+				if e := g.Submit(token, r, 100, "protocol test"); e != nil {
 					errs <- e
 				}
 			}(token)
@@ -250,7 +253,7 @@ func TestConcurrentSubmissionsAndTies(t *testing.T) {
 		}
 	}
 	v := view(t, g, "")
-	if len(v.History) != 5 || len(v.Settlement.Tied) != 7 || v.Settlement.Paid != 0 || !contains(v.Settlement.Tied, v.Settlement.WinnerID) {
+	if len(v.History) != 5 || len(v.Settlement.Tied) != 7 || v.Settlement.Paid != 100 || !contains(v.Settlement.Tied, v.Settlement.WinnerID) {
 		t.Fatal("incorrect tie resolution")
 	}
 }

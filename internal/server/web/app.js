@@ -14,7 +14,7 @@ const $=id=>document.getElementById(id);
 const text=(id,value)=>{const node=$(id),next=String(value);if(node.textContent!==next)node.textContent=next;};
 const initialRoom=new URLSearchParams(location.search).get('room')||'';
 const initialPage=new URLSearchParams(location.search).get('page');
-const ui={room:initialRoom,roomGroup:null,page:initialRoom?'room':['history','stats','archives'].includes(initialPage)?initialPage:'rooms',cursor:null,sort:'profit',quality:'all',search:'',observer:false,manage:false,focusPlayer:null,focusItem:null,inspector:null,roomMenu:null,bulkMode:false,selectedRooms:new Set(),roomBusy:false,roomError:'',deleteTargets:[],notice:null};
+const ui={room:initialRoom,roomGroup:null,page:initialRoom?'room':['history','stats','archives'].includes(initialPage)?initialPage:'rooms',cursor:null,sort:'profit',quality:'all',search:'',observer:false,manage:false,focusPlayer:null,focusItem:null,inspector:null,activityTab:'actions',actionRound:null,actionFilter:'all',actionID:null,roomMenu:null,bulkMode:false,selectedRooms:new Set(),roomBusy:false,roomError:'',deleteTargets:[],notice:null};
 let source=null,rooms=[],results={games:0,profit:0,paid:0,rate:null,agents:[]},connection='connecting',resultsFailed=false;
 let lastContent='',lastRooms='',lastContentObserver=false;
 let managing=false,activeDialog=null,closeDirectoryOnLoad=false;
@@ -74,7 +74,7 @@ function updateDialog() {
   if(activeDialog.kind==='delete-rooms'&&!ui.manage){dialog.close();return;}
   const content=activeDialog.kind==='delete-rooms'?deleteRoomsDialog(ui.deleteTargets,ui):dialogContent(activeDialog.kind,activeDialog.id,source,results,ui);
   if(!content){dialog.close();return;}
-  dialog.className=['hints','bids','inventory','room-info'].includes(activeDialog.kind)?'drawer drawer-'+activeDialog.kind:'';
+  dialog.className=['hints','bids','inventory','room-info','activities'].includes(activeDialog.kind)?'drawer drawer-'+activeDialog.kind:'';
   patchContent(dialog,`<div class="dialog-head"><h2 id="dialog-title">${esc(content.title)}</h2><button class="dialog-close" aria-label="${esc(t('close'))}">${icon('close')}</button></div>${content.content}`);
   dialog.querySelector('button').onclick=()=>dialog.close();
 }
@@ -100,7 +100,7 @@ function chooseRoom(id,fromDirectory=false) {
   ui.page='room';
   ui.roomGroup=roomGroup(rooms.find(room=>room.room_id===id));
   if(id===ui.room){if(source?.room_id===id)closeMobileSidebar();redraw();return;}
-  ui.room=id;ui.cursor=null;ui.quality='all';ui.search='';
+  ui.room=id;ui.cursor=null;ui.actionRound=null;ui.actionID=null;ui.quality='all';ui.search='';
   connection='connecting';
   dialog.close();
   const url=new URL(location.href);url.searchParams.set('room',id);url.searchParams.delete('page');history.replaceState(null,'',url);
@@ -120,10 +120,14 @@ document.addEventListener('click',event=>{
   const action=event.target.closest('[data-action]')?.dataset.action;
   if(!action)return;
   const separator=action.indexOf(':'),kind=separator<0?action:action.slice(0,separator),id=separator<0?'':action.slice(separator+1);
+  if(kind==='activity-tab'){ui.activityTab=id;redraw();return;}
+  if(kind==='action-round'){ui.actionRound=Number(id);ui.actionID=null;redraw();updateDialog();return;}
+  if(kind==='action-detail'){ui.actionID=Number(id);showDialog('activities');return;}
+  if(kind==='activities'){showDialog('activities');return;}
   if(kind==='avatar-greet'){greet(event.target.closest('button'));return;}
   if(kind==='focus-agent'){
     if(ui.focusPlayer===id&&ui.inspector==='player'){closeInspection();return;}
-    if(ui.focusPlayer!==id)ui.focusItem=null;
+    if(ui.focusPlayer!==id){ui.focusItem=null;ui.actionRound=null;ui.actionID=null;ui.activityTab='actions';}
     ui.focusPlayer=id;ui.inspector='player';hideTip();redraw();updateDialog();greet(event.target.closest('button'));return;
   }
   if(kind==='dismiss-player'){closeInspection();return;}
@@ -155,9 +159,9 @@ document.addEventListener('click',event=>{
   }
   if(['agent','stats-agent','card'].includes(kind)){showDialog(kind,id);return;}
   if(!source)return;
-  if(kind==='step')ui.cursor=Number(id);
-  else if(kind==='latest')ui.cursor=null;
-  else if(kind==='prev'||kind==='next')ui.cursor=Math.max(0,Math.min((ui.cursor??maxFrame(source))+(kind==='prev'?-1:1),maxFrame(source)));
+  if(kind==='step'){ui.cursor=Number(id);ui.actionRound=null;ui.actionID=null;}
+  else if(kind==='latest'){ui.cursor=null;ui.actionRound=null;ui.actionID=null;}
+  else if(kind==='prev'||kind==='next'){ui.actionRound=null;ui.actionID=null;ui.cursor=Math.max(0,Math.min((ui.cursor??maxFrame(source))+(kind==='prev'?-1:1),maxFrame(source)));}
   redraw();
 });
 document.addEventListener('keydown',event=>{
@@ -183,6 +187,7 @@ document.addEventListener('change',event=>{
     if(event.target.dataset.roomSelect){const id=event.target.dataset.roomSelect;if(event.target.checked)ui.selectedRooms.add(id);else ui.selectedRooms.delete(id);redraw();return;}
   }
   const key=event.target.dataset.control;
+ if(key==='action-filter'){ui.actionFilter=event.target.value;redraw();updateDialog();return;}
   if(['quality','sort'].includes(key)){ui[key]=event.target.value;if(key==='sort')live.refresh({results:true});else{redraw();updateDialog();}}
 });
 document.addEventListener('input',event=>{
@@ -228,7 +233,7 @@ const live=observe({getRoom:()=>ui.room,getObserver:()=>ui.observer,getSort:()=>
     if(source&&!knownItems(observation(source,ui.cursor),ui.observer?ui.focusPlayer:null).some(item=>item.id===ui.focusItem))ui.focusItem=null;
     if(data.rooms){
       const previous=rooms.find(room=>room.room_id===ui.room);
-      rooms=data.rooms.rooms;
+      rooms=data.rooms.rooms;ui.warehouses=data.rooms.warehouses||[];
       if(!rooms.some(room=>room.archived_at))ui.bulkMode=false;
       ui.selectedRooms=new Set([...ui.selectedRooms].filter(id=>rooms.some(room=>room.room_id===id&&room.archived_at)));
       if(ui.roomMenu&&!rooms.some(room=>room.room_id===ui.roomMenu&&room.phase!=='bidding'&&!room.archived_at))ui.roomMenu=null;
@@ -300,7 +305,7 @@ dialog.addEventListener('submit',async event=>{
   event.preventDefault();if(managing)return;managing=true;
   const submit=event.target.querySelector('[type=submit]');submit.disabled=true;
   try{
-    const data=new FormData(event.target),room=await post('/api/create',{name:data.get('name').trim(),players:Number(data.get('players'))});
+    const data=new FormData(event.target),room=await post('/api/create',{name:data.get('name').trim(),players:Number(data.get('players')),warehouse:data.get('warehouse')||'mixed',ticket_fee:Number(data.get('ticket'))});
     dialog.close();chooseRoom(room.room_id);live.refresh({state:true,rooms:true});
   }catch{$('create-room-error').hidden=false;}
   finally{managing=false;submit.disabled=false;}

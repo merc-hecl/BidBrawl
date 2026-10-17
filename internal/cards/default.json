@@ -1,42 +1,137 @@
 {
   "schema_version": 1,
-  "default_deck": ["largest_price", "random_shape", "item_count", "quality_counts"],
+  "default_deck": [
+    "largest_price",
+    "random_shape",
+    "item_count",
+    "quality_counts"
+  ],
   "cards": [
     {
       "id": "largest_quality",
       "name": "巨物鉴定",
       "description": "揭示面积最大物品的轮廓、位置和品质；并列按物品 ID 排序取首个。",
-      "effect": {"type": "reveal", "selector": "largest", "fields": ["quality"]}
+      "effect": {
+        "type": "reveal",
+        "selector": "largest",
+        "fields": [
+          "quality"
+        ]
+      },
+      "price": 800
     },
     {
       "id": "largest_price",
       "name": "巨物估价",
       "description": "揭示面积最大物品的轮廓、位置和真实价格，不揭示品质。",
-      "effect": {"type": "reveal", "selector": "largest", "fields": ["price"]}
+      "effect": {
+        "type": "reveal",
+        "selector": "largest",
+        "fields": [
+          "price"
+        ]
+      },
+      "price": 3500
     },
     {
       "id": "random_shape",
       "name": "轮廓扫描",
       "description": "揭示一件随机物品的 ID 和两个角坐标。",
-      "effect": {"type": "reveal", "selector": "random", "fields": ["shape"]}
+      "effect": {
+        "type": "reveal",
+        "selector": "random",
+        "fields": [
+          "shape"
+        ]
+      },
+      "price": 200
     },
     {
       "id": "random_quality",
       "name": "随机鉴定",
       "description": "揭示一件随机物品的 ID、轮廓、位置和品质，不揭示价格。",
-      "effect": {"type": "reveal", "selector": "random", "fields": ["quality"]}
+      "effect": {
+        "type": "reveal",
+        "selector": "random",
+        "fields": [
+          "quality"
+        ]
+      },
+      "price": 500
     },
     {
       "id": "item_count",
       "name": "清点",
       "description": "揭示物品总数。",
-      "effect": {"type": "count"}
+      "effect": {
+        "type": "count"
+      },
+      "price": 1200
     },
     {
       "id": "quality_counts",
       "name": "品质普查",
       "description": "揭示每种品质的物品数量。",
-      "effect": {"type": "count", "group_by": "quality"}
+      "effect": {
+        "type": "count",
+        "group_by": "quality"
+      },
+      "price": 12000
+    },
+    {
+      "id": "sample_four",
+      "name": "抽样全检",
+      "description": "完整鉴定四件尚未知晓的物品。",
+      "price": 6000,
+      "effect": {
+        "type": "reveal",
+        "selector": "random",
+        "fields": [
+          "quality",
+          "price",
+          "identity"
+        ],
+        "count": 4
+      }
+    },
+    {
+      "id": "category_counts",
+      "name": "品类清点",
+      "description": "显示各品类件数。",
+      "price": 1800,
+      "effect": {
+        "type": "count",
+        "group_by": "category"
+      }
+    },
+    {
+      "id": "legendary_area",
+      "name": "珍品扫描",
+      "description": "显示传说物品总占格。",
+      "price": 5000,
+      "effect": {
+        "type": "area",
+        "quality": "legendary"
+      }
+    },
+    {
+      "id": "legendary_value",
+      "name": "珍品估价",
+      "description": "显示传说物品合计回收价值。",
+      "price": 18000,
+      "effect": {
+        "type": "value",
+        "quality": "legendary"
+      }
+    },
+    {
+      "id": "audit",
+      "name": "终极审计",
+      "description": "显示整仓准确回收价值。",
+      "price": 35000,
+      "effect": {
+        "type": "value"
+      }
     }
   ]
 }

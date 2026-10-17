@@ -30,8 +30,8 @@ func TestInstantSettlementThresholdsAndPersistence(t *testing.T) {
 		high, second int64
 		instant      bool
 	}{
-		{1, 199, 100, false}, {1, 200, 100, true}, {2, 169, 100, false}, {2, 170, 100, true},
-		{3, 149, 100, false}, {3, 150, 100, true}, {4, 100000, 1, false}, {5, 100, 100, false},
+		{1, 199, 100, false}, {1, 200, 100, true}, {2, 159, 100, false}, {2, 160, 100, true},
+		{3, 129, 100, false}, {3, 130, 100, true}, {4, 109, 100, false}, {4, 110, 100, true}, {5, 100, 100, false},
 		{1, 1, 0, true}, {1, 0, 0, false},
 	} {
 		g, tokens := fixture(t, 2)
@@ -42,17 +42,23 @@ func TestInstantSettlementThresholdsAndPersistence(t *testing.T) {
 				}
 			}
 		}
-		if err := g.Submit(tokens[0], sample.round, sample.high, "price and risk estimate"); err != nil {
+		submit := func(token string, amount int64) error {
+			if amount == 0 {
+				return g.Withdraw(token, sample.round, "exit based on risk")
+			}
+			return g.Submit(token, sample.round, amount, "price and risk estimate")
+		}
+		if err := submit(tokens[0], sample.high); err != nil {
 			t.Fatal(err)
 		}
 		if view(t, g, "").Settlement != nil {
 			t.Fatal("settled before everyone submitted")
 		}
-		if err := g.Submit(tokens[1], sample.round, sample.second, "independent estimate"); err != nil {
+		if err := submit(tokens[1], sample.second); err != nil {
 			t.Fatal(err)
 		}
 		v := view(t, g, "")
-		settled := sample.instant || sample.round == Rounds
+		settled := sample.instant || sample.round == Rounds || sample.high == 0 && sample.second == 0
 		if (v.Settlement != nil) != settled {
 			t.Fatalf("round %d bids %d/%d: phase %s", sample.round, sample.high, sample.second, v.Phase)
 		}
@@ -60,6 +66,9 @@ func TestInstantSettlementThresholdsAndPersistence(t *testing.T) {
 			method := "final"
 			if sample.instant {
 				method = "instant"
+			}
+			if sample.high == 0 && sample.second == 0 {
+				method = "unsold"
 			}
 			if v.Round != sample.round || v.Settlement.Round != sample.round || v.Settlement.Method != method || v.Settlement.Paid != sample.high || len(v.History) != sample.round {
 				t.Fatal("wrong settlement stage")

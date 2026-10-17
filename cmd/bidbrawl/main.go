@@ -54,12 +54,12 @@ func run(ctx context.Context, args []string) error {
 }
 func runWithBrowser(ctx context.Context, args []string, launchBrowser func(string) error) error {
 	if len(args) == 0 {
-		fmt.Println("BidBrawl — 外部 Agent 驱动的暗拍\n命令: host | ui | register | accounts | rotate-credential | login | logout | me | rooms | create | invite | join | start | state | watch | results | stats | leaderboard | agent | replay | observer-login | config | cards | hints | card | bid | handbook\n用法: bidbrawl <命令> -h")
+		fmt.Println("BidBrawl — 外部 Agent 驱动的暗拍\n命令: host | ui | register | accounts | rotate-credential | login | logout | me | rooms | create | invite | join | start | state | watch | results | stats | leaderboard | agent | replay | observer-login | config | cards | hints | card | bid | withdraw | inventory | buy | sell | loadout | relief | catalog | handbook\n用法: bidbrawl <命令> -h")
 		return nil
 	}
 	command := args[0]
 	switch command {
-	case "host", "ui", "register", "accounts", "rotate-credential", "login", "logout", "me", "rooms", "create", "invite", "join", "start", "state", "watch", "results", "stats", "leaderboard", "agent", "replay", "observer-login", "config", "cards", "hints", "card", "bid", "handbook":
+	case "host", "ui", "register", "accounts", "rotate-credential", "login", "logout", "me", "rooms", "create", "invite", "join", "start", "state", "watch", "results", "stats", "leaderboard", "agent", "replay", "observer-login", "config", "cards", "hints", "card", "bid", "handbook", "inventory", "buy", "sell", "loadout", "relief", "catalog", "withdraw":
 	default:
 		return fmt.Errorf("unknown command: %s", command)
 	}
@@ -67,6 +67,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	if command == "host" {
 		listen := f.String("listen", "127.0.0.1:8787", "listen address; use 0.0.0.0:8787 for LAN access")
 		configPath := f.String("cards-config", "", "skill-card JSON configuration path; uses built-in defaults if omitted")
+		itemsConfigPath := f.String("items-config", "", "物品目录 JSON 路径，省略使用内置目录")
 		gameConfigPath := f.String("game-config", "", "game JSON configuration path: box and item dimensions, quality prices and weights, initial assets; uses built-in defaults if omitted")
 		hintsPath := f.String("hints-config", "", "public-hint JSON configuration path; uses built-in local-fact hints if omitted")
 		dataDir := f.String("data-dir", os.Getenv("BIDBRAWL_DATA_DIR"), "account, room and game data directory; defaults to BidBrawl in the user configuration directory")
@@ -101,6 +102,16 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		databasePath, e := identityDBPath(*dataDir)
 		if e != nil {
 			return e
+		}
+		if *itemsConfigPath != "" {
+			items, err := game.LoadCatalog(*itemsConfigPath)
+			if err != nil {
+				return err
+			}
+			geometry.Catalog = items
+			if err := geometry.Validate(); err != nil {
+				return err
+			}
 		}
 		s, e := server.OpenWithHints(geometry, cfg, hintConfig, databasePath)
 		if e != nil {
@@ -164,6 +175,13 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	name := f.String("name", "Agent", "玩家名称")
 	accountID := f.String("account", "", "agent / rotate-credential：永久账号 ID，必填")
 	deck := f.String("cards", "", "携带的卡 ID，最多 5 张不同卡，用逗号分隔；省略或空字符串表示不带卡")
+	specialty := f.String("specialty", "analysis", "鉴定专长 ID，用 catalog 查看22种专长及轮次效果")
+	category := f.String("category", "", "专长允许的子品类；region 可选 northwest/northeast/southwest/southeast")
+	ticket := f.Int64("ticket", 5000, "建房门票金额；开局扣除，退出不退，可设0")
+	warehouse := f.String("warehouse", "mixed", "建房仓库：mixed / tech / estate")
+	quantity := f.Int("quantity", 1, "购买卡牌数量，1–99")
+	itemIDs := f.String("items", "", "出售的仓库物品 ID，逗号分隔")
+	sellAll := f.Bool("all", false, "出售全部仓库藏品")
 	round := f.Int("round", 0, "用卡 / 报价的当前轮次，必填，从 state 查看")
 	card := f.String("card", "", "技能卡 ID")
 	amount := f.Int64("amount", 0, "整数报价")
@@ -208,7 +226,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	}
 	if *room == "" {
 		switch command {
-		case "join", "invite", "start", "state", "replay", "card":
+		case "join", "invite", "start", "state", "replay", "card", "loadout", "withdraw":
 			return errors.New("-room is required (join also accepts -invite)")
 		}
 	}
@@ -233,6 +251,16 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		}
 		if !*live {
 			fmt.Print(handbookText)
+			if *token != "" {
+				reportCtx, cancel := context.WithTimeout(ctx, 2*time.Second)
+				local := client.New(*url, *token)
+				var result any
+				err := local.Request(reportCtx, "POST", client.RoomPath("/api/activity", *room), map[string]any{"command": "handbook", "topic": *topic, "lang": *lang}, &result)
+				cancel()
+				if err != nil {
+					fmt.Fprintln(os.Stderr, "Handbook activity was not recorded:", err)
+				}
+			}
 			if *topic == "cards" {
 				fmt.Print(manual.Catalog(cards.Default(), game.DefaultConfig(), *lang))
 			}
@@ -240,6 +268,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		}
 	}
 	c := client.New(*url, *token)
+	c.Command = command
 	if *observer {
 		if *observerToken == "" {
 			return errors.New("-observer-token or BIDBRAWL_OBSERVER_TOKEN is required")
@@ -284,6 +313,15 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 			watch = c.WatchObserver
 		}
 		err := watch(watchCtx, *room, func(event client.Event) error {
+			if event.Name == "ready" && !*observer && *token != "" {
+				reportCtx, cancel := context.WithTimeout(watchCtx, 2*time.Second)
+				var result any
+				reportErr := c.Request(reportCtx, "POST", client.RoomPath("/api/activity", *room), map[string]any{"command": "watch"}, &result)
+				cancel()
+				if reportErr != nil {
+					fmt.Fprintln(os.Stderr, "Watch activity was not recorded:", reportErr)
+				}
+			}
 			matched := len(selected) == 0 || selected[event.Name]
 			// Always expose ready so a consumer can resync after reconnect.
 			if matched || event.Name == "ready" {
@@ -341,8 +379,34 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		return printJSON(cfg)
 	}
 	method, path := "POST", ""
+	if command == "catalog" && *room != "" {
+		observation, err := c.Observe(ctx, *room)
+		if err != nil {
+			return err
+		}
+		return printJSON(map[string]any{"specialties": observation.Rules.Specialties, "categories": observation.Rules.Categories, "catalog": observation.Rules.Catalog, "warehouses": observation.Rules.Warehouses})
+	}
 	var input any
 	switch command {
+	case "catalog":
+		method, path = "GET", "/api/config"
+	case "withdraw":
+		path = client.RoomPath("/api/withdraw", *room)
+		input = map[string]any{"round": *round, "reason": *reason}
+	case "buy":
+		path = "/api/buy"
+		input = map[string]any{"card": *card, "quantity": *quantity}
+	case "sell":
+		path = "/api/sell"
+		ids := []string{}
+		if *itemIDs != "" {
+			for _, id := range strings.Split(*itemIDs, ",") {
+				ids = append(ids, strings.TrimSpace(id))
+			}
+		}
+		input = map[string]any{"ids": ids, "all": *sellAll}
+	case "relief":
+		path = "/api/relief"
 	case "observer-login":
 		path = "/api/observer/login"
 	case "stats", "leaderboard":
@@ -373,22 +437,25 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		path = "/api/accounts/" + neturl.PathEscape(*accountID) + "/credential"
 	case "logout":
 		path = "/api/logout"
-	case "me", "rooms", "accounts", "results":
+	case "me", "rooms", "accounts", "results", "inventory":
 		method, path = "GET", "/api/"+command
 	case "create":
 		path = "/api/create"
-		input = map[string]any{"name": *name, "players": *players}
+		input = map[string]any{"name": *name, "players": *players, "warehouse": *warehouse}
+		if explicit["ticket"] {
+			input.(map[string]any)["ticket_fee"] = *ticket
+		}
 	case "invite":
 		path = client.RoomPath("/api/invite", *room)
-	case "join":
-		path = client.RoomPath("/api/join", *room)
+	case "join", "loadout":
+		path = client.RoomPath("/api/"+command, *room)
 		cards := []string{}
 		if *deck != "" {
 			for _, id := range strings.Split(*deck, ",") {
 				cards = append(cards, strings.TrimSpace(id))
 			}
 		}
-		input = map[string]any{"cards": cards}
+		input = map[string]any{"cards": cards, "specialty": *specialty, "category": *category}
 	case "state":
 		method, path = "GET", client.RoomPath("/api/state", *room)
 		if *observer {
@@ -404,7 +471,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		input = map[string]any{"round": *round, "card": *card, "reason": *reason}
 	case "bid":
 		if !explicit["amount"] {
-			return errors.New("-amount is required, including for a zero bid")
+			return errors.New("-amount is required and must be positive; use withdraw to exit")
 		}
 		if *room == "" {
 			return errors.New("-room is required")

@@ -41,6 +41,11 @@ export function localizeCard(card) {
   if (card.name !== zh[nameKey] || card.description !== zh[descriptionKey]) return card;
   return {...card, name:t(nameKey), description:t(descriptionKey)};
 }
+export function localizeName(kind,definition) {
+  if(!definition)return '';
+  const key=`${kind}.${definition.id}.name`;
+  return zh[key]===definition.name?t(key):definition.name;
+}
 export function translateDOM(root = document) {
   for (const [attribute, target] of [['data-i18n', null], ['data-i18n-aria', 'aria-label'], ['data-i18n-placeholder', 'placeholder']]) {
     root.querySelectorAll(`[${attribute}]`).forEach(node => {

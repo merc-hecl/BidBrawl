@@ -76,6 +76,12 @@ func TestConfiguredPricesWeightsBidsAndRestore(t *testing.T) {
 		t.Run(chosen.ID, func(t *testing.T) {
 			cfg := geometryConfig(Dimensions{4, 4}, ItemLimits{1, 1})
 			cfg.InitialAssets = 8_000_000
+			cfg.Catalog = []ItemTemplate{}
+			for _, item := range builtinCatalog.Items {
+				if item.Category != "easter_egg" {
+					cfg.Catalog = append(cfg.Catalog, item)
+				}
+			}
 			for i := range cfg.Qualities {
 				q := &cfg.Qualities[i]
 				q.Weight = 0
@@ -118,7 +124,7 @@ func TestConfiguredPricesWeightsBidsAndRestore(t *testing.T) {
 			if err = g.Submit(a, 1, cfg.InitialAssets+1, "protocol fixture"); err == nil {
 				t.Fatal("custom bid cap ignored")
 			}
-			if err = g.Submit(a, 1, cfg.InitialAssets, "protocol fixture"); err != nil {
+			if err = g.Submit(a, 1, cfg.InitialAssets-cfg.TicketFee, "protocol fixture"); err != nil {
 				t.Fatal(err)
 			}
 			before, _ := g.Observe(a)
@@ -134,7 +140,7 @@ func TestConfiguredPricesWeightsBidsAndRestore(t *testing.T) {
 			if !bytes.Equal(before, after) {
 				t.Fatal("restore changed prices, private result or bid limit")
 			}
-			if err = restored.Submit(b, 1, 0, "protocol fixture"); err != nil {
+			if err = restored.Withdraw(b, 1, "protocol fixture"); err != nil {
 				t.Fatal(err)
 			}
 			settled := view(t, restored, "")
@@ -161,7 +167,9 @@ func TestConfiguredPricesWeightsBidsAndRestore(t *testing.T) {
 }
 
 func TestBidsUseEachPlayersAssetsIncludingZero(t *testing.T) {
-	g, _ := New(2)
+	cfg := DefaultConfig()
+	cfg.TicketFee = 0
+	g, _ := NewWithConfig(2, cfg, cards.Default())
 	_, a, _ := g.Join("A", nil)
 	_, b, _ := g.Join("B", nil)
 	if err := g.StartWithAssets(map[string]int64{"p1": 0, "p2": 3000000}); err != nil {
@@ -173,7 +181,7 @@ func TestBidsUseEachPlayersAssetsIncludingZero(t *testing.T) {
 	if err := g.Submit(a, 1, 1, "protocol fixture"); err == nil {
 		t.Fatal("zero-assets player can overbid")
 	}
-	if err := g.Submit(a, 1, 0, "protocol fixture"); err != nil {
+	if err := g.Withdraw(a, 1, "protocol fixture"); err != nil {
 		t.Fatal(err)
 	}
 	if err := g.Submit(b, 1, 3000001, "protocol fixture"); err == nil {

@@ -85,7 +85,7 @@ func TestObserverItemRevealsPreserveOnlyLearnedFields(t *testing.T) {
 	for _, fields := range [][]string{{"shape"}, {"quality"}, {"price"}, {"shape", "quality", "price"}} {
 		t.Run(fmt.Sprint(fields), func(t *testing.T) {
 			cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []cards.Definition{
-				{ID: "scan", Name: "Scan", Description: "Test reveal", Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: fields}},
+				{ID: "scan", Name: "Scan", Description: "Test reveal", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: fields}},
 			}}
 			g, err := NewWithCards(2, cfg)
 			if err != nil {

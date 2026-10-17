@@ -38,11 +38,11 @@ func Catalog(cfg cards.Config, geometry game.Config, lang string) string {
 	if lang == "en" {
 		fmt.Fprintf(&b, "\n## Box dimensions\n\nBox: %d columns × %d rows (%d cells). Items: at least 1×1 cell, at most %d columns × %d rows.\n", geometry.Box.Width, geometry.Box.Height, geometry.Box.Width*geometry.Box.Height, geometry.Items.MaxWidth, geometry.Items.MaxHeight)
 		fmt.Fprintf(&b, "\n## Card catalog\n\nPreset: `%s`. To carry cards, explicitly list them with `-cards`; omitting it means no cards.\n\n", strings.Join(cfg.DefaultDeck, ","))
-		b.WriteString("| Card ID | Name | Description |\n|---|---|---|\n")
+		b.WriteString("| Card ID | Name | Price | Description |\n|---|---|---|---|\n")
 	} else {
 		fmt.Fprintf(&b, "\n## 箱体尺寸\n\n箱体 %d 列 × %d 行，共 %d 格；物品最小 1×1 格，最大 %d 列 × %d 行。\n", geometry.Box.Width, geometry.Box.Height, geometry.Box.Width*geometry.Box.Height, geometry.Items.MaxWidth, geometry.Items.MaxHeight)
 		fmt.Fprintf(&b, "\n## 卡牌目录\n\n预设卡组：`%s`，携带时需用 `-cards` 指定；省略则不带卡。\n\n", strings.Join(cfg.DefaultDeck, ","))
-		b.WriteString("| 卡 ID | 名称 | 说明 |\n|---|---|---|\n")
+		b.WriteString("| 卡 ID | 名称 | 购买价 | 说明 |\n|---|---|---|---|\n")
 	}
 	escape := func(s string) string { return strings.ReplaceAll(s, "|", "\\|") }
 	defaults := cards.Default().Cards
@@ -57,7 +57,7 @@ func Catalog(cfg cards.Config, geometry game.Config, lang string) string {
 				}
 			}
 		}
-		fmt.Fprintf(&b, "| %s | %s | %s |\n", card.ID, escape(card.Name), escape(card.Description))
+		fmt.Fprintf(&b, "| %s | %s | %d | %s |\n", card.ID, escape(card.Name), card.Price, escape(card.Description))
 	}
 	if len(cfg.Cards) == 0 {
 		if lang == "en" {
@@ -67,9 +67,9 @@ func Catalog(cfg cards.Config, geometry game.Config, lang string) string {
 		}
 	}
 	if lang == "en" {
-		fmt.Fprintf(&b, "\n## Prices and assets\n\nNew accounts receive %d coins once. Account assets are stored directly and updated at settlement. Your bid limit is self.max_bid (your current total assets). Only one unfinished room per account, including waiting rooms.\n\n| Quality ID | Price range (coins) | Generation weight |\n|---|---|---|\n", geometry.InitialAssets)
+		fmt.Fprintf(&b, "\n## Prices and assets\n\nNew accounts receive %d coins once. Cash is stored directly. Buy cards before bidding; consumed cards count as costs. Winning deducts the bid and deposits items into your warehouse; sell to the system outside bidding for cash. Your bid limit is self.max_bid (cash only). Only one unfinished room per account, including waiting rooms.\n\n| Quality ID | Price range (coins) | Generation weight |\n|---|---|---|\n", geometry.InitialAssets)
 	} else {
-		fmt.Fprintf(&b, "\n## 品质价格与资产\n\n新账号一次性获得 %d 金币。账号直接保存当前资产，成交时更新；报价上限见 self.max_bid（本人当前总资产）。同一账号同时只能加入一个未结算房间，包括等候中的房间。\n\n| 品质 ID | 单件价格范围（金币） | 生成权重 |\n|---|---|---|\n", geometry.InitialAssets)
+		fmt.Fprintf(&b, "\n## 品质价格与资产\n\n新账号一次性获得 %d 金币。购买卡牌扣现金，使用时消耗库存；成交只扣报价、藏品入库，非竞拍时向系统出售才增加现金。报价上限见 self.max_bid，仅包含现金。同一账号同时只能加入一个未结算房间，包括等候中的房间。\n\n| 品质 ID | 单件价格范围（金币） | 生成权重 |\n|---|---|---|\n", geometry.InitialAssets)
 	}
 	for _, q := range geometry.Qualities {
 		fmt.Fprintf(&b, "| %s | %d–%d | %d%% |\n", q.ID, q.Min, q.Max, q.Weight)
@@ -78,6 +78,11 @@ func Catalog(cfg cards.Config, geometry game.Config, lang string) string {
 }
 
 var englishCards = map[string][2]string{
+	"sample_four":     {"Sample appraisal", "Fully appraise four items with unknown attributes."},
+	"category_counts": {"Category census", "Show item counts by category."},
+	"legendary_area":  {"Legendary scan", "Show total cells occupied by legendary items."},
+	"legendary_value": {"Legendary valuation", "Show the total buyback value of legendary items."},
+	"audit":           {"Full audit", "Show the exact total warehouse buyback value."},
 	"largest_quality": {"Largest-item appraisal", "Reveals the quality of the largest item by area; ties use the first item in ID order."},
 	"largest_price":   {"Largest-item valuation", "Reveals the actual price of the largest item by area."},
 	"random_shape":    {"Shape scan", "Reveals the ID and two corner coordinates of one random item."},

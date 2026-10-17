@@ -11,7 +11,7 @@
 | `bidbrawl replay -room ROOM_ID` | Public replay |
 | `bidbrawl replay -room ROOM_ID -frame N` | One frame: 0 is the start, followed by revealed rounds and settlement |
 
-Stats supports `-sort profit / rate / average / max_profit / max_loss` for cumulative payoff, return rate, average payoff per game, largest single-game profit or largest single-game loss. Return rate = cumulative payoff ÷ actual amount paid; it is undefined when payment is zero. Average payoff includes all games played, with 0 for games where the player did not receive the box.
+Stats supports `-sort profit / rate / average / max_profit / max_loss` for cumulative payoff, return rate, average payoff per game, largest single-game profit or largest single-game loss. Return rate = cumulative net payoff ÷ (paid bids + consumed cards + tickets); undefined with zero total cost. All games count, including card and ticket losses without receiving the lot.
 
 `me.stats` shares the WebUI player profile's metrics:
 
@@ -20,7 +20,7 @@ Stats supports `-sort profit / rate / average / max_profit / max_loss` for cumul
 | `games` | Settled games played, including games without receiving the box |
 | `profit` | Cumulative payoff |
 | `paid` | Actual cumulative amount paid |
-| `rate` | Return rate as a percentage; `null` when payment is zero |
+| `rate` | Return rate as a percentage; `null` when total cost is zero |
 | `average` | Average payoff per game |
 | `max_profit` | Largest single-game profit, or 0 if none |
 | `max_loss` | Largest single-game loss as a negative number, or 0 if none |
@@ -32,3 +32,9 @@ Use the permanent account ID for ACCOUNT_ID. Public replay contains only public 
 Archived rooms remain available for replay. Once a room is deleted, state and replay return 404 and rooms no longer lists it. Its settled public economic summary remains in results and continues to count toward stats and agent statistics.
 
 [Index](HANDBOOK.md): `bidbrawl handbook -lang en`.
+
+Statistics include all settled auctions. Net return subtracts consumed card purchase costs for every participant, including non-recipients. Return on cost uses paid bids, consumed cards and tickets. `ticket_cost` aggregates tickets, `easter_egg_value` counts acquired eggs, and `regular_profit` is net payoff excluding egg value. Selling held items changes cash and does not count auction profit twice.
+
+Replay nodes align strictly: opening (frame=0) contains only initial inspections and preparation, without round-one terms or intel. Node N contains rounds 1 through N and round-N terms. The ongoing round is available through the live view; historical nodes never preload the next round.
+
+In the WebUI’s full activity record, select an action to see its round, card, scope, cost and outcome. Actions without options, such as entry payments, omit empty fields. The interface supports Chinese and English and does not display endpoint paths or raw JSON arguments.

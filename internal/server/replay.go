@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"slices"
 	"strconv"
 )
 
@@ -60,25 +61,56 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 		p["agent_id"] = "account:" + rm.seatAccounts[p["id"].(string)]
 	}
 	count := len(view.History)
-	if view.Settlement != nil {
-		count++
-	}
+	// Frame zero is the opening inspection. Frame N includes only rounds 1..N;
+	// the live projection separately includes an ongoing round.
+	// The settling round reveals its bids and settlement atomically in one frame.
 	frames := make([]map[string]any, 0, count+1)
 	for cursor := 0; cursor <= count; cursor++ {
 		frame := make(map[string]any, len(full))
 		for k, v := range full {
 			frame[k] = v
 		}
-		n := min(cursor, len(view.History))
+		n := cursor
 		frame["history"] = view.History[:n]
 		hints := []game.Hint{}
 		for _, h := range view.PublicHints {
-			if h.Round <= min(n+1, view.Rules.Rounds) {
+			if h.Round <= n {
 				hints = append(hints, h)
 			}
 		}
 		frame["public_hints"] = hints
+		multiplier := float64(0)
+		if n > 0 {
+			multiplier = view.Rules.EarlyMultipliers[n-1]
+		}
+		frame["round"] = n
+		frame["context"] = map[string]any{"warehouse": view.Rules.Warehouse, "round": n, "remaining_rounds": view.Rules.Rounds - n, "ticket": view.Rules.TicketFee, "early_multiplier": multiplier}
 		if observer {
+			frame["activities"] = activityView(rm, "", n)
+			intelligence := map[string][]game.Hint{}
+			for p, list := range view.Intelligence {
+				intelligence[p] = []game.Hint{}
+				for _, h := range list {
+					if h.Round <= n {
+						intelligence[p] = append(intelligence[p], h)
+					}
+				}
+			}
+			frame["intelligence"] = intelligence
+			costs := map[string]game.PlayerCosts{}
+			for seat, list := range intelligence {
+				cost := game.PlayerCosts{}
+				if view.Phase != "lobby" {
+					cost.TicketCost = view.Rules.TicketFee
+				}
+				for _, h := range list {
+					if h.Source != "specialty" {
+						cost.CardCost += rm.game.UsedCardPrice(seat, h.Source)
+					}
+				}
+				costs[seat] = cost
+			}
+			frame["player_costs"] = costs
 			decisions := []game.ObserverDecision{}
 			for _, d := range view.Decisions {
 				if d.Round <= n {
@@ -105,9 +137,10 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 		if view.Phase != "lobby" {
 			if settled {
 				frame["phase"] = "settled"
+			} else if n == 0 {
+				frame["phase"] = "opening"
 			} else {
-				frame["phase"] = "bidding"
-				frame["round"] = min(n+1, view.Rules.Rounds)
+				frame["phase"] = "revealed"
 			}
 		}
 		players := []map[string]any{}
@@ -117,7 +150,10 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 			for k, v := range p {
 				copy[k] = v
 			}
-			copy["submitted"] = view.Settlement == nil && n == len(view.History) && p["submitted"].(bool)
+			copy["submitted"] = n > 0
+			copy["withdrawn"] = slices.ContainsFunc(view.History[:n], func(r game.RoundResult) bool {
+				return slices.ContainsFunc(r.Bids, func(b game.Bid) bool { return b.PlayerID == p["id"] && b.Amount == 0 })
+			})
 			players = append(players, copy)
 		}
 		frame["players"] = players
@@ -135,6 +171,9 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 		}
 		reply(w, 200, frames[cursor])
 		return
+	}
+	if observer {
+		full["activities"] = activityView(rm, "", 6)
 	}
 	full["frames"] = frames
 	reply(w, 200, full)

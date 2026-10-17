@@ -1,0 +1,921 @@
+[
+  {
+    "id": "category",
+    "name": "家居估价",
+    "description": "第1轮家居件数，第3轮最多3件的抽样均价，第5轮家居总值。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "value"
+        },
+        "mode": "average",
+        "sample_size": 3
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "value"
+        }
+      }
+    ],
+    "categories": [
+      "furniture",
+      "household"
+    ]
+  },
+  {
+    "id": "electronics",
+    "name": "数码溯源",
+    "description": "第1轮数码件数，第2轮两件品质，第4轮两件完整鉴定。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality"
+          ],
+          "count": 2
+        }
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 2
+        }
+      }
+    ],
+    "categories": [
+      "electronics",
+      "computers"
+    ]
+  },
+  {
+    "id": "tools",
+    "name": "工具测绘",
+    "description": "第1轮工具占格，第2轮四件轮廓，第4轮最大件完整鉴定。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "area"
+        }
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape"
+          ],
+          "count": 4
+        }
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "largest",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        }
+      }
+    ],
+    "categories": [
+      "tools",
+      "machinery"
+    ]
+  },
+  {
+    "id": "art",
+    "name": "书画鉴赏",
+    "description": "第1轮史诗存在性，第3轮最高品质一件完整鉴定，第5轮稀有以上总值。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        },
+        "qualities": [
+          "epic"
+        ],
+        "mode": "presence"
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "highest",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        }
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "value"
+        },
+        "qualities": [
+          "rare",
+          "epic",
+          "legendary"
+        ]
+      }
+    ],
+    "categories": [
+      "art"
+    ]
+  },
+  {
+    "id": "jewelry",
+    "name": "珠宝称量",
+    "description": "第1轮珠宝件数，第3轮珍品面积，第4轮珍品总值。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "area"
+        },
+        "qualities": [
+          "epic",
+          "legendary"
+        ]
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "value"
+        },
+        "qualities": [
+          "epic",
+          "legendary"
+        ]
+      }
+    ],
+    "categories": [
+      "jewelry",
+      "minerals"
+    ]
+  },
+  {
+    "id": "transport",
+    "name": "载具检验",
+    "description": "第1轮载具件数，第2轮三件轮廓，第4轮全部品质。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape"
+          ],
+          "count": 3
+        }
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality"
+          ],
+          "count": 1
+        },
+        "all": true
+      }
+    ],
+    "categories": [
+      "transport",
+      "energy"
+    ]
+  },
+  {
+    "id": "books",
+    "name": "古籍校勘",
+    "description": "第1轮古籍均价，第3轮两件完整鉴定，第5轮最大件完整鉴定。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "value"
+        },
+        "mode": "average"
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 2
+        }
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "reveal",
+          "selector": "largest",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        }
+      }
+    ],
+    "categories": [
+      "books",
+      "documents"
+    ]
+  },
+  {
+    "id": "music",
+    "name": "乐器辨声",
+    "description": "第1轮高品质存在性，第3轮两件完整鉴定，第4轮整类总值。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        },
+        "qualities": [
+          "epic",
+          "legendary"
+        ],
+        "mode": "presence"
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 2
+        }
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "value"
+        }
+      }
+    ],
+    "categories": [
+      "music"
+    ]
+  },
+  {
+    "id": "toys",
+    "name": "玩具识别",
+    "description": "第1轮玩具件数，第2轮五件轮廓，第4轮两件价格。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape"
+          ],
+          "count": 5
+        }
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "price"
+          ],
+          "count": 2
+        }
+      }
+    ],
+    "categories": [
+      "toys",
+      "collectibles"
+    ]
+  },
+  {
+    "id": "clock",
+    "name": "钟表鉴定",
+    "description": "第1轮钟表品质数量，第3轮最高品质一件完整鉴定，第5轮钟表均价。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count",
+          "group_by": "quality"
+        }
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "highest",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        }
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "value"
+        },
+        "mode": "average"
+      }
+    ],
+    "tag": "clock"
+  },
+  {
+    "id": "military",
+    "name": "军品识别",
+    "description": "第1轮军品件数，第3轮全部品质，第5轮稀有以上总值。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality"
+          ],
+          "count": 1
+        },
+        "all": true
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "value"
+        },
+        "qualities": [
+          "rare",
+          "epic",
+          "legendary"
+        ]
+      }
+    ],
+    "categories": [
+      "military"
+    ]
+  },
+  {
+    "id": "medical",
+    "name": "器械诊断",
+    "description": "第1轮器械面积，第2轮件数，第4轮三件完整鉴定。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "area"
+        }
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 3
+        }
+      }
+    ],
+    "categories": [
+      "medical"
+    ]
+  },
+  {
+    "id": "dimensions",
+    "name": "尺寸测绘",
+    "description": "第1轮最大三件轮廓，第3轮最小三件轮廓，第5轮全部轮廓。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "reveal",
+          "selector": "largest",
+          "fields": [
+            "shape"
+          ],
+          "count": 3
+        }
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "smallest",
+          "fields": [
+            "shape"
+          ],
+          "count": 3
+        }
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape"
+          ],
+          "count": 1
+        },
+        "all": true
+      }
+    ]
+  },
+  {
+    "id": "survey",
+    "name": "多点观察",
+    "description": "每轮补看两件未知轮廓与品质。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape",
+            "quality"
+          ],
+          "count": 2
+        }
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape",
+            "quality"
+          ],
+          "count": 2
+        }
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape",
+            "quality"
+          ],
+          "count": 2
+        }
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape",
+            "quality"
+          ],
+          "count": 2
+        }
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape",
+            "quality"
+          ],
+          "count": 2
+        }
+      }
+    ]
+  },
+  {
+    "id": "analysis",
+    "name": "珍品计数",
+    "description": "第1轮史诗与传说合计件数，第3轮两档各自件数，第5轮两档合计占格。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        },
+        "qualities": [
+          "epic",
+          "legendary"
+        ]
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "count",
+          "group_by": "quality"
+        },
+        "qualities": [
+          "epic",
+          "legendary"
+        ]
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "area"
+        },
+        "qualities": [
+          "epic",
+          "legendary"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "appraisal",
+    "name": "珍品估价",
+    "description": "第2轮高品质均价，第4轮高品质总值，不定位物品。",
+    "steps": [
+      {
+        "round": 2,
+        "effect": {
+          "type": "value"
+        },
+        "qualities": [
+          "epic",
+          "legendary"
+        ],
+        "mode": "average"
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "value"
+        },
+        "qualities": [
+          "epic",
+          "legendary"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "common_value",
+    "name": "市井估价",
+    "description": "第1轮普通均价，第3轮优良均价，第5轮两档合计价值。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "value"
+        },
+        "qualities": [
+          "common"
+        ],
+        "mode": "average"
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "value"
+        },
+        "qualities": [
+          "uncommon"
+        ],
+        "mode": "average"
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "value"
+        },
+        "qualities": [
+          "common",
+          "uncommon"
+        ]
+      }
+    ]
+  },
+  {
+    "id": "small",
+    "name": "边角搜寻",
+    "description": "第1轮最小三件轮廓，第3轮同批品质，第5轮同批一件价格。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "reveal",
+          "selector": "smallest",
+          "fields": [
+            "shape"
+          ],
+          "count": 3
+        },
+        "remember": "small"
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality"
+          ],
+          "count": 3
+        },
+        "from_sample": "small"
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "price"
+          ],
+          "count": 1
+        },
+        "from_sample": "small"
+      }
+    ]
+  },
+  {
+    "id": "late",
+    "name": "压轴鉴定",
+    "description": "第1轮一件品质，第4轮三件完整鉴定，第5轮全部未知品质。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality"
+          ],
+          "count": 1
+        }
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 3
+        }
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality"
+          ],
+          "count": 1
+        },
+        "all": true
+      }
+    ]
+  },
+  {
+    "id": "crosscheck",
+    "name": "交叉验证",
+    "description": "第1轮两件品质，第3、5轮依次补其中一件价格。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality"
+          ],
+          "count": 2
+        },
+        "remember": "cross"
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "price"
+          ],
+          "count": 1
+        },
+        "from_sample": "cross"
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "price"
+          ],
+          "count": 1
+        },
+        "from_sample": "cross"
+      }
+    ]
+  },
+  {
+    "id": "region",
+    "name": "分区勘探",
+    "description": "集中分析选定象限（默认左上），第1轮件数，第3轮品质数量，第5轮总值。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "count",
+          "group_by": "quality"
+        }
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "value"
+        }
+      }
+    ]
+  },
+  {
+    "id": "stratified",
+    "name": "分档取样",
+    "description": "第1至5轮依次在普通、优良、稀有、史诗、传说中完整鉴定一件。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        },
+        "qualities": [
+          "common"
+        ]
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        },
+        "qualities": [
+          "uncommon"
+        ]
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        },
+        "qualities": [
+          "rare"
+        ]
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        },
+        "qualities": [
+          "epic"
+        ]
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        },
+        "qualities": [
+          "legendary"
+        ]
+      }
+    ]
+  }
+]

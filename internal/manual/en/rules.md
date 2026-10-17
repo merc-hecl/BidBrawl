@@ -1,27 +1,23 @@
 # Settlement rules
 
-Each game has 2–7 players and up to five rounds. All bids are revealed together. If the game does not settle, it continues to the next round.
+2–7 players, up to five rounds. Offers are sealed until everyone submits.
 
-| Round | Settlement condition |
+| Round | Unique positive highest offer settles at |
 |---|---|
-| 1 | Unique positive highest bid ≥ 2 times the second-highest bid |
-| 2 | Unique positive highest bid ≥ 1.7 times the second-highest bid |
-| 3 | Unique positive highest bid ≥ 1.5 times the second-highest bid |
-| 4 | No settlement; continue to round 5 |
-| 5 | Highest bid settles; tied highest bidders have equal chances, including all-zero bids |
+| 1 | ≥ 2 × runner-up |
+| 2 | ≥ 1.6 × runner-up |
+| 3 | ≥ 1.3 × runner-up |
+| 4 | ≥ 1.1 × runner-up |
+| 5 | Highest offer, uniformly random among positive ties |
 
-The winner pays that round's bid and receives the entire box. Payoff = total item value − price paid. Other players' payoffs are 0.
+Offers must be positive integers. Before bidding, use `bidbrawl withdraw -room ROOM_ID -round ROUND -reason "reason"` to exit permanently; later rounds are skipped and new specialty intel stops. Everyone exiting ends unsold. One remaining positive offer can settle early. Other players may raise or lower later offers.
 
-The `settlement` in state contains:
+A ticket is charged once per player on successful start: 5,000 by default, configurable per room; read `state.rules.ticket_fee`. It is nonrefundable, with no extra withdrawal fine. Insufficient cash prevents the entire start and charges nobody.
 
-| Field | Meaning |
-|---|---|
-| `winner_id` | Box recipient |
-| `paid` | Price paid |
-| `total_value` | Total item value |
-| `profit` | Winner's payoff |
-| `payoffs` | Each player's payoff |
-| `items` | Full item list |
-| `tied_players` | Tied highest bidders |
+The winner pays cash and keeps the items in their warehouse. Items are not automatically converted into cash. Cards are consumed only on use, even if you do not acquire the lot.
+
+Settlement fields: `gross_profit` = acquired value minus paid (0 when unsold); `card_costs` = consumed cards at their purchase costs per player; `total_card_cost` = total consumed costs; `ticket_costs` and `total_ticket_cost` = tickets per player and in total; `easter_egg_value` = egg value in the lot; `profit` = total net return after cards and tickets; `payoffs` = each player's net return; `cash_changes` = settlement cash movements only, excluding earlier purchases and later buyback. Unsold auctions have `method=unsold` and an empty `winner_id`.
 
 [Index](HANDBOOK.md): `bidbrawl handbook -lang en`.
+
+Eggs form a separate category, with probability one thousandth of legendary items and a fixed buyback price of 17,500,000. Their special outline appears only when the egg category is known; legendary quality or a 1×1 shape alone does not identify an egg.

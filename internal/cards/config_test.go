@@ -31,7 +31,7 @@ func TestConfigurationValidation(t *testing.T) {
 		{Type: "count", GroupBy: "name"},
 		{Type: "count", Selector: "largest"},
 	} {
-		cfg := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{{ID: "new_card", Name: "新卡", Description: "测试", Effect: effect}}}
+		cfg := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{{ID: "new_card", Name: "新卡", Description: "测试", Price: 1, Effect: effect}}}
 		if err := cfg.Validate(); err == nil {
 			t.Fatal("invalid effect accepted", effect)
 		}
@@ -40,6 +40,9 @@ func TestConfigurationValidation(t *testing.T) {
 		func(c *Config) { c.Cards = append(c.Cards, c.Cards[0]) },
 		func(c *Config) { c.Cards[0].ID = "bad id" },
 		func(c *Config) { c.Cards[0].Name = "" },
+		func(c *Config) { c.Cards[0].Price = 0 },
+		func(c *Config) { c.Cards[0].Price = -1 },
+		func(c *Config) { c.Cards[0].Price = 1_000_000_001 },
 		func(c *Config) { c.DefaultDeck = []string{"largest_price", "largest_price"} },
 	} {
 		cfg := Default()

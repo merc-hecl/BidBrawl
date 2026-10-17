@@ -134,6 +134,7 @@ func TestIdentityAdministrationAndRotation(t *testing.T) {
 	}
 	code, body = request(t, s, "POST", "/api/login", "", `{"credential":"`+credential+`"}`)
 	a2 := responseStrings(t, code, body, 200)["token"]
+	purchaseJoinCards(t, s, a, `{"cards":[]}`)
 	if code, _ = request(t, s, "POST", "/api/join", a, `{"cards":[]}`); code != 201 {
 		t.Fatal("join failed")
 	}

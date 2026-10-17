@@ -37,6 +37,9 @@ func TestExternalClientProtocolFlow(t *testing.T) {
 			t.Fatal(e)
 		}
 		c.Token = logged.Token
+		if e := c.Request(ctx, "POST", "/api/buy", map[string]any{"card": "item_count", "quantity": 1}, nil); e != nil {
+			t.Fatal(e)
+		}
 		if e := c.Request(ctx, "POST", RoomPath("/api/join", roomID), map[string]any{"cards": []string{"item_count"}}, nil); e != nil {
 			t.Fatal(e)
 		}

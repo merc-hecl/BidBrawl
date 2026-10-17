@@ -22,6 +22,7 @@ func TestResultsOnlySettledAndStableIdentity(t *testing.T) {
 			order = []string{sessions[1], sessions[0]}
 		}
 		for _, token := range order {
+			purchaseJoinCards(t, s, token, `{"cards":[]}`)
 			if code, body := request(t, s, "POST", "/api/join?room="+roomID, token, `{"cards":[]}`); code != 201 {
 				t.Fatalf("join: %d %s", code, body)
 			}
@@ -73,7 +74,7 @@ func TestResultsOnlySettledAndStableIdentity(t *testing.T) {
 	}
 	identities := map[string]string{}
 	for _, room := range results.Rooms {
-		if len(room.Settlement) != 7 || room.Settlement["items"] != nil || room.Settlement["decisions"] != nil {
+		if len(room.Settlement) != 12 || room.Settlement["items"] != nil || room.Settlement["decisions"] != nil {
 			t.Fatal("summary must contain economics and settlement stage only")
 		}
 		for _, player := range room.Players {

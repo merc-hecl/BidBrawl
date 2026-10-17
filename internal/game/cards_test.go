@@ -9,8 +9,8 @@ import (
 
 func TestConfiguredCardsAndSnapshot(t *testing.T) {
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit", "census"}, Cards: []cards.Definition{
-		{ID: "audit", Name: "组合全检", Description: "最大物品全部信息", Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price", "shape"}}},
-		{ID: "census", Name: "清点", Description: "物品总数", Effect: cards.Effect{Type: "count"}},
+		{ID: "audit", Name: "组合全检", Description: "最大物品全部信息", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price", "shape"}}},
+		{ID: "census", Name: "清点", Description: "物品总数", Price: 1, Effect: cards.Effect{Type: "count"}},
 	}}
 	g, err := NewWithCards(2, cfg)
 	if err != nil {
@@ -44,8 +44,8 @@ func TestConfiguredCardsAndSnapshot(t *testing.T) {
 	if !reflect.DeepEqual(before, view(t, g, "")) || len(view(t, g, b).Self.Hints) != 0 {
 		t.Fatal("configured card leaked private information")
 	}
-	_ = g.Submit(a, 1, 0, "protocol test")
-	_ = g.Submit(b, 1, 0, "protocol test")
+	_ = g.Submit(a, 1, 100, "protocol test")
+	_ = g.Submit(b, 1, 100, "protocol test")
 	if err := g.UseCard(a, 2, "census", "protocol test"); err != nil {
 		t.Fatal(err)
 	}

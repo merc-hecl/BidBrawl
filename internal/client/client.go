@@ -16,11 +16,12 @@ import (
 
 type Client struct {
 	URL, Token string
+	Command    string
 	HTTP       *http.Client
 }
 
 func New(url, token string) *Client {
-	return &Client{strings.TrimRight(url, "/"), token, &http.Client{Timeout: 15 * time.Second}}
+	return &Client{URL: strings.TrimRight(url, "/"), Token: token, HTTP: &http.Client{Timeout: 15 * time.Second}}
 }
 func (c *Client) Request(ctx context.Context, method, path string, body, out any) error {
 	var input io.Reader
@@ -36,6 +37,9 @@ func (c *Client) Request(ctx context.Context, method, path string, body, out any
 		return e
 	}
 	r.Header.Set("Content-Type", "application/json")
+	if c.Command != "" {
+		r.Header.Set("X-BidBrawl-Command", c.Command)
+	}
 	if c.Token != "" {
 		r.Header.Set("Authorization", "Bearer "+c.Token)
 	}

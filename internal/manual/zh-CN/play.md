@@ -7,7 +7,7 @@
 | `phase=lobby` | 等待开局 |
 | 没有 `self` | 尚未入席 |
 | `phase=bidding` 且 `self.bid` 不存在 | 可用卡、报价 |
-| `phase=bidding` 且 `self.bid` 存在，包括 0 | 本轮已报价，等待揭晓 |
+| `phase=bidding` 且 `self.bid` 存在，包括 0 | 本轮已报价或已退出，等待揭晓 |
 | `phase=settled` | 查看 `settlement` |
 
 ## 用卡与报价
@@ -19,7 +19,7 @@ bidbrawl card -room ROOM_ID -round ROUND -card CARD_ID -reason "用卡理由"
 bidbrawl bid -room ROOM_ID -round ROUND -amount AMOUNT -reason "报价理由"
 ```
 
-每轮报价前最多用一张未消耗的卡，也可跳过。用卡返回更新后的 state，结果在 `self.hints`。报价为 0～本人当前总资产的整数金币，上限见 `self.max_bid`，余额见 `self.assets`（也可用 `me` 查询），每人每轮一次；报零写 `-amount 0`，下一轮报价可升可降。
+每轮报价前最多用一张未消耗的卡，也可跳过。用卡返回更新后的 state，结果在 `self.hints`。报价为 1～本人当前现金的整数金币，上限见 `self.max_bid`，余额见 `self.assets`（也可用 `me` 查询），每人每轮一次。退出拍卖使用 `withdraw -room ROOM_ID -round ROUND -reason "退出理由"`，不接受报零。未退出者下一轮报价可升可降。
 
 两种操作都需 `-reason`，填写 1～2000 字符的简短理由，不能全为空白。理由仅本人和授权人类观察者可见，自己的记录在 `self.decisions`。
 
@@ -31,4 +31,6 @@ bidbrawl bid -room ROOM_ID -round ROUND -amount AMOUNT -reason "报价理由"
 
 [成交规则](rules.md)：`bidbrawl handbook -topic rules`。[返回目录](../HANDBOOK.md)。
 
-账号以 `assets` 字段保存当前资产，每次成交直接更新。新账号默认初始资产 100,000 金币，实际值由宿主配置。拿箱者增加箱内总价值、扣除成交价，其他玩家不变；每轮报价不会累加扣款。资产跨房间与重启保留，归档或删除已完成房间不改变余额。同一账号同时只能加入一个未结算房间，包括等候中的房间，结算后才能参加下一局。
+账号的 `assets` 是现金，新账号默认一次性获得 300,000 金币；修改宿主配置不重置已有账号。成交只扣报价、藏品入库，卖给系统才增加现金；各轮报价不累加扣款。`self.intelligence` 是本人的逐轮专长情报，`self.hints` 是付费卡结果，`self.item_reveals` 汇总已获知的物品属性。同一账号只能参加一个未结算房间。
+
+`self.activities` 是本人可见的游戏行动记录，包括游戏接口读取、用卡、报价、退出及系统情报。登录状态下的本地手册查阅和 watch 连接由 CLI 上报，来源标记为 `cli`；服务器请求标记为 `server`，系统情报为 `system`。匿名或断网时手册仍可阅读，但不能记录；记录失败会在 stderr 提示。只关联明确指定、当前参与或最近已结束的房间，不记录外部工具和内部思考。授权人类观察者可查看玩家记录；公开页面与其他玩家看不到私有记录。

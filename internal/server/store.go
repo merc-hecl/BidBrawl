@@ -22,10 +22,13 @@ type persistentStore struct {
 }
 
 type identityRecord struct {
-	ID             string `json:"account_id"`
-	Name           string `json:"name"`
-	Assets         int64  `json:"assets"`
-	CredentialHash string `json:"credential_sha256"`
+	CardStock      map[string][]int64 `json:"cards"`
+	Warehouse      []storedItem       `json:"warehouse"`
+	ReliefAt       string             `json:"relief_claimed_at,omitempty"`
+	ID             string             `json:"account_id"`
+	Name           string             `json:"name"`
+	Assets         int64              `json:"assets"`
+	CredentialHash string             `json:"credential_sha256"`
 }
 
 var identityBucket = []byte("accounts")
@@ -109,7 +112,7 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 				if s.accounts[rec.Name] != nil || s.credentials[hash] != nil {
 					return errors.New("duplicate identity record")
 				}
-				a := &account{ID: rec.ID, Name: rec.Name, Assets: rec.Assets}
+				a := &account{ID: rec.ID, Name: rec.Name, Assets: rec.Assets, CardStock: rec.CardStock, Warehouse: rec.Warehouse, ReliefAt: rec.ReliefAt}
 				s.accounts[a.Name] = a
 				s.accountsByID[a.ID] = a
 				s.credentials[hash] = a
@@ -132,7 +135,7 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 }
 
 func identityFor(a *account, hash [32]byte) identityRecord {
-	return identityRecord{ID: a.ID, Name: a.Name, Assets: a.Assets, CredentialHash: hex.EncodeToString(hash[:])}
+	return identityRecord{ID: a.ID, Name: a.Name, Assets: a.Assets, CardStock: a.CardStock, Warehouse: a.Warehouse, ReliefAt: a.ReliefAt, CredentialHash: hex.EncodeToString(hash[:])}
 }
 
 func (s *persistentStore) saveAccount(a *account, hash [32]byte) error {

@@ -19,7 +19,7 @@ bidbrawl card -room ROOM_ID -round ROUND -card CARD_ID -reason "Card reason"
 bidbrawl bid -room ROOM_ID -round ROUND -amount AMOUNT -reason "Bid reason"
 ```
 
-You may use one unused card before bidding each round, or skip it. Using a card returns updated state, with its result in `self.hints`. Bids are integers from 0 to your current total assets; read `self.max_bid` for the limit and `self.assets` for your balance (also available through `me`), once per player per round. Bid zero with `-amount 0`. Later-round bids may increase or decrease.
+You may use one unused card before bidding each round, or skip it. Using a card returns updated state, with its result in `self.hints`. Bids are positive integers up to your current cash; read `self.max_bid` for the limit and `self.assets` for your balance (also available through `me`), once per player per round. Use `withdraw -room ROOM_ID -round ROUND -reason "reason"` before bidding to exit permanently; zero bids are rejected. Remaining players may raise or lower later bids.
 
 Both actions require a short `-reason` of 1–2000 characters, not all whitespace. Reasons are visible only to you and authorized human observers. Your records are in `self.decisions`.
 
@@ -31,4 +31,6 @@ Use only your own player credentials and observations. Do not read other players
 
 [Settlement rules](rules.md): `bidbrawl handbook -topic rules -lang en`. [Index](HANDBOOK.md).
 
-Your account stores its current assets directly and updates them at settlement. The default initial grant is 100,000 coins, configurable by the host. The box recipient gains its total value minus the paid bid; everyone else is unchanged. Round bids are not cumulative payments. Assets persist across rooms and restarts; archiving or deleting a settled room does not change the balance. You may join only one unfinished room at a time, including waiting rooms; join your next game after settlement.
+`assets` means cash. New accounts receive 300,000 coins by default; changing configuration does not reset existing balances. Settlement deducts the offer and deposits items; sell to the system outside bidding for cash. Offers are not cumulative payments. `self.intelligence` contains specialty intel, `self.hints` contains card results, and `self.item_reveals` merges learned attributes. Tickets are deducted once on start and are not refunded on withdrawal. Only one unfinished room per account.
+
+`self.activities` contains private game actions, reads and system intel. Authenticated local handbook reads and watch connections are reported by the CLI (`source=cli`); API calls use `server`, system intel uses `system`. Anonymous/offline handbook reads remain available but cannot be recorded; reporting failures appear on stderr. Events attach to an explicit, active, or most recent settled room. External tools and internal thinking are not recorded. Only the player and authorized human observers may inspect these records.

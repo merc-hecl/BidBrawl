@@ -90,7 +90,9 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 	checkedRequest(t, s, "GET", "/api/agents/"+accountID, "", "", 200)
 	checkedRequest(t, s, "GET", "/api/agents/missing", "", "", 404)
 	checkedRequest(t, s, "GET", "/api/stats?sort=wins", "", "", 400)
+	purchaseJoinCards(t, s, a, `{"cards":["item_count"]}`)
 	checkedRequest(t, s, "POST", "/api/join?room=table", a, `{"cards":["item_count"]}`, 201)
+	purchaseJoinCards(t, s, b, `{"cards":[]}`)
 	checkedRequest(t, s, "POST", "/api/join?room=table", b, `{"cards":[]}`, 201)
 	checkedRequest(t, s, "POST", "/api/start?room=table", s.HostToken, "", 200)
 	checkedRequest(t, s, "POST", "/api/card?room=table", a, `{"round":1,"card":"item_count","reason":"secret first decision"}`, 200)
@@ -105,7 +107,7 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 	}
 	var full map[string]any
 	json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table", observer, "", 200), &full)
-	if _, exists := full["self"]; exists || len(full["decisions"].([]any)) != 11 || len(full["frames"].([]any)) != 7 {
+	if _, exists := full["self"]; exists || len(full["decisions"].([]any)) != 11 || len(full["frames"].([]any)) != 6 {
 		t.Fatal("wrong observer projection")
 	}
 	var fourth game.View
@@ -123,7 +125,7 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 	if final.Settlement == nil || len(final.History) != 5 {
 		t.Fatal("final reveal incomplete")
 	}
-	for _, frame := range []string{"-1", "8", "x", "1&frame=2"} {
+	for _, frame := range []string{"-1", "6", "x", "1&frame=2"} {
 		checkedRequest(t, s, "GET", "/api/replay?room=table&frame="+frame, "", "", 400)
 	}
 	var summary statistics
@@ -166,16 +168,30 @@ func TestInstantReplayFinalAtomic(t *testing.T) {
 	a, _ := accountSession(t, s, "A")
 	b, _ := accountSession(t, s, "B")
 	for _, token := range []string{a, b} {
+		purchaseJoinCards(t, s, token, `{"cards":[]}`)
 		checkedRequest(t, s, "POST", "/api/join?room=table", token, `{"cards":[]}`, 201)
 	}
 	checkedRequest(t, s, "POST", "/api/start?room=table", s.HostToken, "", 200)
 	checkedRequest(t, s, "POST", "/api/bid?room=table", a, `{"round":1,"amount":1000,"reason":"early"}`, 200)
 	checkedRequest(t, s, "POST", "/api/bid?room=table", b, `{"round":1,"amount":1,"reason":"low"}`, 200)
-	for frame := 0; frame <= 2; frame++ {
-		var view game.View
-		json.Unmarshal(checkedRequest(t, s, "GET", fmt.Sprintf("/api/replay?room=table&frame=%d", frame), "", "", 200), &view)
-		if (view.Settlement != nil) != (frame >= 1) {
-			t.Fatal("instant reveal not atomic")
+	for _, route := range []struct{ path, token string }{
+		{"/api/replay?room=table", ""},
+		{"/api/observer/replay?room=table", s.ObserverToken},
+	} {
+		var replay struct {
+			Frames []game.View `json:"frames"`
 		}
+		json.Unmarshal(checkedRequest(t, s, "GET", route.path, route.token, "", 200), &replay)
+		if len(replay.Frames) != 2 {
+			t.Fatalf("expected opening and one atomic settlement frame, got %d", len(replay.Frames))
+		}
+		for frame := range replay.Frames {
+			var view game.View
+			json.Unmarshal(checkedRequest(t, s, "GET", fmt.Sprintf("%s&frame=%d", route.path, frame), route.token, "", 200), &view)
+			if (view.Settlement != nil) != (frame == 1) || len(view.History) != frame || !reflect.DeepEqual(view, replay.Frames[frame]) {
+				t.Fatal("instant reveal not atomic or frame endpoint diverged")
+			}
+		}
+		checkedRequest(t, s, "GET", route.path+"&frame=2", route.token, "", 400)
 	}
 }

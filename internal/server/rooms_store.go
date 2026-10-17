@@ -5,7 +5,6 @@ import (
 	"errors"
 	"log"
 	"maps"
-	"math"
 	"net/http"
 	"time"
 
@@ -16,6 +15,7 @@ import (
 var roomBucket = []byte("rooms")
 
 type roomRecord struct {
+	Activities   []activity        `json:"activities"`
 	ID           string            `json:"room_id"`
 	Name         string            `json:"name"`
 	Owner        string            `json:"owner_id"`
@@ -51,7 +51,7 @@ func encodeRoom(rm *room) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return json.Marshal(roomRecord{ID: rm.id, Name: rm.name, Owner: rm.owner, Members: rm.members, SeatAccounts: rm.seatAccounts, CreatedAt: rm.createdAt, SettledAt: rm.settledAt, ArchivedAt: rm.archivedAt, Game: snapshot})
+	return json.Marshal(roomRecord{Activities: rm.activities, ID: rm.id, Name: rm.name, Owner: rm.owner, Members: rm.members, SeatAccounts: rm.seatAccounts, CreatedAt: rm.createdAt, SettledAt: rm.settledAt, ArchivedAt: rm.archivedAt, Game: snapshot})
 }
 
 func (s *Server) loadRooms(tx *bolt.Tx) error {
@@ -97,7 +97,7 @@ func (s *Server) loadRooms(tx *bolt.Tx) error {
 		if !rec.ArchivedAt.IsZero() && (view.Phase == "bidding" || rec.ArchivedAt.Before(rec.CreatedAt)) {
 			return errors.New("invalid room archive")
 		}
-		s.rooms[rec.ID] = &room{id: rec.ID, name: rec.Name, owner: rec.Owner, game: g, members: rec.Members, seatAccounts: rec.SeatAccounts, createdAt: rec.CreatedAt, settledAt: rec.SettledAt, archivedAt: rec.ArchivedAt}
+		s.rooms[rec.ID] = &room{activities: rec.Activities, id: rec.ID, name: rec.Name, owner: rec.Owner, game: g, members: rec.Members, seatAccounts: rec.SeatAccounts, createdAt: rec.CreatedAt, settledAt: rec.SettledAt, archivedAt: rec.ArchivedAt}
 		return nil
 	})
 }
@@ -158,23 +158,58 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 	if view.Phase == "settled" && next.settledAt.IsZero() {
 		next.settledAt = time.Now().UTC()
 	}
-	var winner *account
-	var updated account
-	var accounts []identityRecord
-	if before.Phase != "settled" && view.Phase == "settled" {
-		winner = s.accountsByID[next.seatAccounts[view.Settlement.WinnerID]]
-		if winner == nil {
-			roomFailure(w, errors.New("missing settlement account"))
+	updated := map[string]account{}
+	if before.Phase == "lobby" && view.Phase == "bidding" {
+		for _, aid := range next.seatAccounts {
+			a := cloneAccount(s.accountsByID[aid])
+			if a.Assets < view.Rules.TicketFee {
+				fail(w, 409, errors.New("insufficient cash for ticket"))
+				return false
+			}
+			a.Assets -= view.Rules.TicketFee
+			updated[aid] = a
+		}
+	}
+	beforeEconomy, afterEconomy := rm.game.Economy(), next.game.Economy()
+	for seat, now := range afterEconomy {
+		prior := beforeEconomy[seat]
+		if len(now.Used) < len(prior.Used) {
+			roomFailure(w, errors.New("card history shrank"))
 			return false
 		}
-		updated = *winner
-		profit := view.Settlement.Profit
-		if profit > 0 && updated.Assets > math.MaxInt64-profit || profit < 0 && updated.Assets < -profit {
-			fail(w, 409, errors.New("invalid resulting account assets"))
+		for _, id := range now.Used[len(prior.Used):] {
+			aid := next.seatAccounts[seat]
+			a, ok := updated[aid]
+			if !ok {
+				a = cloneAccount(s.accountsByID[aid])
+			}
+			if len(a.CardStock[id]) == 0 {
+				fail(w, 409, errors.New("card stock exhausted"))
+				return false
+			}
+			a.CardStock[id] = a.CardStock[id][1:]
+			updated[aid] = a
+		}
+	}
+	if before.Phase != "settled" && view.Phase == "settled" && view.Settlement.WinnerID != "" {
+		aid := next.seatAccounts[view.Settlement.WinnerID]
+		a, ok := updated[aid]
+		if !ok {
+			a = cloneAccount(s.accountsByID[aid])
+		}
+		if a.Assets < view.Settlement.Paid {
+			fail(w, 409, errors.New("insufficient settlement cash"))
 			return false
 		}
-		updated.Assets += profit
-		accounts = append(accounts, identityFor(&updated, s.credentialHashes[updated.ID]))
+		a.Assets -= view.Settlement.Paid
+		for _, item := range view.Settlement.Items {
+			a.Warehouse = append(a.Warehouse, storedItem{ID: next.id + ":" + item.ID, RoomID: next.id, Item: item})
+		}
+		updated[aid] = a
+	}
+	accounts := []identityRecord{}
+	for id, a := range updated {
+		accounts = append(accounts, identityFor(&a, s.credentialHashes[id]))
 	}
 	if s.store != nil {
 		if err := s.store.saveRoom(next, accounts...); err != nil {
@@ -183,8 +218,8 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 		}
 	}
 	*rm = *next
-	if winner != nil {
-		winner.Assets = updated.Assets
+	for id, a := range updated {
+		*s.accountsByID[id] = a
 	}
 	s.publishRoomChange(rm.id, before, view)
 	afterObserver, _ := rm.game.ObserveObserver()

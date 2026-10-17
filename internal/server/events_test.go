@@ -102,6 +102,7 @@ func TestSSELifecyclePrivacyReconnectAndShutdown(t *testing.T) {
 	// Stream must survive the ordinary response timeout.
 	time.Sleep(150 * time.Millisecond)
 	for _, token := range []string{a, b} {
+		purchaseJoinCards(t, s, token, `{"cards":["largest_price"]}`)
 		checkedRequest(t, s, "POST", "/api/join", token, `{"cards":["largest_price"]}`, 201)
 		e := nextEvent(t, events, "state_changed")
 		if !e.Rooms || e.RoomID != "table" {

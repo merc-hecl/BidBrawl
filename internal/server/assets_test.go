@@ -17,6 +17,8 @@ func TestAccountAssetsAcrossRoomsDeletionAndRestart(t *testing.T) {
 	for _, value := range []int64{1, 2000000} {
 		t.Run(fmt.Sprint(value), func(t *testing.T) {
 			cfg := game.DefaultConfig()
+			cfg.InitialAssets = 100000
+			cfg.TicketFee = 0
 			cfg.Box = game.Dimensions{Width: 1, Height: 1}
 			cfg.Items = game.ItemLimits{MaxWidth: 1, MaxHeight: 1}
 			for i := range cfg.Qualities {
@@ -48,6 +50,7 @@ func TestAccountAssetsAcrossRoomsDeletionAndRestart(t *testing.T) {
 			}
 			first, second := newRoom(), newRoom()
 			for _, token := range []string{a, b} {
+				purchaseJoinCards(t, s, token, `{"cards":[]}`)
 				checkedRequest(t, s, "POST", "/api/join?room="+first, token, `{"cards":[]}`, 201)
 			}
 			checkedRequest(t, s, "POST", "/api/join?room="+second, a, `{"cards":[]}`, 409)
@@ -79,8 +82,11 @@ func TestAccountAssetsAcrossRoomsDeletionAndRestart(t *testing.T) {
 			a, b = loginAgain(t, s, ca), loginAgain(t, s, cb)
 			own(first, a, 100000)
 			checkedRequest(t, s, "POST", "/api/join?room="+second, a, `{"cards":[]}`, 409)
-			checkedRequest(t, s, "POST", "/api/bid?room="+first, b, `{"round":1,"amount":0,"reason":"protocol fixture"}`, 200)
-			balance := value // 100000 initial + item value - 100000 paid.
+			checkedRequest(t, s, "POST", "/api/withdraw?room="+first, b, `{"round":1,"reason":"protocol fixture"}`, 200)
+			balance := int64(0) // Purchase leaves cash at zero; warehouse retains the item.
+			if len(s.sessions[a].Warehouse) != 1 || s.sessions[a].Warehouse[0].Item.Price != value {
+				t.Fatal("missing purchased inventory")
+			}
 			own(first, a, balance)
 			own(first, b, 100000)
 			var profile accountProfile
@@ -90,6 +96,7 @@ func TestAccountAssetsAcrossRoomsDeletionAndRestart(t *testing.T) {
 				t.Fatal("incorrect self economic metrics", profile.Stats)
 			}
 			for _, token := range []string{a, b} {
+				purchaseJoinCards(t, s, token, `{"cards":[]}`)
 				checkedRequest(t, s, "POST", "/api/join?room="+second, token, `{"cards":[]}`, 201)
 			}
 			own(second, a, balance)
@@ -99,7 +106,7 @@ func TestAccountAssetsAcrossRoomsDeletionAndRestart(t *testing.T) {
 			own(second, a, balance)
 			checkedRequest(t, s, "POST", "/api/start?room="+second, s.HostToken, "", 200)
 			checkedRequest(t, s, "POST", "/api/bid?room="+second, a, fmt.Sprintf(`{"round":1,"amount":%d,"reason":"protocol fixture"}`, balance+1), 409)
-			checkedRequest(t, s, "POST", "/api/bid?room="+second, a, fmt.Sprintf(`{"round":1,"amount":%d,"reason":"protocol fixture"}`, balance), 200)
+			checkedRequest(t, s, "POST", "/api/bid?room="+second, a, fmt.Sprintf(`{"round":1,"amount":%d,"reason":"protocol fixture"}`, max(balance, 1)), map[bool]int{true: 200, false: 409}[balance > 0])
 			_ = s.Close()
 			cfg.InitialAssets = 999999 // New accounts only; existing grants remain fixed.
 			s = open()
@@ -117,13 +124,16 @@ func TestAccountAssetsAcrossRoomsDeletionAndRestart(t *testing.T) {
 			if me.Assets != cfg.InitialAssets {
 				t.Fatal("new account ignored configured grant")
 			}
-			checkedRequest(t, s, "POST", "/api/bid?room="+second, b, `{"round":1,"amount":0,"reason":"protocol fixture"}`, 200)
-			own(second, a, value)
+			if balance == 0 {
+				checkedRequest(t, s, "POST", "/api/withdraw?room="+second, a, `{"round":1,"reason":"cash exhausted"}`, 200)
+			}
+			checkedRequest(t, s, "POST", "/api/withdraw?room="+second, b, `{"round":1,"reason":"protocol fixture"}`, 200)
+			own(second, a, 0)
 			// Repeated queries/restarts must not apply a settlement twice.
 			_ = s.Close()
 			s = open()
 			a = loginAgain(t, s, ca)
-			own(second, a, value)
+			own(second, a, 0)
 		})
 	}
 }
@@ -133,15 +143,16 @@ func TestFailedSettlementDoesNotChangeAssets(t *testing.T) {
 	a, _ := accountSession(t, s, "Atlas")
 	b, _ := accountSession(t, s, "Echo")
 	for _, token := range []string{a, b} {
+		purchaseJoinCards(t, s, token, `{"cards":[]}`)
 		checkedRequest(t, s, "POST", "/api/join", token, `{"cards":[]}`, 201)
 	}
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
 	checkedRequest(t, s, "POST", "/api/bid", a, `{"round":1,"amount":100000,"reason":"protocol fixture"}`, 200)
 	_ = s.Close()
-	checkedRequest(t, s, "POST", "/api/bid", b, `{"round":1,"amount":0,"reason":"protocol fixture"}`, 500)
+	checkedRequest(t, s, "POST", "/api/withdraw", b, `{"round":1,"reason":"protocol fixture"}`, 500)
 	var own game.View
 	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state", a, "", 200), &own)
-	if own.Settlement != nil || own.Self.Assets != 100000 {
+	if own.Settlement != nil || own.Self.Assets != game.DefaultConfig().InitialAssets-game.DefaultConfig().TicketFee {
 		t.Fatal("failed transaction changed assets")
 	}
 }
@@ -179,6 +190,7 @@ func TestOnlyOneUnfinishedRoomPerAccount(t *testing.T) {
 	var wg sync.WaitGroup
 	codes := make(chan int, 2)
 	for _, id := range []string{first, second} {
+		purchaseJoinCards(t, s, a, `{"cards":[]}`)
 		wg.Go(func() { code, _ := request(t, s, "POST", "/api/join?room="+id, a, `{"cards":[]}`); codes <- code })
 	}
 	wg.Wait()
@@ -204,5 +216,6 @@ func TestOnlyOneUnfinishedRoomPerAccount(t *testing.T) {
 	a = loginAgain(t, s, credential)
 	checkedRequest(t, s, "POST", "/api/join?room="+second, a, `{"cards":[]}`, 409)
 	lifecycleRequest(t, s, s.HostToken, "delete", []string{first}, 200)
+	purchaseJoinCards(t, s, a, `{"cards":[]}`)
 	checkedRequest(t, s, "POST", "/api/join?room="+second, a, `{"cards":[]}`, 201)
 }

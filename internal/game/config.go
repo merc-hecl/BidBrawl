@@ -28,15 +28,23 @@ type ItemLimits struct {
 }
 
 type Config struct {
-	SchemaVersion int        `json:"schema_version"`
-	Box           Dimensions `json:"box"`
-	Items         ItemLimits `json:"items"`
-	Qualities     []Quality  `json:"qualities"`
-	InitialAssets int64      `json:"initial_assets"`
+	SchemaVersion int            `json:"schema_version"`
+	Box           Dimensions     `json:"box"`
+	Items         ItemLimits     `json:"items"`
+	Qualities     []Quality      `json:"qualities"`
+	InitialAssets int64          `json:"initial_assets"`
+	Catalog       []ItemTemplate `json:"catalog,omitempty"`
+	Specialties   []Specialty    `json:"specialties,omitempty"`
+	TicketFee     int64          `json:"ticket_fee"`
 }
 
 func (c Config) Clone() Config {
 	c.Qualities = slices.Clone(c.Qualities)
+	c.Catalog = slices.Clone(c.Catalog)
+	for i := range c.Catalog {
+		c.Catalog[i].Tags = slices.Clone(c.Catalog[i].Tags)
+	}
+	c.Specialties = cloneSpecialties(c.Specialties)
 	return c
 }
 
@@ -80,6 +88,12 @@ func ParseConfig(r io.Reader) (Config, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return Config{}, errors.New("expected exactly one configuration object")
 	}
+	if cfg.Catalog == nil {
+		cfg.Catalog = append([]ItemTemplate{}, builtinCatalog.Items...)
+	}
+	if cfg.Specialties == nil {
+		cfg.Specialties = cloneSpecialties(Specialties)
+	}
 	if err := cfg.Validate(); err != nil {
 		return Config{}, err
 	}
@@ -87,6 +101,12 @@ func ParseConfig(r io.Reader) (Config, error) {
 }
 
 func (c Config) Validate() error {
+	if c.TicketFee < 0 || c.TicketFee > 1_000_000_000 {
+		return errors.New("ticket_fee must be 0 to 1000000000")
+	}
+	if err := validateSpecialties(c.Specialties); err != nil {
+		return err
+	}
 	if c.SchemaVersion != 2 {
 		return errors.New("game schema_version must be 2")
 	}
@@ -117,6 +137,32 @@ func (c Config) Validate() error {
 	}
 	if weight != 100 {
 		return errors.New("qualities[].weight must add up to 100")
+	}
+	if c.Catalog != nil {
+		ids := map[string]bool{}
+		for _, t := range c.Catalog {
+			if t.ID == "" || ids[t.ID] || t.Name == "" || !ValidCategory(t.Category) || t.Width < 1 || t.Height < 1 || t.Width > 128 || t.Height > 128 || t.ValuePercent < 0 || t.ValuePercent > 100 {
+				return errors.New("invalid item catalog")
+			}
+			if _, ok := map[string]bool{"common": true, "uncommon": true, "rare": true, "epic": true, "legendary": true}[t.Quality]; !ok {
+				return errors.New("invalid catalog quality")
+			}
+			ids[t.ID] = true
+			if t.Category == "easter_egg" && (t.FixedPrice != 17500000 || t.Quality != "legendary" || t.Width != 1 || t.Height != 1) || t.Category != "easter_egg" && t.FixedPrice != 0 {
+				return errors.New("easter eggs require legendary tier, 1x1 bounds and fixed_price 17500000; ordinary templates use quality prices")
+			}
+		}
+		for _, q := range c.Qualities {
+			found := false
+			for _, t := range c.Catalog {
+				if t.Category != "easter_egg" && t.Quality == q.ID && t.Width == 1 && t.Height == 1 {
+					found = true
+				}
+			}
+			if !found {
+				return errors.New("each quality needs a 1x1 item")
+			}
+		}
 	}
 	return nil
 }

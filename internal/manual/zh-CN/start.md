@@ -23,7 +23,7 @@ bidbrawl me
 
 login 返回 JSON，将其中的 `token` 设置为 `BIDBRAWL_TOKEN` 后再执行 me。每次调用都需传入这些环境变量；退出登录用 `bidbrawl logout`。未指定地址时使用 `http://127.0.0.1:8787`。
 
-`bidbrawl me` 查询自己的账号信息：`account_id` 为永久账号 ID，`name` 为名称，`assets` 为当前资产（整数金币）。`stats` 包含与 WebUI 一致的个人历史统计，字段见[成绩与复盘](results.md)。本命令必须登录，只查询当前会话本人，不接受 `-account`。无需先加入房间，结算后重新查询即可看到最新资产与统计。
+`bidbrawl me` 查询自己的账号信息：`account_id` 为永久账号 ID，`name` 为名称，`assets` 为可用现金（整数金币）。`stats` 包含与 WebUI 一致的个人历史统计，字段见[成绩与复盘](results.md)。本命令必须登录，只查询当前会话本人，不接受 `-account`。无需先加入房间，结算后重新查询即可看到最新资产与统计。
 
 ## 入席
 
@@ -32,7 +32,7 @@ bidbrawl cards
 bidbrawl join -invite INVITATION_URL -cards CARD_ID,CARD_ID
 ```
 
-`-cards` 指定最多五张不同卡，省略或传空值则不带卡。已知房间 ID 时，也可用 `join -room ROOM_ID`。卡组在入席时确定，开局后不能加入。
+`-cards` 指定最多五张不同卡，省略或传空值则不带卡。已知房间 ID 时，也可用 `join -room ROOM_ID`。卡牌必须先购买。准备阶段可以通过 loadout 调整，开局后锁定。
 
 ## 建房与开局
 
@@ -46,3 +46,26 @@ bidbrawl start -room ROOM_ID
 人数 N 为 2～7。用 create 返回的 `room_id` 替换 ROOM_ID，将 invite 返回的 `invite_url` 交给其他玩家。创建者也需入席，满员后由房主开局；新一局另建房间。
 
 下一步：[每轮操作](play.md)，执行 `bidbrawl handbook -topic play`。[返回目录](../HANDBOOK.md)。
+
+## 购买、专长与仓库
+
+```text
+bidbrawl catalog
+bidbrawl buy -card item_count -quantity 1
+bidbrawl inventory
+bidbrawl join -invite INVITATION_URL -specialty category -category household -cards item_count
+bidbrawl loadout -room ROOM_ID -specialty late -cards item_count
+bidbrawl sell -items STORED_ITEM_ID
+bidbrawl sell -all
+bidbrawl relief
+```
+
+共有 22 种专长：12 种侧重品类（家居、数码、工具、书画、珠宝、载具、古籍、乐器、玩具、钟表、军品、器械），10 种侧重跨品类的尺寸、品质、估价、样本或分区情报。用 `catalog` 查看 `specialties` 中各 ID、description 和逐轮 steps；指定房间用 `catalog -room ROOM_ID`。可用 `-category` 缩小到该专长支持的子类；region 选 northwest / northeast / southwest / southeast，默认 northwest。专长可重复选择，选择公开、结果私有。
+
+购买与系统回收在非竞拍时间可用，包括房间准备阶段。买卡扣现金、使用消耗，未用卡保留，最多携带五张不同卡、每轮最多使用一张。库存中卡牌以实际购入价记录成本。仓库的出售 ID 见 inventory.items[].id；藏品无玩家市场、无保管费。
+
+建房可用 `-warehouse mixed`（综合）、`tech`（数码）、`estate`（文玩主题）。主题影响品类分布；默认门票 5,000，建房可用 `-ticket N` 设置（0 为免费）。准备阶段展示，成功开局才扣一次。建议现金是参考，实际门票余额是开局条件。
+
+现金、藏品与卡牌合计价值不足 10,000 时，每个上海日期可手动领取一次 50,000 救济金，竞拍中不可领取。
+
+未指定专长时默认珍品计数（analysis）。购买响应超时后，先核对 inventory 和现金，再决定是否重试，避免重复购买。
