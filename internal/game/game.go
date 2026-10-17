@@ -712,7 +712,7 @@ func (g *Game) ObserveObserver() ([]byte, error) {
 }
 func (g *Game) observe(token string, observer bool) ([]byte, error) {
 	v := View{Version: g.version, Phase: g.phase, Round: g.round, Players: []PlayerInfo{}, Context: g.publicContext(), PublicHints: g.hints, History: g.history, Settlement: g.settlement,
-		Rules: Rules{TicketFee: g.gameConfig.TicketFee, Specialties: g.gameConfig.Specialties, Categories: Categories, Catalog: Catalog(g.gameConfig), Warehouse: g.warehouse, Warehouses: Warehouses, Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig.Clone(), PlayerCount: g.maxPlayers, Qualities: append([]Quality{}, g.gameConfig.Qualities...), Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck, PublicHintPlugins: g.hintConfig.IDs(),
+		Rules: Rules{TicketFee: g.gameConfig.TicketFee, Specialties: g.gameConfig.Specialties, Categories: Categories, Catalog: catalogForWarehouse(g.gameConfig, g.warehouse), Warehouse: g.warehouse, Warehouses: Warehouses, Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig.Clone(), PlayerCount: g.maxPlayers, Qualities: CatalogQualities(g.gameConfig), Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck, PublicHintPlugins: g.hintConfig.IDs(),
 			Description: "2–7 players. Five sealed-offer rounds; after each round all bids are published together. A unique positive highest bid settles at >= 2/1.6/1.3/1.1 times the runner-up in rounds 1–4. Round 5 chooses the highest bid, uniformly among ties. Offers must be positive; withdraw explicitly before bidding to permanently exit. Everyone withdrawing ends unsold. Tickets are charged once on start, nonrefundable and with no extra exit fine. Winner pays cash and receives items in their warehouse; sell to system outside bidding to obtain cash. Profit deducts consumed card costs and tickets for every player. Buy cards before bidding; one carried unused card per round. Configure a specialty in preparation; private intelligence grows by round. Reasons are private. Public clues arrive in rounds 1 and 3. Cash, not total inventory wealth, limits bids."}}
 	v.Rules.EarlyMultipliers = []float64{2, 1.6, 1.3, 1.1, 0}
 	v.Rules.PublicHintDefinitions = g.hintConfig.Definitions()
@@ -817,6 +817,12 @@ func (g *Game) itemReveals(p *player) ([]ItemReveal, error) {
 }
 
 func inferEggPrice(r *ItemReveal) {
+	if r.Quality == "easter_egg" {
+		r.Category = "easter_egg"
+	}
+	if r.Category == "easter_egg" {
+		r.Quality = "easter_egg"
+	}
 	if r.Category == "easter_egg" && r.Price == nil {
 		price := int64(17500000)
 		r.Price = &price

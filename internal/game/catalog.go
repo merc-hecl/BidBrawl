@@ -16,17 +16,19 @@ type Category struct {
 	Name string `json:"name"`
 }
 type ItemTemplate struct {
-	Translations map[string]string `json:"translations,omitempty"`
-	ID           string            `json:"id"`
-	Name         string            `json:"name"`
-	Category     string            `json:"category"`
-	Quality      string            `json:"quality"`
-	Width        int               `json:"width"`
-	Height       int               `json:"height"`
-	Price        int64             `json:"price"`
-	ValuePercent int               `json:"value_percent"`
-	FixedPrice   int64             `json:"fixed_price,omitempty"`
-	Tags         []string          `json:"tags,omitempty"`
+	QualityAppearanceProbability *float64          `json:"quality_appearance_probability,omitempty"`
+	AppearanceProbability        *float64          `json:"appearance_probability,omitempty"`
+	Translations                 map[string]string `json:"translations,omitempty"`
+	ID                           string            `json:"id"`
+	Name                         string            `json:"name"`
+	Category                     string            `json:"category"`
+	Quality                      string            `json:"quality"`
+	Width                        int               `json:"width"`
+	Height                       int               `json:"height"`
+	Price                        int64             `json:"price"`
+	ValuePercent                 int               `json:"value_percent"`
+	FixedPrice                   int64             `json:"fixed_price,omitempty"`
+	Tags                         []string          `json:"tags,omitempty"`
 }
 type Warehouse struct {
 	ID              string `json:"id"`
@@ -51,6 +53,12 @@ var builtinCatalog = func() ItemCatalog {
 }()
 var Categories = builtinCatalog.Categories
 var Warehouses = builtinCatalog.Warehouses
+
+// Config.Qualities contains the five weighted ordinary tiers. Eggs are a
+// separate fixed-price tier, sampled relative to the legendary weight.
+func CatalogQualities(cfg Config) []Quality {
+	return append(append([]Quality{}, cfg.Qualities...), Quality{ID: "easter_egg", Name: "彩蛋", Min: 17500000, Max: 17500000})
+}
 
 func LoadCatalog(path string) ([]ItemTemplate, error) {
 	data, err := os.ReadFile(path)
@@ -102,6 +110,16 @@ func (g *Game) SetWarehouse(id string) error {
 }
 
 func Catalog(cfg Config) []ItemTemplate {
+	return catalogForWarehouse(cfg, "mixed")
+}
+
+func (g *Game) Catalog() []ItemTemplate {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	return catalogForWarehouse(g.gameConfig, g.warehouse)
+}
+
+func catalogForWarehouse(cfg Config, warehouse string) []ItemTemplate {
 	source := cfg.Catalog
 	if source == nil {
 		source = builtinCatalog.Items
@@ -120,6 +138,62 @@ func Catalog(cfg Config) []ItemTemplate {
 			t.Price = t.FixedPrice
 		}
 		out = append(out, t)
+	}
+	// Baseline for one draw with the full candidate pool and sufficient space.
+	// Later placements narrow that pool by their remaining width and height.
+	favored := ""
+	for _, w := range Warehouses {
+		if w.ID == warehouse {
+			favored = w.Category
+		}
+	}
+	totals := map[string]int{}
+	for _, item := range out {
+		if item.Width <= cfg.Box.Width && item.Height <= cfg.Box.Height {
+			weight := 1
+			if item.Category == favored && item.Quality != "easter_egg" {
+				weight = 3
+			}
+			totals[item.Quality] += weight
+		}
+	}
+	eggWeight := 0
+	if totals["easter_egg"] > 0 {
+		for _, q := range cfg.Qualities {
+			if q.ID == "legendary" {
+				eggWeight = q.Weight
+			}
+		}
+	}
+	eggProbability := float64(eggWeight) / float64(100000+eggWeight)
+	for n := range out {
+		item := &out[n]
+		qualityProbability := 0.0
+		if item.Quality == "easter_egg" {
+			qualityProbability = eggProbability
+		} else {
+			for _, q := range cfg.Qualities {
+				if q.ID == item.Quality {
+					// Ordinary quality probabilities are conditional on a non-egg draw.
+					qualityProbability = float64(q.Weight) / 100
+				}
+			}
+		}
+		item.QualityAppearanceProbability = &qualityProbability
+		probability := 0.0
+		item.AppearanceProbability = &probability
+		if item.Width > cfg.Box.Width || item.Height > cfg.Box.Height {
+			continue
+		}
+		if item.Quality == "easter_egg" {
+			probability = qualityProbability / float64(totals[item.Quality])
+			continue
+		}
+		weight := 1
+		if item.Category == favored {
+			weight = 3
+		}
+		probability = (1 - eggProbability) * qualityProbability * float64(weight) / float64(totals[item.Quality])
 	}
 	return out
 }
@@ -192,7 +266,7 @@ func (g *Game) generateCatalog() []Item {
 // thousandth of the highest tier's probability, independent of template count.
 func catalogTier(qualities []Quality, eggWeight, roll int) (string, bool) {
 	if roll < eggWeight {
-		return "legendary", true
+		return "easter_egg", true
 	}
 	roll = (roll - eggWeight) / 1000
 	for _, q := range qualities {

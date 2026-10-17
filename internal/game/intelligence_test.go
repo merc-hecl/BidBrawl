@@ -219,6 +219,9 @@ func TestEggProbabilityAndKnownCategoryDisclosure(t *testing.T) {
 	for roll := 0; roll < 100002; roll++ {
 		quality, egg := catalogTier(cfg.Qualities, 2, roll)
 		if egg {
+			if quality != "easter_egg" {
+				t.Fatal("egg draw returned an ordinary quality")
+			}
 			quality = "egg"
 		}
 		counts[quality]++
@@ -238,7 +241,7 @@ func TestEggProbabilityAndKnownCategoryDisclosure(t *testing.T) {
 		t.Fatal("ordinary catalog weights changed")
 	}
 	g, _ := New(2)
-	g.items = []Item{{ID: "egg", Category: "easter_egg", Quality: "legendary", Price: 17500000, TopLeft: Point{0, 0}, BottomRight: Point{1, 1}}}
+	g.items = []Item{{ID: "egg", Category: "easter_egg", Quality: "easter_egg", Price: 17500000, TopLeft: Point{0, 0}, BottomRight: Point{1, 1}}}
 	p := &player{hints: []Hint{{Round: 1, Source: "test", Data: map[string]any{"item_id": "egg", "quality": "legendary"}}}}
 	r, err := g.itemReveals(p)
 	if err != nil || r[0].Category != "" || r[0].Price != nil {
@@ -248,6 +251,11 @@ func TestEggProbabilityAndKnownCategoryDisclosure(t *testing.T) {
 	r, err = g.itemReveals(p)
 	if err != nil || r[0].Price == nil || *r[0].Price != 17500000 {
 		t.Fatal("known egg category omitted its public fixed value")
+	}
+	p.hints[0].Data = map[string]any{"item_id": "egg", "quality": "easter_egg"}
+	r, err = g.itemReveals(p)
+	if err != nil || r[0].Category != "easter_egg" || r[0].Price == nil || *r[0].Price != 17500000 {
+		t.Fatal("known egg quality omitted its independent category or value")
 	}
 }
 

@@ -8,7 +8,7 @@ const quality=q=>catalogs[getLocale()][q]?t(q):q;
 const name=(kind,id,rules)=>localizeName(kind,(rules[kind==='category'?'categories':'specialties']||[]).find(x=>x.id===id))||t('unknownSelection');
 export const itemName=item=>item.translations?.[getLocale()]||item.name;
 export const newHandbookState=(section='items')=>({section:sections.includes(section)?section:'items',entry:null,search:'',category:'all',quality:'all',footprint:'all',filter:'all',page:0,detail:false});
-export const hostReference=data=>({...data.game,catalog:data.catalog,cards:data.cards.cards,categories:data.categories,specialties:data.specialties,public_hint_definitions:data.public_hint_definitions});
+export const hostReference=data=>({...data.game,qualities:data.qualities,catalog:data.catalog,cards:data.cards.cards,categories:data.categories,specialties:data.specialties,public_hint_definitions:data.public_hint_definitions});
 
 const pill=content=>`<span class="handbook-pill">${content}</span>`;
 const note=(title,body)=>`<div class="handbook-note"><strong>${tr(title)}</strong><p>${body}</p></div>`;
@@ -62,7 +62,7 @@ function items(rules,book){
   let right='';
   if(current){
     const q=(rules.qualities||[]).find(q=>q.id===current.quality);
-    right=detail(`<span class="eyebrow">${tr('book.catalogDetails')}</span><h2 tabindex="-1">${esc(itemName(current))}</h2><div class="handbook-pills">${pill(esc(name('category',current.category,rules)))}${pill(esc(quality(current.quality)))}</div>${current.category==='easter_egg'?'<div class="handbook-egg" aria-hidden="true"></div>':''}<div class="handbook-amount"><strong>${money(current.price)}</strong><small>${tr('book.resaleCaption')}</small></div><dl>${fact('book.footprint',tr('book.cells',{width:current.width,height:current.height}))}${q&&current.category!=='easter_egg'?fact('book.qualityRange',money(q.min_price)+' – '+money(q.max_price)+' '+tr('coins')):fact('book.eggOdds',tr('book.eggOddsValue'))}</dl>`,current.id);
+    right=detail(`<span class="eyebrow">${tr('book.catalogDetails')}</span><h2 tabindex="-1">${esc(itemName(current))}</h2><div class="handbook-pills">${pill(esc(name('category',current.category,rules)))}${current.category==='easter_egg'?'':pill(esc(quality(current.quality)))}</div>${current.category==='easter_egg'?'<div class="handbook-egg" aria-hidden="true"></div>':''}<div class="handbook-amount"><strong>${money(current.price)}</strong><small>${tr('book.resaleCaption')}</small></div><dl>${fact('book.footprint',tr('book.cells',{width:current.width,height:current.height}))}${q&&current.category!=='easter_egg'?fact('book.qualityRange',money(q.min_price)+' – '+money(q.max_price)+' '+tr('coins')):''}${fact('book.qualityOdds',money(current.quality_appearance_probability*100,10)+'%')}${fact('book.appearanceOdds',money(current.appearance_probability*100,10)+'%')}</dl>`,current.id);
   }
   return {controls,body:`${left}${right}`,selected:!!current};
 }

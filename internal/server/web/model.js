@@ -26,5 +26,12 @@ export function knownItems(view,playerID=null) {
     if(f.type==='random_quality')known.set(f.item_id,{...known.get(f.item_id),id:f.item_id,quality:f.quality});
     if(f.type==='random_quality_price')known.set(f.item_id,{...known.get(f.item_id),id:f.item_id,quality:f.quality,price:f.price});
   }
+  for(const item of known.values()){
+    if(item.quality==='easter_egg'||item.category==='easter_egg'){
+      item.quality=item.category='easter_egg';
+      const template=view.rules?.catalog?.find(entry=>entry.quality==='easter_egg');
+      if(item.price===undefined&&template)item.price=template.price;
+    }
+  }
   return [...known.values()].filter(item=>item.top_left&&item.bottom_right);
 }

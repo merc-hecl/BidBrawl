@@ -63,7 +63,7 @@ type playerSnapshot struct {
 func (g *Game) Snapshot() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := gameSnapshot{SchemaVersion: 8, LoadoutChanges: g.loadoutChanges, Warehouse: g.warehouse, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
+	s := gameSnapshot{SchemaVersion: 9, LoadoutChanges: g.loadoutChanges, Warehouse: g.warehouse, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
 		Phase: g.phase, Round: g.round, Version: g.version, Players: []playerSnapshot{}, Items: g.items,
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
@@ -85,7 +85,7 @@ func Restore(data []byte) (*Game, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return nil, errors.New("expected exactly one game snapshot")
 	}
-	if s.SchemaVersion != 8 {
+	if s.SchemaVersion != 9 {
 		return nil, errors.New("unsupported game snapshot schema")
 	}
 	g, err := NewWithHints(s.PlayerCount, s.Config, s.Cards, s.HintConfig)

@@ -220,7 +220,7 @@ func TestGeometryAndPriceRanges(t *testing.T) {
 				}
 			}
 			if i.Category == "easter_egg" {
-				valid = i.Price == 17500000 && i.Quality == "legendary"
+				valid = i.Price == 17500000 && i.Quality == "easter_egg"
 			}
 			if !valid {
 				t.Fatal("invalid quality/price")

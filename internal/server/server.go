@@ -112,7 +112,7 @@ func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Confi
 	mux.HandleFunc("GET /api/events", s.events)
 	mux.HandleFunc("GET /api/catalog", s.catalog)
 	mux.HandleFunc("GET /api/config", func(w http.ResponseWriter, r *http.Request) {
-		reply(w, 200, map[string]any{"game": s.gameConfig, "cards": s.cardConfig, "public_hint_plugins": s.hintConfig.IDs(), "public_hint_definitions": s.hintConfig.Definitions(), "specialties": s.gameConfig.Specialties, "categories": game.Categories, "catalog": game.Catalog(s.gameConfig), "warehouses": game.Warehouses})
+		reply(w, 200, map[string]any{"game": s.gameConfig, "qualities": game.CatalogQualities(s.gameConfig), "cards": s.cardConfig, "public_hint_plugins": s.hintConfig.IDs(), "public_hint_definitions": s.hintConfig.Definitions(), "specialties": s.gameConfig.Specialties, "categories": game.Categories, "catalog": game.Catalog(s.gameConfig), "warehouses": game.Warehouses})
 	})
 	mux.HandleFunc("POST /api/invite", s.invite)
 	mux.HandleFunc("POST /api/observer/launch", s.observerLaunch)

@@ -7,6 +7,22 @@ import {renderContent,roomDirectory,dialogContent} from './web/render.js';
 import {itemInfo,crate} from './web/room-ui.js';
 import {actionDetail,actionRows,activityTabs} from './web/actions.js';
 
+test('item inspector separates quality and item odds without identifying hidden templates',()=>{
+ const template={id:'ordinary',quality:'common',quality_appearance_probability:0.45,appearance_probability:0.002};
+ const item={id:'visible',quality:'common',template_id:'ordinary',top_left:{x:0,y:0},bottom_right:{x:1,y:1}};
+ const view={rules:{catalog:[template]},settlement:{items:[item]}};
+ for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  const html=itemInfo(view,{focusItem:'visible'});
+  assert.ok(html.includes(t('book.qualityOdds'))&&html.includes('45%'));
+  assert.ok(html.includes(t('book.appearanceOdds'))&&html.includes('0.2%'));
+  const unknown=itemInfo({...view,settlement:{items:[{...item,template_id:undefined}]}},{focusItem:'visible'});
+  assert.ok(unknown.includes('45%')&&!unknown.includes('0.2%'));
+  assert.ok(unknown.includes(t('unrevealed')));
+ }
+ setLocale('zh-CN',false);
+});
+
 test('catalog query details show localized game terms and match counts',()=>{
  const view={rules:{qualities:[{id:'rare',name:'稀有'}]},round:2};
  for(const locale of ['zh-CN','en']){
@@ -45,6 +61,15 @@ test('egg outline requires learned category and retains exact rectangular bounds
  item.category='easter_egg';
  const html=crate(v,state);
  assert.ok(html.includes('is-easter-egg')&&html.includes('data-col="2" data-row="3" data-w="1" data-h="1"'));
+});
+
+test('egg quality identifies only the egg tier and uses the public catalog value',()=>{
+ const item={id:'egg',quality:'easter_egg',top_left:{x:0,y:0},bottom_right:{x:1,y:1}};
+ const view={rules:{catalog:[{quality:'easter_egg',price:17500000}]},initial_inspections:{p1:[item]},public_hints:[]};
+ const known=knownItems(view,'p1');
+ assert.equal(known[0].category,'easter_egg');assert.equal(known[0].price,17500000);
+ const legendary=knownItems({...view,initial_inspections:{p1:[{...item,quality:'legendary'}]}},'p1');
+ assert.equal(legendary[0].category,undefined);assert.equal(legendary[0].price,undefined);
 });
 
 test('action details present game facts in both languages without technical payloads',async()=>{

@@ -45,6 +45,14 @@ func (c Config) Clone() Config {
 	for i := range c.Catalog {
 		c.Catalog[i].Tags = slices.Clone(c.Catalog[i].Tags)
 		c.Catalog[i].Translations = maps.Clone(c.Catalog[i].Translations)
+		if c.Catalog[i].QualityAppearanceProbability != nil {
+			probability := *c.Catalog[i].QualityAppearanceProbability
+			c.Catalog[i].QualityAppearanceProbability = &probability
+		}
+		if c.Catalog[i].AppearanceProbability != nil {
+			probability := *c.Catalog[i].AppearanceProbability
+			c.Catalog[i].AppearanceProbability = &probability
+		}
 	}
 	c.Specialties = cloneSpecialties(c.Specialties)
 	return c
@@ -146,12 +154,12 @@ func (c Config) Validate() error {
 			if t.ID == "" || ids[t.ID] || t.Name == "" || !ValidCategory(t.Category) || t.Width < 1 || t.Height < 1 || t.Width > 128 || t.Height > 128 || t.ValuePercent < 0 || t.ValuePercent > 100 {
 				return errors.New("invalid item catalog")
 			}
-			if _, ok := map[string]bool{"common": true, "uncommon": true, "rare": true, "epic": true, "legendary": true}[t.Quality]; !ok {
+			if _, ok := map[string]bool{"common": true, "uncommon": true, "rare": true, "epic": true, "legendary": true, "easter_egg": true}[t.Quality]; !ok {
 				return errors.New("invalid catalog quality")
 			}
 			ids[t.ID] = true
-			if t.Category == "easter_egg" && (t.FixedPrice != 17500000 || t.Quality != "legendary" || t.Width != 1 || t.Height != 1) || t.Category != "easter_egg" && t.FixedPrice != 0 {
-				return errors.New("easter eggs require legendary tier, 1x1 bounds and fixed_price 17500000; ordinary templates use quality prices")
+			if (t.Category == "easter_egg" || t.Quality == "easter_egg") && (t.Category != "easter_egg" || t.Quality != "easter_egg" || t.FixedPrice != 17500000 || t.Width != 1 || t.Height != 1) || t.Category != "easter_egg" && t.FixedPrice != 0 {
+				return errors.New("easter eggs require easter_egg category and quality, 1x1 bounds and fixed_price 17500000; ordinary templates use quality prices")
 			}
 		}
 		for _, q := range c.Qualities {

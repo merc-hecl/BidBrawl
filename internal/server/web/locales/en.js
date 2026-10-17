@@ -1,6 +1,7 @@
 export default {
-  "book.eggOdds":"Appearance probability",
-  "book.eggOddsValue":"1/1000 of the legendary item probability",
+  "book.qualityOdds":"Quality appearance probability",
+  "book.appearanceOdds":"Item appearance probability",
+  "easter_egg":"Easter egg",
   "book.eligibleCount":"Eligible item count",
   "book.halfCrate":"At most half of the crate's items",
   "catalogName":"Item name",

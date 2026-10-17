@@ -20,4 +20,4 @@ Settlement fields: `gross_profit` = acquired value minus paid (0 when unsold); `
 
 [Index](HANDBOOK.md): `bidbrawl handbook -lang en`.
 
-Eggs form a separate category, with probability one thousandth of legendary items and a fixed buyback price of 17,500,000. Their special outline appears only when the egg category is known; legendary quality or a 1×1 shape alone does not identify an egg.
+Eggs use the independent easter_egg category and quality. They are not legendary and are excluded from effects limited to legendary items. Their combined probability is one thousandth of legendary items, with a fixed buyback price of 17,500,000 each. Knowing egg quality or category identifies the special outline; ordinary legendary quality or a 1×1 shape alone does not identify an egg.

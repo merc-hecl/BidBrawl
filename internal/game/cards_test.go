@@ -74,7 +74,7 @@ func TestEffectPrimitives(t *testing.T) {
 	}
 	data = g.cardEffect(cards.Effect{Type: "count", GroupBy: "quality"})
 	counts := data["counts"].(map[string]int)
-	if counts["common"] != 2 || counts["rare"] != 1 || counts["epic"] != 0 || len(counts) != len(g.gameConfig.Qualities) {
+	if counts["common"] != 2 || counts["rare"] != 1 || counts["epic"] != 0 || len(counts) != len(CatalogQualities(g.gameConfig)) {
 		t.Fatal("incorrect configured grouped count", counts)
 	}
 	if g.cardEffect(cards.Effect{Type: "count"})["count"] != 3 {

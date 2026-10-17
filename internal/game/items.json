@@ -6849,7 +6849,7 @@
         "en": "Misprinted golden ticket"
       },
       "category": "easter_egg",
-      "quality": "legendary",
+      "quality": "easter_egg",
       "width": 1,
       "height": 1,
       "value_percent": 0,
@@ -6862,7 +6862,7 @@
         "en": "The thirteenth pocket watch"
       },
       "category": "easter_egg",
-      "quality": "legendary",
+      "quality": "easter_egg",
       "width": 1,
       "height": 1,
       "value_percent": 0,
@@ -6875,7 +6875,7 @@
         "en": "Reverse hourglass"
       },
       "category": "easter_egg",
-      "quality": "legendary",
+      "quality": "easter_egg",
       "width": 1,
       "height": 1,
       "value_percent": 0,
@@ -6888,7 +6888,7 @@
         "en": "Faceless die"
       },
       "category": "easter_egg",
-      "quality": "legendary",
+      "quality": "easter_egg",
       "width": 1,
       "height": 1,
       "value_percent": 0,
@@ -6901,7 +6901,7 @@
         "en": "Miniature star chart"
       },
       "category": "easter_egg",
-      "quality": "legendary",
+      "quality": "easter_egg",
       "width": 1,
       "height": 1,
       "value_percent": 0,
@@ -6914,7 +6914,7 @@
         "en": "Impossible postmark"
       },
       "category": "easter_egg",
-      "quality": "legendary",
+      "quality": "easter_egg",
       "width": 1,
       "height": 1,
       "value_percent": 0,
@@ -6927,7 +6927,7 @@
         "en": "The final chess piece"
       },
       "category": "easter_egg",
-      "quality": "legendary",
+      "quality": "easter_egg",
       "width": 1,
       "height": 1,
       "value_percent": 0,
@@ -6940,7 +6940,7 @@
         "en": "Key zero"
       },
       "category": "easter_egg",
-      "quality": "legendary",
+      "quality": "easter_egg",
       "width": 1,
       "height": 1,
       "value_percent": 0,

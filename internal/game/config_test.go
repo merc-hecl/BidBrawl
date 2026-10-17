@@ -161,7 +161,7 @@ func TestConfiguredPricesWeightsBidsAndRestore(t *testing.T) {
 			if settled.Settlement == nil || settled.Settlement.Total != int64(len(g.items))*1_234_567 {
 				t.Fatal("incorrect configured settlement")
 			}
-			if !reflect.DeepEqual(settled.Rules.Qualities, cfg.Qualities) {
+			if !reflect.DeepEqual(settled.Rules.Qualities, CatalogQualities(cfg)) {
 				t.Fatal("public rules use stale economy")
 			}
 			var invalid gameSnapshot

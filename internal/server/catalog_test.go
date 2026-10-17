@@ -16,7 +16,7 @@ func TestCatalogSearchUsesPublicTemplatesAndRoomPrices(t *testing.T) {
 	cfg.Catalog = []game.ItemTemplate{
 		{ID: "vase", Name: "琉璃瓶 & A", Translations: map[string]string{"en": "Glass Vase & A"}, Category: "tools", Quality: "rare", Width: 2, Height: 1, ValuePercent: 50},
 		{ID: "other", Name: "竖瓶", Category: "tools", Quality: "rare", Width: 1, Height: 2},
-		{ID: "egg", Name: "彩蛋", Category: "easter_egg", Quality: "legendary", Width: 1, Height: 1, FixedPrice: 17500000},
+		{ID: "egg", Name: "彩蛋", Category: "easter_egg", Quality: "easter_egg", Width: 1, Height: 1, FixedPrice: 17500000},
 	}
 	for _, q := range cfg.Qualities {
 		cfg.Catalog = append(cfg.Catalog, game.ItemTemplate{ID: "filler_" + q.ID, Name: "基础模板", Category: "tools", Quality: q.ID, Width: 1, Height: 1})
@@ -43,6 +43,8 @@ func TestCatalogSearchUsesPublicTemplatesAndRoomPrices(t *testing.T) {
 		{"name=" + url.QueryEscape("GLASS VASE & A"), "vase", 15000},
 		{"quality=" + url.QueryEscape(cfg.Qualities[2].Name) + "&name=Glass", "vase", 15000},
 		{"category=easter_egg", "egg", 17500000},
+		{"quality=easter_egg", "egg", 17500000},
+		{"quality=" + url.QueryEscape("彩蛋"), "egg", 17500000},
 		{"room=" + room.ID + "&size=2x1", "vase", 3000},
 		{"size=2x1&name=missing", "", 0},
 		{"size=2x1&quality=common", "", 0},
@@ -64,6 +66,12 @@ func TestCatalogSearchUsesPublicTemplatesAndRoomPrices(t *testing.T) {
 			}
 		} else if got.Count != 1 || got.Catalog[0].ID != tc.id || got.Catalog[0].Price != tc.price {
 			t.Fatalf("query %s: %+v", tc.query, got)
+		}
+		if got.Count > 0 && (got.Catalog[0].AppearanceProbability == nil || *got.Catalog[0].AppearanceProbability <= 0) {
+			t.Fatal("query omitted computed appearance probability")
+		}
+		if got.Count > 0 && (got.Catalog[0].QualityAppearanceProbability == nil || *got.Catalog[0].QualityAppearanceProbability < *got.Catalog[0].AppearanceProbability) {
+			t.Fatal("query omitted full quality probability")
 		}
 		for _, secret := range []string{`"self"`, `"top_left"`, `"settlement"`, `"activities"`, s.HostToken, s.ObserverToken} {
 			if strings.Contains(string(body), secret) {

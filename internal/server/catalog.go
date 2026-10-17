@@ -12,6 +12,7 @@ import (
 // catalog searches public templates only, never the contents of a room's box.
 func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
 	cfg := s.gameConfig
+	var templates []game.ItemTemplate
 	if r.URL.Query().Get("room") != "" {
 		rm := s.getRoom(w, r)
 		if rm == nil {
@@ -23,7 +24,11 @@ func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		cfg = rm.game.GameConfig()
+		templates = rm.game.Catalog()
 		s.mu.Unlock()
+	}
+	if templates == nil {
+		templates = game.Catalog(cfg)
 	}
 	q := r.URL.Query()
 	name := strings.ToLower(strings.TrimSpace(q.Get("name")))
@@ -42,7 +47,7 @@ func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
 	}
 	if quality != "" {
 		found := false
-		for _, def := range cfg.Qualities {
+		for _, def := range game.CatalogQualities(cfg) {
 			if quality == def.ID || quality == def.Name {
 				quality, found = def.ID, true
 				break
@@ -58,7 +63,7 @@ func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	items := []game.ItemTemplate{}
-	for _, item := range game.Catalog(cfg) {
+	for _, item := range templates {
 		if width != 0 && (item.Width != width || item.Height != height) || quality != "" && item.Quality != quality || category != "" && item.Category != category {
 			continue
 		}
@@ -72,7 +77,7 @@ func (s *Server) catalog(w http.ResponseWriter, r *http.Request) {
 	}
 	result := map[string]any{"catalog": items, "count": len(items)}
 	if name == "" && width == 0 && quality == "" && category == "" {
-		result["qualities"], result["categories"] = cfg.Qualities, game.Categories
+		result["qualities"], result["categories"] = game.CatalogQualities(cfg), game.Categories
 		result["specialties"], result["warehouses"] = cfg.Specialties, game.Warehouses
 	}
 	reply(w, 200, result)

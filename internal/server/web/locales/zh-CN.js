@@ -1,6 +1,7 @@
 export default {
-  "book.eggOdds":"出现概率",
-  "book.eggOddsValue":"传说物品概率的 1/1000",
+  "book.qualityOdds":"品质出现概率",
+  "book.appearanceOdds":"单件出现概率",
+  "easter_egg":"彩蛋",
   "book.eligibleCount":"候选件数限制",
   "book.halfCrate":"不超过整箱件数的一半",
   "catalogName":"物品名称",

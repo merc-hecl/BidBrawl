@@ -151,7 +151,7 @@ func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any
 		if e.Type == "count" && e.GroupBy != "" {
 			counts := map[string]int{}
 			if e.GroupBy == "quality" {
-				for _, q := range g.gameConfig.Qualities {
+				for _, q := range CatalogQualities(g.gameConfig) {
 					counts[q.ID] = 0
 				}
 			} else {
@@ -270,7 +270,7 @@ func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any
 			ia, ib := pool[a], pool[b]
 			if e.Selector == "highest" {
 				rank := func(q string) int {
-					for n, v := range []string{"common", "uncommon", "rare", "epic", "legendary"} {
+					for n, v := range []string{"common", "uncommon", "rare", "epic", "legendary", "easter_egg"} {
 						if v == q {
 							return n
 						}

@@ -166,7 +166,7 @@ func (e Effect) validate() error {
 	if e.Count < 0 || e.Count > 20 {
 		return errors.New("count must be 0 to 20")
 	}
-	if e.Quality != "" && e.Quality != "common" && e.Quality != "uncommon" && e.Quality != "rare" && e.Quality != "epic" && e.Quality != "legendary" {
+	if e.Quality != "" && e.Quality != "common" && e.Quality != "uncommon" && e.Quality != "rare" && e.Quality != "epic" && e.Quality != "legendary" && e.Quality != "easter_egg" {
 		return errors.New("unknown quality filter")
 	}
 	if e.Category != "" && e.Category != "household" && e.Category != "electronics" && e.Category != "tools" && e.Category != "art" && e.Category != "jewelry" && e.Category != "transport" {
