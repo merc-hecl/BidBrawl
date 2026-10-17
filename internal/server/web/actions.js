@@ -91,8 +91,7 @@ function actionOutcome(e,view){
  if(e.action==='card')return intelligenceSummary(e.result?.data,view)||t('cardApplied');
  if(e.action==='catalog'&&e.result?.templates!==undefined)return t('catalogMatches',{count:e.result.templates});
  if(e.action==='bid'||e.action==='withdraw')return '';
- const key='outcome_'+e.action;
- return catalogs[getLocale()][key]?t(key):t('activity_'+e.status);
+ return '';
 }
 export function actionDetail(e,view){
  if(!e)return `<p class="peek-empty">${tr('selectAction')}</p>`;
@@ -100,7 +99,7 @@ export function actionDetail(e,view){
  const status=success&&e.action==='ticket'?'ticketPaid':success&&e.action==='card'?'cardApplied':'activity_'+e.status;
  const amount=e.action==='bid'?e.params?.amount:success&&['ticket','card'].includes(e.action)?e.cost??0:undefined;
  const amountLabel=e.action==='bid'?'offerAmount':e.action==='card'?'cardCost':'actionSpend';
- const result=actionOutcome(e,view),outcome=result?`<section class="action-outcome"><strong>${esc(result)}</strong>${e.action==='ticket'&&success?`<p>${tr('ticketPaymentNote')}</p>`:''}</section>`:'';
+ const result=actionOutcome(e,view),outcome=result?`<section class="action-outcome"><strong>${esc(result)}</strong></section>`:'';
  return `<article class="action-detail"><header><h3>${esc(activityTitle(e,view))}</h3><span class="${e.status==='rejected'?'negative':'positive'}">${tr(status)}</span></header>${amount!==undefined?`<div class="action-amount"><small>${tr(amountLabel)} · ${tr('coins')}</small><strong class="action-detail-amount">${money(amount)}</strong></div>`:''}${card?`<div class="action-card-help"><p>${esc(card.description)}</p>${button(tr('cardHelp',{name:card.name}),'card:'+card.id,'text-button')}</div>`:''}${e.reason?`<section class="action-reason-block"><small>${tr(e.action==='withdraw'?'withdrawReason':'submittedReason')}</small><p>${esc(e.reason)}</p></section>`:''}${e.action==='ticket'?outcome:''}<h4>${tr('actionDetails')}</h4><dl>${actionFacts(e,view,card)}</dl>${e.action==='ticket'?'':outcome}${e.action==='withdraw'&&success?`<div class="withdraw-note"><strong>${tr('withdrawAccepted')}</strong><p>${tr('withdrawConsequences')}</p><p>${tr('ticketNonrefundable')}</p></div>`:''}</article>`;
 }
 export function fullActivity(view,ui){

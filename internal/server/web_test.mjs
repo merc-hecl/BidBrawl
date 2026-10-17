@@ -56,7 +56,7 @@ test('action details present game facts in both languages without technical payl
  try{for(const locale of ['zh-CN','en']){
   setLocale(locale,false);
   const ticket=actionDetail({...base,action:'ticket',cost:5000},view);
-  assert.ok(ticket.includes(t('ticketPaid'))&&ticket.includes(t('outcome_ticket'))&&ticket.includes(t('opening')));
+  assert.ok(ticket.includes(t('ticketPaid'))&&ticket.includes(t('opening')));
   assert.match(ticket,/5,000/);
   assert.ok(!ticket.includes('auction')||locale==='en');
   assert.ok(!ticket.includes('{}')&&!ticket.includes('<code>')&&!ticket.includes('42 ms'));
