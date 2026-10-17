@@ -20,6 +20,16 @@
 
 ## 查询目录
 
+用 `catalog` 查询公开物品模板，可组合筛选：
+
+```text
+bidbrawl catalog -room ROOM_ID -size 2x2 -quality rare
+bidbrawl catalog -room ROOM_ID -name "琉璃"
+bidbrawl catalog -category easter_egg
+```
+
+`-size` 为宽×高的格数，方向严格匹配，不自动旋转。`-quality` 接受目录中的品质 ID 或名称；`-name` 匹配完整或部分中文名称、英文译名，忽略大小写。各条件同时满足才返回。返回 `catalog` 列表和 `count` 数量，包含名称、品类、品质、尺寸与回收价；无匹配时返回空列表。加 `-room` 使用该房间冻结的配置，不加则使用宿主默认配置。不加筛选条件可查看完整目录、品质、品类、专长和仓库类型。目录中的候选不代表箱内实际存在。
+
 ```text
 bidbrawl handbook -topic cards
 bidbrawl handbook -topic cards -live -room ROOM_ID

@@ -137,6 +137,13 @@ func (s *Server) auditRequest(next http.Handler, w http.ResponseWriter, r *http.
 	if v := r.URL.Query().Get("frame"); v != "" {
 		params["frame"] = v
 	}
+	if r.URL.Path == "/api/catalog" {
+		for _, key := range []string{"size", "quality", "name", "category"} {
+			if v := r.URL.Query().Get(key); v != "" && len(v) <= 256 {
+				params[key] = v
+			}
+		}
+	}
 	start := time.Now()
 	capture := &activityResponse{header: make(http.Header)}
 	next.ServeHTTP(capture, r)
@@ -188,7 +195,13 @@ func (s *Server) auditRequest(next http.Handler, w http.ResponseWriter, r *http.
 				result["version"] = replyBody["version"]
 			}
 			if action == "catalog" {
-				result["templates"] = len(after.Rules.Catalog)
+				if r.URL.Path == "/api/catalog" {
+					if capture.code < 300 {
+						result["templates"] = replyBody["count"]
+					}
+				} else {
+					result["templates"] = len(after.Rules.Catalog)
+				}
 			}
 			if action == "card" && capture.code < 300 {
 				for _, h := range after.Intelligence[seatForAccount(rm, a.ID)] {

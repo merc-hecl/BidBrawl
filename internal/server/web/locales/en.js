@@ -1,4 +1,8 @@
 export default {
+  "catalogName":"Item name",
+  "catalogSize":"Footprint (width × height / cells)",
+  "catalogQuality":"Item quality",
+  "catalogMatches":"Found {count} item templates.",
   "book.close":"Close handbook and return",
   "book.scopeEffect":"{scope} · {effect}",
   "book.shortTarget.random":{"one":"Up to {count} random item","other":"Up to {count} random items"},

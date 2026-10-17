@@ -1,4 +1,8 @@
 export default {
+  "catalogName":"物品名称",
+  "catalogSize":"物品尺寸（宽 × 高 / 格）",
+  "catalogQuality":"物品品质",
+  "catalogMatches":"找到 {count} 种物品模板。",
   "book.close":"关闭手册并返回",
   "book.scopeEffect":"{scope} · {effect}",
   "book.shortTarget.random":"随机最多 {count} 件",

@@ -61,6 +61,11 @@ function actionFacts(e,view,card){
  if(p.quantity!==undefined)add('purchaseQuantity',t('cardQuantity',{count:p.quantity}));
  if(p.specialty)add('selectedSpecialty',name('specialty',p.specialty,view.rules.specialties));
  if(p.category)add('selectedCategory',catalogs[getLocale()]['region_'+p.category]?t('region_'+p.category):name('category',p.category,view.rules.categories));
+ if(e.action==='catalog'){
+  if(p.name)add('catalogName',p.name);
+  if(p.size)add('catalogSize',p.size.replace(/[xX]/g,' × '));
+  if(p.quality){const q=view.rules.qualities?.find(q=>q.name===p.quality||q.id===p.quality),key=q?.id||p.quality;add('catalogQuality',catalogs[getLocale()][key]?t(key):q?.name||p.quality);}
+ }
  if(Array.isArray(p.cards))add('carriedCards',p.cards.length?p.cards.map(cardName).join(' · '):t('noCarriedCards'));
  if(p.all===true||Array.isArray(p.ids)&&p.ids.length)add('soldSelection',p.all===true?t('allStoredItems'):t('selectedItemCount',{count:p.ids.length}));
  if(p.players!==undefined)add('players',money(p.players));
@@ -84,6 +89,7 @@ function actionOutcome(e,view){
  if(e.status==='rejected')return t('actionRejected');
  if(['specialty','public_hint'].includes(e.action))return intelligenceSummary(e.result,view);
  if(e.action==='card')return intelligenceSummary(e.result?.data,view)||t('cardApplied');
+ if(e.action==='catalog'&&e.result?.templates!==undefined)return t('catalogMatches',{count:e.result.templates});
  if(e.action==='bid'||e.action==='withdraw')return '';
  const key='outcome_'+e.action;
  return catalogs[getLocale()][key]?t(key):t('activity_'+e.status);

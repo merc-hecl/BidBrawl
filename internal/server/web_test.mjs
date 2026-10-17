@@ -7,6 +7,18 @@ import {renderContent,roomDirectory,dialogContent} from './web/render.js';
 import {itemInfo,crate} from './web/room-ui.js';
 import {actionDetail,actionRows,activityTabs} from './web/actions.js';
 
+test('catalog query details show localized game terms and match counts',()=>{
+ const view={rules:{qualities:[{id:'rare',name:'稀有'}]},round:2};
+ for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  const html=actionDetail({action:'catalog',round:2,source:'server',status:'success',params:{name:'<Glass>',size:'2x1',quality:'稀有'},result:{templates:0}},view);
+  assert.ok(html.includes('&lt;Glass&gt;')&&html.includes('2 × 1'));
+  assert.ok(html.includes(t('rare'))&&html.includes(t('catalogMatches',{count:0})));
+  assert.ok(!html.includes('/api/')&&!html.includes('<Glass>'));
+ }
+ setLocale('zh-CN',false);
+});
+
 test('activity calls remain individually inspectable, escaped and observer-only',()=>{
  const v={rules:{cards:[]},round:2,phase:'bidding',history:[],public_hints:[],activities:[
   {id:1,player_id:'p1',round:2,action:'state',source:'server',status:'success'},

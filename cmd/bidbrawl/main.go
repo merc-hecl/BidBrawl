@@ -172,11 +172,13 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	room := f.String("room", "", "房间 ID；state / replay / 行动必填，watch 省略则订阅全部房间")
 	invitation := f.String("invite", "", "join：房主提供的邀请链接")
 	players := f.Int("players", 4, "创建房间的玩家数 (2–7)")
-	name := f.String("name", "Agent", "玩家名称")
+	name := f.String("name", "Agent", "玩家名称；catalog：按中文或译名搜索物品（支持部分名称）")
+	size := f.String("size", "", "catalog：物品尺寸，宽x高，单位为格，如 2x2；不自动旋转")
+	quality := f.String("quality", "", "catalog：品质 ID 或名称，如 rare；可与尺寸、名称、类别组合")
 	accountID := f.String("account", "", "agent / rotate-credential：永久账号 ID，必填")
 	deck := f.String("cards", "", "携带的卡 ID，最多 5 张不同卡，用逗号分隔；省略或空字符串表示不带卡")
 	specialty := f.String("specialty", "analysis", "鉴定专长 ID，用 catalog 查看22种专长及轮次效果")
-	category := f.String("category", "", "专长允许的子品类；region 可选 northwest/northeast/southwest/southeast")
+	category := f.String("category", "", "专长允许的子品类；catalog：筛选品类 ID；region 可选 northwest/northeast/southwest/southeast")
 	ticket := f.Int64("ticket", 5000, "建房门票金额；开局扣除，退出不退，可设0")
 	warehouse := f.String("warehouse", "mixed", "建房仓库：mixed / tech / estate")
 	quantity := f.Int("quantity", 1, "购买卡牌数量，1–99")
@@ -379,17 +381,19 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		return printJSON(cfg)
 	}
 	method, path := "POST", ""
-	if command == "catalog" && *room != "" {
-		observation, err := c.Observe(ctx, *room)
-		if err != nil {
-			return err
-		}
-		return printJSON(map[string]any{"specialties": observation.Rules.Specialties, "categories": observation.Rules.Categories, "catalog": observation.Rules.Catalog, "warehouses": observation.Rules.Warehouses})
-	}
 	var input any
 	switch command {
 	case "catalog":
-		method, path = "GET", "/api/config"
+		query := neturl.Values{}
+		for key, value := range map[string]string{"room": *room, "size": *size, "quality": *quality, "category": *category} {
+			if value != "" {
+				query.Set(key, value)
+			}
+		}
+		if explicit["name"] {
+			query.Set("name", *name)
+		}
+		method, path = "GET", "/api/catalog?"+query.Encode()
 	case "withdraw":
 		path = client.RoomPath("/api/withdraw", *room)
 		input = map[string]any{"round": *round, "reason": *reason}

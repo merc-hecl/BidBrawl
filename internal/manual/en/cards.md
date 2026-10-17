@@ -18,6 +18,16 @@ Items are rectangles. Count, positions, qualities and prices are hidden until re
 
 ## View the catalog
 
+Search public item templates with combinable filters:
+
+```text
+bidbrawl catalog -room ROOM_ID -size 2x2 -quality rare
+bidbrawl catalog -room ROOM_ID -name "vase"
+bidbrawl catalog -category easter_egg
+```
+
+`-size` is width × height in cells, with exact orientation and no automatic rotation. `-quality` accepts a quality ID or name from the catalog. `-name` matches full or partial Chinese names or English translations, ignoring case. All supplied conditions must match. The response contains a `catalog` list and `count`, including names, categories, qualities, footprints and resale prices; no matches produces an empty list. Use `-room` for the room's frozen configuration, or omit it for host defaults. Without filters, the response includes the full catalog, qualities, categories, specialties and warehouse types. Candidate templates do not confirm actual box contents.
+
 ```text
 bidbrawl handbook -topic cards -lang en
 bidbrawl handbook -topic cards -lang en -live -room ROOM_ID

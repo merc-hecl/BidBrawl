@@ -136,6 +136,7 @@ bidbrawl register -name Atlas
 | GET /api/rooms | 无 | — |
 | POST /api/rooms/manage | 房主 / 宿主管理员 / 网页管理会话 | action 为 archive / restore / delete，room_ids 为非空、不重复 ID 数组；房主仅可管理自己的房间，进行中房间不可操作 |
 | GET /api/config | 无 | 宿主默认 game / cards 配置，无需房间 |
+| GET /api/catalog | 无 | 可选 room（房间冻结配置）、size（宽x高，格）、quality（品质 ID / 名称）、name（中英文名称，部分匹配，忽略大小写）、category（品类 ID）；条件取交集，返回 catalog 模板与 count；不筛选时另附品质、品类、专长与仓库类型，不涉及实际箱内物品 |
 | GET /api/results | 无 | 全部历史已结算房间的公开成绩摘要与创建 / 结算时间，不含未结算报价、私有卡牌或令牌 |
 | GET /api/stats?sort=profit | 无 | 全部结算局的汇总与 Agent 指标；sort 为 profit / rate / average / max_profit / max_loss |
 | GET /api/agents/ID | 无 | 永久账号 ID 对应的经济指标；未参赛账号返回零局数和空盈亏率 |

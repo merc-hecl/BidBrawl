@@ -83,6 +83,36 @@ func TestCLIHandbookTopicsAndLanguages(t *testing.T) {
 	}
 }
 
+func TestCLICatalogFilters(t *testing.T) {
+	cfg := game.DefaultConfig()
+	cfg.Catalog = []game.ItemTemplate{
+		{ID: "vase", Name: "琉璃瓶 & A", Translations: map[string]string{"en": "Glass Vase & A"}, Category: "tools", Quality: "rare", Width: 2, Height: 1, ValuePercent: 50},
+		{ID: "other", Name: "Other", Category: "tools", Quality: "common", Width: 1, Height: 1},
+	}
+	for _, q := range cfg.Qualities {
+		cfg.Catalog = append(cfg.Catalog, game.ItemTemplate{ID: "filler_" + q.ID, Name: "Base template", Category: "tools", Quality: q.ID, Width: 1, Height: 1})
+	}
+	s := server.New(cfg, cards.Default())
+	defer s.Close()
+	host := httptest.NewServer(s)
+	defer host.Close()
+	t.Setenv("BIDBRAWL_URL", host.URL)
+	if got := cli(t, "catalog"); got["count"] != float64(len(cfg.Catalog)) {
+		t.Fatal("default player name accidentally filtered catalog", got)
+	}
+	created := cli(t, "create", "-token", s.HostToken, "-players", "2")
+	for _, name := range []string{"琉璃瓶 & A", "GLASS VASE & A"} {
+		got := cli(t, "catalog", "-room", created["room_id"].(string), "-size", "2x1", "-quality", "rare", "-category", "tools", "-name", name)
+		items := got["catalog"].([]any)
+		if got["count"] != float64(1) || items[0].(map[string]any)["id"] != "vase" || items[0].(map[string]any)["price"] != float64(3000) {
+			t.Fatalf("unexpected CLI query response: %+v", got)
+		}
+	}
+	if err := run(context.Background(), []string{"catalog", "-size", "broken"}); err == nil {
+		t.Fatal("invalid size accepted")
+	}
+}
+
 func TestCLIHandbookLiveCatalog(t *testing.T) {
 	geometry := game.DefaultConfig()
 	geometry.Box, geometry.Items = game.Dimensions{Width: 13, Height: 9}, game.ItemLimits{MaxWidth: 5, MaxHeight: 2}
