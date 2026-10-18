@@ -2,7 +2,11 @@
 
 物品模板可选 `translations`，按语言代码提供名称，例如 `"translations": {"en": "Cut-crystal decanter"}`。WebUI 图鉴按当前语言显示该字段；没有对应翻译时保留 `name`。内置物品的英文名同样存放于目录 JSON，不在界面代码中维护。
 
-`-game-config` 加载尺寸、品质区间、权重、初始资金、门票与专长；默认配置见 internal/game/default.json，离线导出用 `bidbrawl config -defaults`。初始现金 300000，只影响新注册账号。五档价格为 100–300 / 400–1200 / 1500–4500 / 6000–12000 / 18000–40000，权重 45/30/15/8/2。
+`-game-config` 加载尺寸、品质区间、权重、初始资金、门票与专长；默认配置见 internal/game/default.json，离线导出用 `bidbrawl config -defaults`。初始现金 600000，只影响新注册账号。五档价格为 80–320 / 300–1300 / 1000–5000 / 3000–15000 / 8000–50000，权重 45/30/15/8/2。
+
+五档区间允许局部重叠：最高品质目标不必是最高价目标；同品质也会因具体身份和 value_percent 出现明显价差。尺寸与品质仍不强制正相关。扩大价格区间时保留史诗/传说区间中点，避免仅靠抬价加剧资金封顶；仓库建议现金同步为 600000，已有账号现金不重置。
+
+固定种子 20261018/1、每仓型 400 个生成样本（只统计常规物品，非 Agent 对战）中，综合/数码/旧宅仓值中位数分别为 259265/275770/277280，95 分位为 539038/561796/583802；超过新号扣票后 595000 现金的比例为 2.25%/3%/4.5%。旧资金与价档下同一组抽样约四成超过现金。最高常规品质贡献约 27%～28%，并非价值来源的绝对多数。生成分布回归见 TestDefaultLotValueDistribution；这些样本不证明玩家策略已平衡。
 
 物品目录独立存放于 internal/game/items.json，含 categories、warehouses、items。宿主 `-items-config PATH` 可替换物品模板列表（使用现有20个常规品类及彩蛋、五档常规品质和独立彩蛋档）；也可在 game-config 的 catalog 数组中配置模板。每档至少有一个常规 1×1 模板，确保任意剩余空间可填充。当前内置560个独立常规模板及8个彩蛋模板。字段为 id、name、category、quality、width、height、value_percent，可选 tags（如 clock）。后者是该档价格区间内 0–100 的位置，价格 = min_price + floor((max_price-min_price)×value_percent/100)。原始目录不使用市场价；实际价格由 catalog / state.rules.catalog 展示。无立绘依赖。
 

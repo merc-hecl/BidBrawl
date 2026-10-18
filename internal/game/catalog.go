@@ -199,7 +199,13 @@ func catalogForWarehouse(cfg Config, warehouse string) []ItemTemplate {
 }
 
 func (g *Game) generateCatalog() []Item {
-	rows := 1 + random(g.height)
+	return g.generateCatalogWith(random)
+}
+
+// Supplying draws lets distribution checks use reproducible lots without
+// creating scripted players or changing production randomness.
+func (g *Game) generateCatalogWith(choose func(int) int) []Item {
+	rows := 1 + choose(g.height)
 	skyline := make([]int, g.width)
 	out := []Item{}
 	catalog := Catalog(g.gameConfig)
@@ -240,7 +246,7 @@ func (g *Game) generateCatalog() []Item {
 		if len(eggs) > 0 {
 			eggWeight = legendaryWeight
 		}
-		quality, isEgg := catalogTier(g.gameConfig.Qualities, eggWeight, random(100000+eggWeight))
+		quality, isEgg := catalogTier(g.gameConfig.Qualities, eggWeight, choose(100000+eggWeight))
 		pool := []ItemTemplate{}
 		for _, t := range catalog {
 			if t.Category == "easter_egg" || t.Quality != quality || t.Width > span || t.Height > rows-y {
@@ -254,7 +260,7 @@ func (g *Game) generateCatalog() []Item {
 		if isEgg {
 			pool = eggs
 		}
-		t := pool[random(len(pool))]
+		t := pool[choose(len(pool))]
 		out = append(out, Item{ID: secret()[:16], Quality: t.Quality, Price: t.Price, TopLeft: Point{x, y}, BottomRight: Point{x + t.Width, y + t.Height}, TemplateID: t.ID, Name: t.Name, Category: t.Category})
 		for j := x; j < x+t.Width; j++ {
 			skyline[j] = y + t.Height

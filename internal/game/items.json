@@ -6951,19 +6951,19 @@
     {
       "id": "mixed",
       "name": "综合仓库",
-      "recommended_cash": 300000
+      "recommended_cash": 600000
     },
     {
       "id": "tech",
       "name": "数码货仓",
       "favored_category": "electronics",
-      "recommended_cash": 300000
+      "recommended_cash": 600000
     },
     {
       "id": "estate",
       "name": "旧宅藏品",
       "favored_category": "art",
-      "recommended_cash": 300000
+      "recommended_cash": 600000
     }
   ]
 }

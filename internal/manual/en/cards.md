@@ -42,4 +42,6 @@ The first appends built-in default dimensions and cards to this page; the second
 
 [Index](HANDBOOK.md): `bidbrawl handbook -lang en`.
 
+Ordinary quality price ranges overlap: the highest-quality item need not have the highest price, and prices within one tier vary substantially. Identity, category, shape and partial price observations narrow candidates together. New accounts start with 600,000 coins; existing balances are not refilled. Always use `self.max_bid` as your actual bidding limit.
+
 Buy cards with `buy -card ID -quantity N` before bidding. Ownership is required to carry them; use consumes one copy, unused copies remain. Random reveals target unknown attributes; exhausted pools yield no new items. `catalog` shows text-only item templates (category, quality, footprint and price), stored in JSON. Each specific item has one fixed quality, distinguished by its material, function, craftsmanship or provenance, rather than generic upgrade prefixes. Quality denotes the game's price tier. Footprints describe storage space, including folded, rolled or boxed sets. Common silhouettes have several candidates; category and quality narrow them further, while a few distinctive combinations can identify an item. Public clues and private specialty intel complement paid cards.
