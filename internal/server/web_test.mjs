@@ -16,6 +16,17 @@ test('area averages preserve units, precision and an empty result in both langua
  setLocale('zh-CN',false);
 });
 
+test('card call details show combined quality and exact-area scopes',async()=>{
+ const cards=JSON.parse(await readFile(new URL('../cards/default.json',import.meta.url),'utf8')).cards;
+ const view={rules:{cards,categories:[]}};
+ try{for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  const detail=id=>actionDetail({action:'card',status:'success',round:1,params:{card:id},result:{data:{}},source:'server'},view);
+  assert.ok(detail('four_cell_average').includes(t('book.areaScope',{count:4})));
+  assert.ok(detail('precious_count').includes(t('epic')+' + '+t('legendary')));
+ }}finally{setLocale('zh-CN',false);}
+});
+
 test('item inspector separates quality and item odds without identifying hidden templates',()=>{
  const template={id:'ordinary',quality:'common',quality_appearance_probability:0.45,appearance_probability:0.002};
  const item={id:'visible',quality:'common',template_id:'ordinary',top_left:{x:0,y:0},bottom_right:{x:1,y:1}};

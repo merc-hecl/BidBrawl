@@ -77,7 +77,13 @@ function actionFacts(e,view,card){
  if(p.frame!==undefined&&Number.isInteger(Number(p.frame)))add('replayPosition',Number(p.frame)?t('round',{round:Number(p.frame)}):t('opening'));
  const effect=card?.effect;
  if(effect){
-  const scope=effect.quality?t('qualityItems',{quality:catalogs[getLocale()][effect.quality]?t(effect.quality):t('unknownSelection')}):effect.category?name('category',effect.category,view.rules.categories):effect.selector==='largest'?t('largestItem'):effect.selector==='random'?t('randomItemCount',{count:effect.count||1}):['count','area','value'].includes(effect.type)?t('wholeCrate'):'';
+  const filters=[];
+  const qualities=effect.quality?[effect.quality]:effect.qualities||[];
+  if(qualities.length)filters.push(t('book.qualityScope',{qualities:qualities.map(q=>catalogs[getLocale()][q]?t(q):t('unknownSelection')).join(' + ')}));
+  if(effect.category)filters.push(name('category',effect.category,view.rules.categories));
+  if(effect.area)filters.push(t('book.areaScope',{count:effect.area}));
+  const target=effect.selector==='largest'?t('largestItem'):effect.selector==='highest'||effect.selector==='smallest'?t('book.shortTarget.'+effect.selector,{count:effect.count||1}):effect.selector==='random'?t('randomItemCount',{count:effect.count||1}):'';
+  const scope=[...filters,target].filter(Boolean).join(' · ')||t('wholeCrate');
   add('viewScope',scope);
   if(effect.type==='count')add('intelContent',t(effect.group_by==='quality'?'qualityCounts':effect.group_by==='category'?'categoryCounts':'totalItemCount'));
  }
