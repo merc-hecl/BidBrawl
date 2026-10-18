@@ -98,7 +98,7 @@ function specialties(rules,book){
   let right='';
   if(selected){
     const steps=selected.steps.map(step=>`<article class="handbook-step"><span aria-label="${tr('round',{round:step.round})}">${String(step.round).padStart(2,'0')}</span><div><strong>${esc(effectText(step.effect,step))}</strong><p>${esc(scope(step.effect,rules,selected,step))}</p>${step.remember?`<small>${tr('book.remember')}</small>`:''}${step.from_sample?`<small>${tr('book.fromSample')}</small>`:''}</div></article>`).join('');
-    right=detail(`<span class="eyebrow">${tr('book.specialtyDetails')}</span><h2 tabindex="-1">${esc(localizeName('specialty',selected))}</h2><div class="handbook-steps">${steps}</div><p class="handbook-muted">${tr('book.specialtyNote')}</p>`,selected.id);
+    right=detail(`<span class="eyebrow">${tr('book.specialtyDetails')}</span><h2 tabindex="-1">${esc(localizeName('specialty',selected))}</h2><div class="handbook-steps">${steps}</div>`,selected.id);
   }
   return {controls,body:left+right,selected:!!selected};
 }

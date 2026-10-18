@@ -92,7 +92,6 @@ export default {
   "book.specialtyFilter.geometry":"尺寸 / 位置",
   "book.specialtyChoice":"准备阶段选择一种专长，情报随轮次自动补充。",
   "book.specialtyDetails":"专长说明 · 情报发放路线",
-  "book.specialtyNote":"未列出的轮次没有新增情报。已获得的信息会保留；主动退出后不再补充。",
   "book.remember":"保留本批样本，供后续继续鉴定。",
   "book.fromSample":"补充此前记录的同批样本信息。",
   "book.loadError":"手册暂时未能载入，请重试。",

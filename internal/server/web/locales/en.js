@@ -92,7 +92,6 @@ export default {
   "book.specialtyFilter.geometry":"Size / position",
   "book.specialtyChoice":"Choose one specialty during preparation; intelligence arrives automatically by round.",
   "book.specialtyDetails":"Specialty intelligence route",
-  "book.specialtyNote":"Unlisted rounds add no intelligence. Previously learned information is kept; withdrawal stops new intelligence.",
   "book.remember":"Keep this sample for later inspection.",
   "book.fromSample":"Supplement information about the previously recorded sample.",
   "book.loadError":"The handbook could not be loaded. Please retry.",
