@@ -22,6 +22,7 @@ type Point struct {
 }
 type Item struct {
 	ID          string `json:"id"`
+	Category    string `json:"category,omitempty"`
 	Quality     string `json:"quality"`
 	Price       int64  `json:"price"`
 	TopLeft     Point  `json:"top_left"`
@@ -30,11 +31,12 @@ type Item struct {
 
 // Request deliberately excludes players, bids, skills and credentials.
 type Request struct {
-	ProtocolVersion int    `json:"protocol_version"`
-	Round           int    `json:"round"`
-	BoxWidth        int    `json:"box_width"`
-	BoxHeight       int    `json:"box_height"`
-	Items           []Item `json:"items"`
+	Categories      map[string]string `json:"categories,omitempty"`
+	ProtocolVersion int               `json:"protocol_version"`
+	Round           int               `json:"round"`
+	BoxWidth        int               `json:"box_width"`
+	BoxHeight       int               `json:"box_height"`
+	Items           []Item            `json:"items"`
 }
 
 type Text struct {

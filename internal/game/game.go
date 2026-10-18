@@ -419,12 +419,17 @@ func scoutableItems(items []Item) []Item {
 }
 
 func (g *Game) planHints(items []Item) ([]Hint, error) {
-	request := hints.Request{ProtocolVersion: 1, BoxWidth: g.width, BoxHeight: g.height, Items: []hints.Item{}}
+	request := hints.Request{ProtocolVersion: 1, BoxWidth: g.width, BoxHeight: g.height, Items: []hints.Item{}, Categories: map[string]string{}}
+	for _, c := range Categories {
+		if c.ID != "easter_egg" {
+			request.Categories[c.ID] = c.Name
+		}
+	}
 	for _, i := range items {
 		if isEasterEgg(i) {
 			continue
 		}
-		request.Items = append(request.Items, hints.Item{ID: i.ID, Quality: i.Quality, Price: i.Price,
+		request.Items = append(request.Items, hints.Item{ID: i.ID, Category: i.Category, Quality: i.Quality, Price: i.Price,
 			TopLeft: hints.Point{X: i.TopLeft.X, Y: i.TopLeft.Y}, BottomRight: hints.Point{X: i.BottomRight.X, Y: i.BottomRight.Y}})
 	}
 	available := append([]hints.Plugin{}, g.hintConfig.Plugins...)

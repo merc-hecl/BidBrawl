@@ -103,6 +103,48 @@ func TestQualityPresenceAndLargestAreaSurviveRestore(t *testing.T) {
 	}
 }
 
+func TestScopedPublicHintsStayScheduledAndPersisted(t *testing.T) {
+	for _, kind := range []string{"category_count", "category_quality_count", "region_quality_count", "quality_total_area", "quality_average_area"} {
+		t.Run(kind, func(t *testing.T) {
+			cfg := hints.Config{SchemaVersion: 1, Plugins: []hints.Plugin{{ID: "scoped", Builtin: kind}, {ID: "presence", Builtin: "quality_presence"}}}
+			g, err := NewWithHints(2, DefaultConfig(), cards.Default(), cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			_, a, _ := g.Join("A", nil)
+			_, b, _ := g.Join("B", nil)
+			if err := g.Start(); err != nil {
+				t.Fatal(err)
+			}
+			planned, _ := json.Marshal(g.plannedHints)
+			for round := 1; round <= 3; round++ {
+				v := view(t, g, "")
+				expected := 1
+				if round == 3 {
+					expected = 2
+				}
+				if len(v.PublicHints) != expected || v.Self != nil {
+					t.Fatal("wrong clue timing or private view")
+				}
+				restored, err := Restore(mustSnapshot(t, g))
+				if err != nil {
+					t.Fatal(err)
+				}
+				after, _ := json.Marshal(restored.plannedHints)
+				if !bytes.Equal(planned, after) {
+					t.Fatal("restart rerolled scoped clues")
+				}
+				g = restored
+				for _, tok := range []string{a, b} {
+					if err := g.Submit(tok, round, 100, "equal offers for scheduled clue fixture"); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+		})
+	}
+}
+
 func TestPlannedHintsStayPrivateAndRestoreWithoutPlugins(t *testing.T) {
 	c := hints.Config{SchemaVersion: 1, Plugins: []hints.Plugin{
 		{ID: "custom_first", Builtin: "random_quality"}, {ID: "custom_second", Builtin: "quality_count"},

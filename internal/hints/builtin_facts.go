@@ -12,6 +12,8 @@ var builtins = map[string]bool{
 	"random_shape": true, "random_quality": true,
 	"quality_count": true, "quality_average": true, "random_quality_price": true,
 	"quality_presence": true, "quality_largest_area": true,
+	"category_count": true, "category_quality_count": true, "region_quality_count": true,
+	"quality_total_area": true, "quality_average_area": true,
 }
 
 var qualityNames = map[string][2]string{
@@ -20,6 +22,9 @@ var qualityNames = map[string][2]string{
 }
 
 func builtin(kind string, r Request) (Clue, error) {
+	if kind == "category_count" || kind == "category_quality_count" || kind == "region_quality_count" || kind == "quality_total_area" || kind == "quality_average_area" {
+		return scopedBuiltin(kind, r)
+	}
 	if len(r.Items) == 0 && kind != "quality_presence" && kind != "quality_count" {
 		return Clue{}, ErrNotApplicable
 	}

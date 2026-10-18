@@ -7,6 +7,9 @@ import (
 
 // Fact contains only approved public fields, never whole-box prices or bands.
 type Fact struct {
+	Category     string   `json:"category,omitempty"`
+	Region       string   `json:"region,omitempty"`
+	AverageArea  *float64 `json:"average_area,omitempty"`
 	Type         string   `json:"type"`
 	ItemID       string   `json:"item_id,omitempty"`
 	Quality      string   `json:"quality,omitempty"`
@@ -23,6 +26,24 @@ func (f Fact) IsPrice() bool { return f.Type == "quality_average" || f.Type == "
 
 func (f Fact) Validate() error {
 	fields := 0
+	if f.Category != "" {
+		fields++
+		if !validID.MatchString(f.Category) || f.Category == "easter_egg" {
+			return errors.New("invalid hint category")
+		}
+	}
+	if f.Region != "" {
+		fields++
+		if f.Region != "northwest" && f.Region != "northeast" && f.Region != "southwest" && f.Region != "southeast" {
+			return errors.New("invalid hint region")
+		}
+	}
+	if f.AverageArea != nil {
+		fields++
+		if math.IsNaN(*f.AverageArea) || math.IsInf(*f.AverageArea, 0) || *f.AverageArea < 1 || *f.AverageArea > 16384 {
+			return errors.New("invalid hint mean area")
+		}
+	}
 	if f.ItemID != "" {
 		fields++
 		if !validText(f.ItemID, 64) {
@@ -70,6 +91,16 @@ func (f Fact) Validate() error {
 	}
 	valid := false
 	switch f.Type {
+	case "category_count":
+		valid = fields == 2 && f.Category != "" && f.Count != nil
+	case "category_quality_count":
+		valid = fields == 3 && f.Category != "" && f.Quality != "" && f.Count != nil
+	case "region_quality_count":
+		valid = fields == 3 && f.Region != "" && f.Quality != "" && f.Count != nil
+	case "quality_total_area":
+		valid = fields == 2 && f.Quality != "" && f.Area != nil
+	case "quality_average_area":
+		valid = fields == 2 && f.Quality != "" && f.AverageArea != nil
 	case "quality_presence":
 		valid = fields == 2 && f.Quality != "" && f.Present != nil
 	case "quality_largest_area":

@@ -44,6 +44,10 @@ func TestBuiltinFactsAreAccurateAndLimited(t *testing.T) {
 		{ID: "d", Quality: "epic", Price: 1000, TopLeft: Point{3, 0}, BottomRight: Point{4, 1}},
 		{ID: "e", Quality: "common", Price: 50, TopLeft: Point{4, 0}, BottomRight: Point{5, 1}},
 	}}
+	for n := range r.Items {
+		r.Items[n].Category = []string{"household", "art"}[n%2]
+	}
+	r.Categories = map[string]string{"household": "日用杂货", "art": "书画艺术"}
 	for _, p := range Default().Plugins {
 		for range 80 {
 			c, err := p.Generate(context.Background(), r)
@@ -58,6 +62,29 @@ func TestBuiltinFactsAreAccurateAndLimited(t *testing.T) {
 				}
 			}
 			switch p.Builtin {
+			case "category_count", "category_quality_count", "region_quality_count":
+				count := 0
+				for _, item := range r.Items {
+					match := (f.Category == "" || item.Category == f.Category) && (f.Quality == "" || item.Quality == f.Quality)
+					if f.Region != "" {
+						east, south := item.TopLeft.X >= r.BoxWidth/2, item.TopLeft.Y >= r.BoxHeight/2
+						match = match && east == strings.HasSuffix(f.Region, "east") && south == strings.HasPrefix(f.Region, "south")
+					}
+					if match {
+						count++
+					}
+				}
+				if f.Count == nil || *f.Count != count {
+					t.Fatal("inaccurate scoped count", f)
+				}
+			case "quality_total_area", "quality_average_area":
+				area := 0
+				for _, item := range group {
+					area += (item.BottomRight.X - item.TopLeft.X) * (item.BottomRight.Y - item.TopLeft.Y)
+				}
+				if p.Builtin == "quality_total_area" && (f.Area == nil || *f.Area != area) || p.Builtin == "quality_average_area" && (f.AverageArea == nil || *f.AverageArea != float64(area)/float64(len(group))) {
+					t.Fatal("inaccurate scoped area", f)
+				}
 			case "quality_presence":
 				if *f.Present != (len(group) > 0) {
 					t.Fatal("inaccurate presence", f)
@@ -127,6 +154,10 @@ func TestBroadPricesAndInvalidFactsAreRejected(t *testing.T) {
 		`{"title":"x","message":"y","fact":{"type":"quality_count","quality":"common","count":2,"price":100}}`,
 		`{"title":"x","message":"y","fact":{"type":"quality_presence","quality":"rare","present":true,"count":2}}`,
 		`{"title":"x","message":"y","fact":{"type":"quality_largest_area","quality":"rare","area":0}}`,
+		`{"title":"x","message":"y","fact":{"type":"category_count","category":"easter_egg","count":1}}`,
+		`{"title":"x","message":"y","fact":{"type":"region_quality_count","region":"center","quality":"rare","count":1}}`,
+		`{"title":"x","message":"y","fact":{"type":"quality_average_area","quality":"rare","average_area":0}}`,
+		`{"title":"x","message":"y","fact":{"type":"category_quality_count","category":"art","quality":"rare","count":1,"price":10}}`,
 	} {
 		if _, err := ParseClue(strings.NewReader(text)); err == nil {
 			t.Fatal("overly broad fact accepted")
