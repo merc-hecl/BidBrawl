@@ -30,6 +30,16 @@ func TestConfigurationValidation(t *testing.T) {
 		{Type: "reveal", Selector: "random", Fields: []string{"price"}, GroupBy: "quality"},
 		{Type: "count", GroupBy: "name"},
 		{Type: "count", Selector: "largest"},
+		{Type: "average"},
+		{Type: "average", Measure: "price", Fields: []string{"price"}},
+		{Type: "average", Measure: "price", SampleSize: -1},
+		{Type: "value", Measure: "price"},
+		{Type: "count", SampleSize: 2},
+		{Type: "count", Quality: "rare", Qualities: []string{"rare"}},
+		{Type: "count", Qualities: []string{"rare", "rare"}},
+		{Type: "count", Qualities: []string{"unknown"}},
+		{Type: "count", Area: -1},
+		{Type: "count", Area: 16385},
 	} {
 		cfg := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{{ID: "new_card", Name: "新卡", Description: "测试", Price: 1, Effect: effect}}}
 		if err := cfg.Validate(); err == nil {
@@ -41,6 +51,8 @@ func TestConfigurationValidation(t *testing.T) {
 		func(c *Config) { c.Cards[0].ID = "bad id" },
 		func(c *Config) { c.Cards[0].Name = "" },
 		func(c *Config) { c.Cards[0].Price = 0 },
+		func(c *Config) { c.Cards[0].MinRound = 6 },
+		func(c *Config) { c.Cards[0].MinRound = -1 },
 		func(c *Config) { c.Cards[0].Price = -1 },
 		func(c *Config) { c.Cards[0].Price = 1_000_000_001 },
 		func(c *Config) { c.DefaultDeck = []string{"largest_price", "largest_price"} },

@@ -143,20 +143,49 @@ func (g *Game) effect(e cards.Effect, p *player) map[string]any { return g.effec
 func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any {
 	pool := []Item{}
 	for _, i := range source {
-		if !isEasterEgg(i) && (e.Category == "" || i.Category == e.Category) && (e.Quality == "" || i.Quality == e.Quality) {
+		if !isEasterEgg(i) && (e.Category == "" || i.Category == e.Category) && (e.Quality == "" || i.Quality == e.Quality) && (len(e.Qualities) == 0 || slices.Contains(e.Qualities, i.Quality)) && (e.Area == 0 || i.area() == e.Area) {
 			pool = append(pool, i)
 		}
 	}
 	if e.Type != "reveal" {
+		if e.Type == "average" {
+			sample := pool
+			if e.SampleSize > 0 {
+				for n := 0; n < min(e.SampleSize, len(sample)); n++ {
+					j := n + random(len(sample)-n)
+					sample[n], sample[j] = sample[j], sample[n]
+				}
+				sample = sample[:min(e.SampleSize, len(sample))]
+			}
+			var sum int64
+			for _, i := range sample {
+				if e.Measure == "area" {
+					sum += int64(i.area())
+				} else {
+					sum += i.Price
+				}
+			}
+			var average any
+			if len(sample) > 0 {
+				average = float64(sum) / float64(len(sample))
+			}
+			d := map[string]any{"average_" + e.Measure: average}
+			if e.SampleSize > 0 {
+				d["sample_count"], d["sample_limit"] = len(sample), e.SampleSize
+			}
+			return d
+		}
 		if e.Type == "count" && e.GroupBy != "" {
 			counts := map[string]int{}
 			if e.GroupBy == "quality" {
 				for _, q := range g.gameConfig.Qualities {
-					counts[q.ID] = 0
+					if (e.Quality == "" || q.ID == e.Quality) && (len(e.Qualities) == 0 || slices.Contains(e.Qualities, q.ID)) {
+						counts[q.ID] = 0
+					}
 				}
 			} else {
 				for _, c := range Categories {
-					if c.ID != "easter_egg" {
+					if c.ID != "easter_egg" && (e.Category == "" || e.Category == c.ID) {
 						counts[c.ID] = 0
 					}
 				}
@@ -390,30 +419,10 @@ func (g *Game) giveIntelligence(p *player) {
 		if step.All {
 			e.Count = len(pool)
 		}
-		d := g.effectOn(e, p, pool)
 		if step.Mode == "average" {
-			sample := pool
-			if step.SampleSize > 0 {
-				sample = append([]Item{}, pool...)
-				for n := 0; n < min(step.SampleSize, len(sample)); n++ {
-					j := n + random(len(sample)-n)
-					sample[n], sample[j] = sample[j], sample[n]
-				}
-				sample = sample[:min(step.SampleSize, len(sample))]
-			}
-			var sum int64
-			for _, i := range sample {
-				sum += i.Price
-			}
-			var avg any
-			if len(sample) > 0 {
-				avg = float64(sum) / float64(len(sample))
-			}
-			d = map[string]any{"average_price": avg}
-			if step.SampleSize > 0 {
-				d["sample_count"], d["sample_limit"] = len(sample), step.SampleSize
-			}
+			e = cards.Effect{Type: "average", Measure: "price", SampleSize: step.SampleSize}
 		}
+		d := g.effectOn(e, p, pool)
 		if step.Mode == "presence" {
 			d = map[string]any{"present": len(pool) > 0}
 		}
@@ -468,6 +477,12 @@ func signalMessage(d map[string]any) string {
 			return fmt.Sprintf("抽样 %v 件的均价：%v 金币，并非全部藏品均价。", count, v)
 		}
 		return fmt.Sprintf("该范围藏品均价：%v 金币。", v)
+	}
+	if v, ok := d["average_area"]; ok {
+		if v == nil {
+			return "该范围内没有藏品，平均占格无结果。"
+		}
+		return fmt.Sprintf("该范围藏品平均占用 %v 格。", v)
 	}
 	if v, ok := d["present"].(bool); ok {
 		if v {

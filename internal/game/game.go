@@ -532,6 +532,9 @@ func (g *Game) UseCard(token string, round int, card, reason string) error {
 	var effect cards.Effect
 	for _, definition := range g.cardConfig.Cards {
 		if definition.ID == card {
+			if round < definition.MinRound {
+				return fmt.Errorf("card unlocks in round %d", definition.MinRound)
+			}
 			effect = definition.Effect
 			break
 		}

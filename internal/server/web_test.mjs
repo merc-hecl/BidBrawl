@@ -5,7 +5,16 @@ import {catalogs,t,setLocale,localizeCard,localizeName} from './web/i18n.js';
 import {normalizeView,observation,knownItems} from './web/model.js';
 import {renderContent,roomDirectory,dialogContent} from './web/render.js';
 import {itemInfo,crate} from './web/room-ui.js';
-import {actionDetail,actionRows,activityTabs} from './web/actions.js';
+import {actionDetail,actionRows,activityTabs,intelligenceSummary} from './web/actions.js';
+
+test('area averages preserve units, precision and an empty result in both languages',()=>{
+ for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  assert.equal(intelligenceSummary({average_area:2.5},{rules:{}}),t('intelAverageArea',{value:'2.5'}));
+  assert.equal(intelligenceSummary({average_area:null},{rules:{}}),t('intelAverageArea',{value:t('noCandidates')}));
+ }
+ setLocale('zh-CN',false);
+});
 
 test('item inspector separates quality and item odds without identifying hidden templates',()=>{
  const template={id:'ordinary',quality:'common',quality_appearance_probability:0.45,appearance_probability:0.002};

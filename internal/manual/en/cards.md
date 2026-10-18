@@ -8,6 +8,8 @@ Use `-cards CARD_ID,CARD_ID` when joining to carry up to five different cards. O
 
 Every single-item skill reveals its target's shape and position, plus only the quality or price learned by the skill. Cumulative item knowledge is in `self.item_reveals`; raw results remain in `self.hints`. Largest Item Price uncovers its target and displays the price without adding quality. Count effects do not reveal item positions. Discoveries persist in later rounds. Authorized human observers see every item from the start by default. Selecting a player switches to that player's known items; clearing the selection restores the full box. Replay frames still exclude future rounds of player skill records.
 
+Cards may specify an earliest usable round in `min_round`; early use is rejected without consuming a card. Sample appraisal unlocks in round 2, quality census in round 3, legendary valuation in round 4 and full audit in round 5. Counts, mean prices, mean areas, sample means and category totals are distinct observations. Means do not include population counts; empty means are `null`. Ordinary intel excludes easter eggs, including full audit totals.
+
 ## Clues and coordinates
 
 A public clue appears in rounds 1 and 3, in `public_hints`. Revealed bids are in `history`. Your card results and current sealed bid are private.

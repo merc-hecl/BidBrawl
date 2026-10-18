@@ -71,17 +71,18 @@
     {
       "id": "quality_counts",
       "name": "品质普查",
-      "description": "揭示每种品质的物品数量。",
+      "description": "第3轮起揭示每种常规品质的物品数量。",
       "effect": {
         "type": "count",
         "group_by": "quality"
       },
-      "price": 12000
+      "price": 12000,
+      "min_round": 3
     },
     {
       "id": "sample_four",
       "name": "抽样全检",
-      "description": "完整鉴定四件尚未知晓的物品。",
+      "description": "第2轮起完整鉴定四件仍有未知属性的物品。",
       "price": 6000,
       "effect": {
         "type": "reveal",
@@ -92,7 +93,8 @@
           "identity"
         ],
         "count": 4
-      }
+      },
+      "min_round": 2
     },
     {
       "id": "category_counts",
@@ -117,20 +119,169 @@
     {
       "id": "legendary_value",
       "name": "珍品估价",
-      "description": "显示传说物品合计价格。",
+      "description": "第4轮起显示传说物品合计价格。",
       "price": 18000,
       "effect": {
         "type": "value",
         "quality": "legendary"
-      }
+      },
+      "min_round": 4
     },
     {
       "id": "audit",
       "name": "终极审计",
-      "description": "显示整仓准确价格。",
+      "description": "第5轮显示所有常规物品的准确总价，不含彩蛋。",
       "price": 35000,
       "effect": {
         "type": "value"
+      },
+      "min_round": 5
+    },
+    {
+      "id": "highest_price",
+      "name": "至宝估价",
+      "description": "揭示最高品质目标的轮廓与价格；同品质取最大面积，再并列按 ID。",
+      "price": 4500,
+      "effect": {
+        "type": "reveal",
+        "selector": "highest",
+        "fields": [
+          "price"
+        ]
+      }
+    },
+    {
+      "id": "bulk_shapes",
+      "name": "广域测绘",
+      "description": "补看最多十二件未知轮廓，不揭示品质和价格。",
+      "price": 1800,
+      "effect": {
+        "type": "reveal",
+        "selector": "random",
+        "fields": [
+          "shape"
+        ],
+        "count": 12
+      }
+    },
+    {
+      "id": "quality_sample",
+      "name": "宝光六鉴",
+      "description": "补看最多六件未知品质，并定位其轮廓。",
+      "price": 2600,
+      "effect": {
+        "type": "reveal",
+        "selector": "random",
+        "fields": [
+          "quality"
+        ],
+        "count": 6
+      }
+    },
+    {
+      "id": "precious_count",
+      "name": "珍品合计",
+      "description": "显示史诗与传说的合计件数，不拆分两档。",
+      "price": 3000,
+      "effect": {
+        "type": "count",
+        "qualities": [
+          "epic",
+          "legendary"
+        ]
+      }
+    },
+    {
+      "id": "legendary_count",
+      "name": "传说清点",
+      "description": "显示传说物品件数，包含零件。",
+      "price": 4500,
+      "effect": {
+        "type": "count",
+        "quality": "legendary"
+      }
+    },
+    {
+      "id": "legendary_average_area",
+      "name": "珍品均格",
+      "description": "显示传说物品平均占格；不存在时返回空值，不提供件数。",
+      "price": 2200,
+      "effect": {
+        "type": "average",
+        "measure": "area",
+        "quality": "legendary"
+      }
+    },
+    {
+      "id": "rare_average",
+      "name": "稀有均价",
+      "description": "显示稀有物品的实际均价，不提供件数；不存在时返回空值。",
+      "price": 2400,
+      "effect": {
+        "type": "average",
+        "measure": "price",
+        "quality": "rare"
+      }
+    },
+    {
+      "id": "four_cell_average",
+      "name": "四格均价",
+      "description": "显示占地恰好四格的物品均价，不提供件数；不存在时返回空值。",
+      "price": 2200,
+      "effect": {
+        "type": "average",
+        "measure": "price",
+        "area": 4
+      }
+    },
+    {
+      "id": "sample_average",
+      "name": "抽样估值",
+      "description": "随机抽取最多六件常规物品，显示样本均价和样本数；不是整仓均价。",
+      "price": 1800,
+      "effect": {
+        "type": "average",
+        "measure": "price",
+        "sample_size": 6
+      }
+    },
+    {
+      "id": "antique_identity",
+      "name": "古器辨识",
+      "description": "定位并辨识最多四件身份未知的古董，不额外揭示品质或价格。",
+      "price": 2000,
+      "effect": {
+        "type": "reveal",
+        "selector": "random",
+        "category": "antiques",
+        "fields": [
+          "identity"
+        ],
+        "count": 4
+      }
+    },
+    {
+      "id": "electronics_value",
+      "name": "数码盘估",
+      "description": "第3轮起显示数码电子品类总价，不定位目标。",
+      "price": 5500,
+      "effect": {
+        "type": "value",
+        "category": "electronics"
+      },
+      "min_round": 3
+    },
+    {
+      "id": "common_value",
+      "name": "基础盘估",
+      "description": "显示普通与优良物品的合计价格，不拆分两档。",
+      "price": 3500,
+      "effect": {
+        "type": "value",
+        "qualities": [
+          "common",
+          "uncommon"
+        ]
       }
     }
   ]

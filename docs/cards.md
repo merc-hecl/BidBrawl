@@ -47,6 +47,7 @@ bidbrawl host -cards-config ./cards.json
 - `schema_version`：当前为 `1`。
 - `cards`：可用卡牌列表；删除某个定义即移除该卡。可以为空数组，最多 256 个定义。
 - `id`：唯一 ID，满足 `[a-z][a-z0-9_]{0,63}`；引擎按配置查找，不根据具体 ID 判断效果。
+- `min_round`：最早使用轮次，0 或省略表示第 1 轮，最大为 5。尚未解锁时拒绝用卡，不消耗库存、成本或本轮名额。
 - `price`：每张购买价，必须是 1～1,000,000,000 的整数，不支持免费卡。
 - `name`、`description`：公开名称与说明，分别最多 80、1000 个字符，非空且不能含控制字符。说明由房主维护，应准确反映 effect；玩家也可直接检查公开的 effect。
 - `default_deck`：供玩家查询的预设卡组，最多五个，不重复且必须存在于 cards；可以为空数组。携带时需用 `-cards` 明确指定。
@@ -57,6 +58,11 @@ bidbrawl host -cards-config ./cards.json
 | `count` | 可按 quality/category 过滤；`group_by` 可省略，或为 quality/category | 物品总数 count，或各组 counts（包括零数量） |
 | `area` | 可按 quality/category 过滤 | 合计占用格数 area |
 | `value` | 可按 quality/category 过滤 | 合计价格 total_value |
+| `average` | `measure` 为 price/area；可用 `sample_size` 限制最多抽样数量（1～4096），省略为全组均值 | average_price/average_area，空组为 null；抽样时另给 sample_count/sample_limit，不附送总体件数 |
+
+所有效果支持 `quality`（单品质）或 `qualities`（不重复的多个品质，二者互斥）、`category`（目录中的常规品类）和 `area`（恰好占多少格，1～16384）交集过滤。`count` 分组只列过滤范围内的分组，明确保留零值。普通情报不探测彩蛋；审计总价也不含彩蛋。
+
+内置卡现有 23 种：既可查询数量、合并品质数量、面积和均值，也可抽样、辨识身份或查局部总价。广域测绘不揭示品质，六鉴不揭示价格，样本均价不能当成整仓均价。强信息分阶段开放：抽样全检从第 2 轮、品质普查与数码总价从第 3 轮、传说总价从第 4 轮、整仓审计仅第 5 轮。公开说明和 min_round 随房间保存。
 
 所有 `reveal` 效果还会在 `self.item_reveals` 中定位目标、揭示轮廓；品质和价格仅按 `fields` 补充。授权观战接口使用相同的物品视野更新迷雾，计数效果不揭示位置。
 
