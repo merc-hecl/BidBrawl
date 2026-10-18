@@ -106,6 +106,8 @@ test('public reference preserves custom text, aliases and translations without d
 test('specialty summaries distinguish sampled averages, remembered samples and complete revelations',()=>{
   const sampled=specialties.find(s=>s.id==='category').steps[1];
   assert.equal(effectText(sampled.effect,sampled),t('book.effect.sampleAverage',{count:3}));
+  const earlyAppraisal=specialties.find(s=>s.id==='appraisal').steps[0];
+  assert.equal(effectText(earlyAppraisal.effect,earlyAppraisal),t('book.effect.sampleAverage',{count:3}));
   const full=specialties.find(s=>s.id==='electronics').steps[2];
   assert.ok(effectText(full.effect,full).includes(t('book.field.identity')));
   const html=renderHandbook(rules,{...newHandbookState('specialties'),entry:'small'});

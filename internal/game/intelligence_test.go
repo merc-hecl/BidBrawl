@@ -281,8 +281,13 @@ func TestAverageIntelDoesNotGiveFreeTotalAndSampleAverageIsDistinct(t *testing.T
 	if _, ok := d["count"]; ok {
 		t.Fatal("average exposed total candidate count")
 	}
-	if d["average_price"] != float64(325) {
-		t.Fatal("incorrect scoped average")
+	if (d["average_price"] != float64(100) && d["average_price"] != float64(400)) || d["sample_count"] != 3 || d["sample_limit"] != 3 {
+		t.Fatal("early appraisal gave full population average or incorrect sample", d)
+	}
+	g.round = 4
+	g.giveIntelligence(p)
+	if p.signals[1].Data["total_value"] != int64(1300) {
+		t.Fatal("late appraisal no longer confirms the scoped total")
 	}
 	p = &player{specialty: "category"}
 	g.round = 3

@@ -614,7 +614,7 @@
   {
     "id": "appraisal",
     "name": "珍品估价",
-    "description": "第2轮高品质均价，第4轮高品质总值，不定位物品。",
+    "description": "第2轮随机抽取最多三件高品质物品的样本均价，第4轮高品质总值，不定位物品。",
     "steps": [
       {
         "round": 2,
@@ -625,7 +625,8 @@
           "epic",
           "legendary"
         ],
-        "mode": "average"
+        "mode": "average",
+        "sample_size": 3
       },
       {
         "round": 4,
