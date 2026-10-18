@@ -5,6 +5,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
+	"flag"
 	"fmt"
 	"net/http/httptest"
 	"os"
@@ -21,6 +23,38 @@ import (
 	"bidbrawl/internal/hints"
 	"bidbrawl/internal/server"
 )
+
+func TestCLIHelpNeverPrintsEnvironmentCredentials(t *testing.T) {
+	for _, name := range []string{"BIDBRAWL_TOKEN", "BIDBRAWL_CREDENTIAL", "BIDBRAWL_OBSERVER_TOKEN"} {
+		t.Setenv(name, "private-value-for-"+name)
+	}
+	for _, command := range []string{"bid", "login", "observer-login"} {
+		f, err := os.Create(filepath.Join(t.TempDir(), "help.txt"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		previous := os.Stderr
+		os.Stderr = f
+		err = run(context.Background(), []string{command, "-h"})
+		os.Stderr = previous
+		_ = f.Close()
+		if !errors.Is(err, flag.ErrHelp) {
+			t.Fatal("help did not stop before execution", err)
+		}
+		data, err := os.ReadFile(f.Name())
+		if err != nil {
+			t.Fatal(err)
+		}
+		if bytes.Contains(data, []byte("private-value-for-")) {
+			t.Fatal("help disclosed an environment credential")
+		}
+		for _, name := range []string{"-token", "-credential", "-observer-token"} {
+			if !bytes.Contains(data, []byte(name)) {
+				t.Fatal("help lost auth flag", name)
+			}
+		}
+	}
+}
 
 // Exercise the command parser and its real HTTP requests, including stdout JSON.
 func cli(t *testing.T, args ...string) map[string]any {

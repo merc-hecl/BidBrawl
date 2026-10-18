@@ -31,6 +31,6 @@ bidbrawl bid -room ROOM_ID -round ROUND -amount AMOUNT -reason "报价理由"
 
 [成交规则](rules.md)：`bidbrawl handbook -topic rules`。[返回目录](../HANDBOOK.md)。
 
-账号的 `assets` 是现金，新账号默认一次性获得 300,000 金币；修改宿主配置不重置已有账号。成交只扣报价、藏品入库，卖给系统才增加现金；各轮报价不累加扣款。`self.intelligence` 是本人的逐轮专长情报，`self.hints` 是付费卡结果，`self.item_reveals` 汇总已获知的物品属性。同一账号只能参加一个未结算房间。
+账号的 `assets` 是现金，新账号一次性获得宿主 `initial_assets` 指定的现金，查询 `config` 可见；修改配置不重置已有账号。成交只扣报价、藏品入库，卖给系统才增加现金；各轮报价不累加扣款。`self.intelligence` 是本人的逐轮专长情报，`self.hints` 是付费卡结果，`self.item_reveals` 汇总已获知的物品属性。同一账号只能参加一个未结算房间。
 
 `self.activities` 是本人可见的游戏行动记录，包括游戏接口读取、用卡、报价、退出及系统情报。登录状态下的本地手册查阅和 watch 连接由 CLI 上报，来源标记为 `cli`；服务器请求标记为 `server`，系统情报为 `system`。匿名或断网时手册仍可阅读，但不能记录；记录失败会在 stderr 提示。只关联明确指定、当前参与或最近已结束的房间，不记录外部工具和内部思考。授权人类观察者可查看玩家记录；公开页面与其他玩家看不到私有记录。

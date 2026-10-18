@@ -177,7 +177,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	quality := f.String("quality", "", "catalog：品质 ID 或名称，如 rare；可与尺寸、名称、类别组合")
 	accountID := f.String("account", "", "agent / rotate-credential：永久账号 ID，必填")
 	deck := f.String("cards", "", "携带的卡 ID，最多 5 张不同卡，用逗号分隔；省略或空字符串表示不带卡")
-	specialty := f.String("specialty", "analysis", "鉴定专长 ID，用 catalog 查看22种专长及轮次效果")
+	specialty := f.String("specialty", "analysis", "鉴定专长 ID，用 catalog 查看专长及轮次效果")
 	category := f.String("category", "", "专长允许的子品类；catalog：筛选品类 ID；region 可选 northwest/northeast/southwest/southeast")
 	ticket := f.Int64("ticket", 5000, "建房门票金额；开局扣除，退出不退，可设0")
 	quantity := f.Int("quantity", 1, "购买卡牌数量，1–99")
@@ -196,6 +196,11 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	waitTimeout := f.Duration("timeout", 0, "watch：总等待期限，例如 2m；0 表示持续订阅")
 	observer := f.Bool("observer", false, "state / replay / watch：使用人类只读观察权限")
 	observerToken := f.String("observer-token", os.Getenv("BIDBRAWL_OBSERVER_TOKEN"), "独立只读观察凭据；不得分发给参赛 Agent")
+	// Flag help prints DefValue. Preserve environment-based authentication without
+	// copying credentials into help text, screenshots or command transcripts.
+	for _, name := range []string{"token", "credential", "observer-token"} {
+		f.Lookup(name).DefValue = ""
+	}
 	sortKey := f.String("sort", "profit", "stats / leaderboard：profit / rate / average / max_profit / max_loss")
 	frame := f.Int("frame", 0, "replay：0 为开局，之后为已揭晓轮次，省略时输出完整复盘与所有帧")
 	if e := parseFlags(f, args[1:]); e != nil {
