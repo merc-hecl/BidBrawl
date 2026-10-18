@@ -13,7 +13,6 @@ export function updateAppearance(){
   toggle.setAttribute('aria-expanded',String(expanded));toggle.setAttribute('aria-label',t(expanded?'collapseSidebar':'expandSidebar'));
   document.getElementById('theme-button').setAttribute('aria-pressed',String(dark));
   document.getElementById('theme-button').setAttribute('aria-label',t(dark?'switchLight':'switchDark'));
-  document.getElementById('theme-label').textContent=t(dark?'lightPaper':'darkPaper');
   document.getElementById('language-button').textContent=root.lang==='en'?'中文':'EN';
   document.querySelector('meta[name=theme-color]').content=dark?'#24251f':'#f3efe4';
 }

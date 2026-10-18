@@ -117,7 +117,7 @@
     {
       "id": "legendary_value",
       "name": "珍品估价",
-      "description": "显示传说物品合计回收价值。",
+      "description": "显示传说物品合计价格。",
       "price": 18000,
       "effect": {
         "type": "value",
@@ -127,7 +127,7 @@
     {
       "id": "audit",
       "name": "终极审计",
-      "description": "显示整仓准确回收价值。",
+      "description": "显示整仓准确价格。",
       "price": 35000,
       "effect": {
         "type": "value"

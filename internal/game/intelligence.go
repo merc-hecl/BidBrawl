@@ -492,7 +492,7 @@ func signalMessage(d map[string]any) string {
 		return fmt.Sprintf("史诗与传说合计占用 %v 格。", v)
 	}
 	if v, ok := d["low_quality_value"]; ok {
-		return fmt.Sprintf("普通与优良合计回收价值 %v 金币。", v)
+		return fmt.Sprintf("普通与优良合计价格 %v 金币。", v)
 	}
 
 	return "本轮私有情报已更新。"

@@ -56,7 +56,7 @@ bidbrawl host -cards-config ./cards.json
 | `reveal` | `selector` 为 `random`、`largest`、`smallest` 或 `highest`；`fields` 为 `quality`、`price`、`shape`、`identity`、`category` 的非空、不重复组合；`count` 为 0～20 | 默认单件含 item_id；指定 count 后返回 items 列表。identity 含名称、模板 ID 和品类 |
 | `count` | 可按 quality/category 过滤；`group_by` 可省略，或为 quality/category | 物品总数 count，或各组 counts（包括零数量） |
 | `area` | 可按 quality/category 过滤 | 合计占用格数 area |
-| `value` | 可按 quality/category 过滤 | 合计回收价值 total_value |
+| `value` | 可按 quality/category 过滤 | 合计价格 total_value |
 
 所有 `reveal` 效果还会在 `self.item_reveals` 中定位目标、揭示轮廓；品质和价格仅按 `fields` 补充。授权观战接口使用相同的物品视野更新迷雾，计数效果不揭示位置。
 
