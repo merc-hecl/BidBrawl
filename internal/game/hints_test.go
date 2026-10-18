@@ -17,6 +17,8 @@ func TestHintPlanNeverCombinesPriceCluesAndHandlesTinyBoxes(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, items := range [][]Item{
+		{{ID: "egg", Category: "easter_egg", Quality: "easter_egg", Price: 17500000, BottomRight: Point{1, 1}}},
+		{{ID: "egg", Category: "easter_egg", Quality: "easter_egg", Price: 17500000, BottomRight: Point{1, 1}}, {ID: "a", Quality: "common", Price: 20, TopLeft: Point{1, 0}, BottomRight: Point{2, 1}}},
 		{{ID: "a", Quality: "common", Price: 20, BottomRight: Point{1, 1}}},
 		{{ID: "a", Quality: "common", Price: 20, BottomRight: Point{1, 1}}, {ID: "b", Quality: "rare", Price: 600, TopLeft: Point{1, 0}, BottomRight: Point{2, 1}}},
 	} {
@@ -32,11 +34,14 @@ func TestHintPlanNeverCombinesPriceCluesAndHandlesTinyBoxes(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				if c.Fact.Quality == "easter_egg" || c.Fact.ItemID == "egg" {
+					t.Fatal("public clue exposed egg", c)
+				}
 				if c.Fact.IsPrice() {
 					prices++
 				}
 			}
-			if prices > 1 || len(items) == 1 && prices != 0 {
+			if prices > 1 || len(scoutableItems(items)) <= 1 && prices != 0 {
 				t.Fatal("whole value could be reconstructed from price clues")
 			}
 		}

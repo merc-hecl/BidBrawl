@@ -12,7 +12,7 @@ Every single-item skill reveals its target's shape and position, plus only the q
 
 A public clue appears in rounds 1 and 3, in `public_hints`. Revealed bids are in `history`. Your card results and current sealed bid are private.
 
-At start, each player independently samples `min(3, item count)` items uniformly without replacement. All players receive the same number; each item has the same inclusion probability for every player regardless of quality. Samples may overlap between players. `self.initial_inspection` contains only sampled IDs, shape coordinates and qualities, never prices. Samples persist across reconnects and restarts.
+At start, each player independently samples up to 3 items uniformly without replacement. All players receive the same number, regardless of quality. Samples may overlap between players. `self.initial_inspection` contains only sampled IDs, shape coordinates and qualities, never prices. Samples persist across reconnects and restarts.
 
 Items are rectangles. Count, positions, qualities and prices are hidden until revealed. Items have no gaps or overlaps; empty space is only at the bottom. Coordinates use cells, starting at `(0,0)` at the top left, with x increasing rightward and y downward. The bottom-right boundary is excluded: `(2,3) → (6,7)` occupies 4×4 cells.
 
@@ -25,7 +25,6 @@ Search public item templates with combinable filters:
 ```text
 bidbrawl catalog -room ROOM_ID -size 2x2 -quality rare
 bidbrawl catalog -room ROOM_ID -name "vase"
-bidbrawl catalog -category easter_egg
 ```
 
 `-size` is width × height in cells, with exact orientation and no automatic rotation. `-quality` accepts a quality ID or name from the catalog. `-name` matches full or partial Chinese names or English translations, ignoring case. All supplied conditions must match. The response contains a `catalog` list and `count`, including names, categories, qualities, footprints and prices; no matches produces an empty list. Use `-room` for the room's frozen configuration, or omit it for host defaults. Without filters, the response includes the full catalog, qualities, categories, specialties and item box types. Candidate templates do not confirm actual box contents.

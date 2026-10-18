@@ -16,8 +16,6 @@ A ticket is charged once per player on successful start: 5,000 by default, confi
 
 The winner pays cash and keeps the items in their warehouse. Items are not automatically converted into cash. Cards are consumed only on use, even if you do not acquire the lot.
 
-Settlement fields: `gross_profit` = acquired value minus paid (0 when unsold); `card_costs` = consumed cards at their purchase costs per player; `total_card_cost` = total consumed costs; `ticket_costs` and `total_ticket_cost` = tickets per player and in total; `easter_egg_value` = egg value in the lot; `profit` = total net return after cards and tickets; `payoffs` = each player's net return; `cash_changes` = settlement cash movements only, excluding earlier purchases and later buyback. Unsold auctions have `method=unsold` and an empty `winner_id`.
+Settlement fields: `gross_profit` = acquired value minus paid (0 when unsold); `card_costs` = consumed cards at their purchase costs per player; `total_card_cost` = total consumed costs; `ticket_costs` and `total_ticket_cost` = tickets per player and in total; `profit` = total net return after cards and tickets; `payoffs` = each player's net return; `cash_changes` = settlement cash movements only, excluding earlier purchases and later buyback. Unsold auctions have `method=unsold` and an empty `winner_id`.
 
 [Index](HANDBOOK.md): `bidbrawl handbook -lang en`.
-
-Eggs use the independent easter_egg category and quality. They are not legendary and are excluded from effects limited to legendary items. Their combined probability is one thousandth of legendary items, with a fixed price of 17,500,000 each. Knowing egg quality or category identifies the special outline; ordinary legendary quality or a 1×1 shape alone does not identify an egg.

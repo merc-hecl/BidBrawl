@@ -7,33 +7,29 @@ import (
 )
 
 type agentMetrics struct {
-	TicketCost     int64    `json:"ticket_cost"`
-	EasterEggValue int64    `json:"easter_egg_value"`
-	RegularProfit  int64    `json:"regular_profit"`
-	CardCost       int64    `json:"card_cost"`
-	CashChange     int64    `json:"cash_change"`
-	AcquiredValue  int64    `json:"acquired_value"`
-	ID             string   `json:"id"`
-	Name           string   `json:"name"`
-	Games          int      `json:"games"`
-	Profit         int64    `json:"profit"`
-	Paid           int64    `json:"paid"`
-	MaxProfit      int64    `json:"max_profit"`
-	MaxLoss        int64    `json:"max_loss"`
-	Rate           *float64 `json:"rate"`
-	Average        float64  `json:"average"`
+	TicketCost    int64    `json:"ticket_cost"`
+	CardCost      int64    `json:"card_cost"`
+	CashChange    int64    `json:"cash_change"`
+	AcquiredValue int64    `json:"acquired_value"`
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	Games         int      `json:"games"`
+	Profit        int64    `json:"profit"`
+	Paid          int64    `json:"paid"`
+	MaxProfit     int64    `json:"max_profit"`
+	MaxLoss       int64    `json:"max_loss"`
+	Rate          *float64 `json:"rate"`
+	Average       float64  `json:"average"`
 }
 type statistics struct {
-	TicketCost     int64          `json:"ticket_cost"`
-	EasterEggValue int64          `json:"easter_egg_value"`
-	RegularProfit  int64          `json:"regular_profit"`
-	CardCost       int64          `json:"card_cost"`
-	GrossProfit    int64          `json:"gross_profit"`
-	Games          int            `json:"games"`
-	Profit         int64          `json:"profit"`
-	Paid           int64          `json:"paid"`
-	Rate           *float64       `json:"rate"`
-	Agents         []agentMetrics `json:"agents"`
+	TicketCost  int64          `json:"ticket_cost"`
+	CardCost    int64          `json:"card_cost"`
+	GrossProfit int64          `json:"gross_profit"`
+	Games       int            `json:"games"`
+	Profit      int64          `json:"profit"`
+	Paid        int64          `json:"paid"`
+	Rate        *float64       `json:"rate"`
+	Agents      []agentMetrics `json:"agents"`
 }
 type rankedAgent struct {
 	Rank int `json:"rank"`
@@ -60,9 +56,6 @@ func calculateStatistics(results []roomResult) statistics {
 		out.Paid += r.Settlement.Paid
 		out.GrossProfit += r.Settlement.GrossProfit
 		out.TicketCost += totalCardCost(r.Settlement.TicketCosts)
-		if r.Settlement.WinnerID != "" {
-			out.EasterEggValue += r.Settlement.EasterEggValue
-		}
 		for _, cost := range r.Settlement.CardCosts {
 			out.CardCost += cost
 		}
@@ -83,15 +76,12 @@ func calculateStatistics(results []roomResult) statistics {
 			if r.Settlement.WinnerID == p.ID {
 				a.Paid += r.Settlement.Paid
 				a.AcquiredValue += r.Settlement.Total
-				a.EasterEggValue += r.Settlement.EasterEggValue
 			}
 		}
 	}
-	out.RegularProfit = out.Profit - out.EasterEggValue
 	out.Rate = profitRate(out.Profit, out.Paid+out.CardCost+out.TicketCost)
 	for _, a := range agents {
 		a.Rate = profitRate(a.Profit, a.Paid+a.CardCost+a.TicketCost)
-		a.RegularProfit = a.Profit - a.EasterEggValue
 		a.Average = float64(a.Profit) / float64(a.Games)
 		out.Agents = append(out.Agents, *a)
 	}

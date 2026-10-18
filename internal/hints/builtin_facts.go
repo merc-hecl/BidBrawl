@@ -17,11 +17,10 @@ var builtins = map[string]bool{
 var qualityNames = map[string][2]string{
 	"common": {"普通", "common"}, "uncommon": {"优良", "uncommon"},
 	"rare": {"稀有", "rare"}, "epic": {"史诗", "epic"}, "legendary": {"传说", "legendary"},
-	"easter_egg": {"彩蛋", "easter egg"},
 }
 
 func builtin(kind string, r Request) (Clue, error) {
-	if len(r.Items) == 0 {
+	if len(r.Items) == 0 && kind != "quality_presence" && kind != "quality_count" {
 		return Clue{}, ErrNotApplicable
 	}
 	groups := map[string][]Item{}
@@ -36,6 +35,9 @@ func builtin(kind string, r Request) (Clue, error) {
 		}
 	}
 	sort.Strings(qualities)
+	if kind == "quality_count" && len(qualities) == 0 {
+		qualities = []string{"common", "uncommon", "rare", "epic", "legendary"}
+	}
 	fact := &Fact{Type: kind}
 	var zhTitle, enTitle, zh, en string
 	switch kind {
@@ -53,7 +55,7 @@ func builtin(kind string, r Request) (Clue, error) {
 			zh, en = fmt.Sprintf("物品 %s 的品质为%s。", item.ID, qualityNames[item.Quality][0]), fmt.Sprintf("Item %s has %s quality.", item.ID, qualityNames[item.Quality][1])
 		}
 	case "quality_presence":
-		all := []string{"common", "uncommon", "rare", "epic", "legendary", "easter_egg"}
+		all := []string{"common", "uncommon", "rare", "epic", "legendary"}
 		fact.Quality = all[Random(len(all))]
 		present := len(groups[fact.Quality]) > 0
 		fact.Present = &present

@@ -16,8 +16,6 @@
 
 成交只从获箱者现金扣除本轮成交价，藏品进入个人仓库，不自动折现。未使用的卡保留；使用过的卡无论是否拿仓都消耗。
 
-`settlement.gross_profit` 是藏品价值减成交价（流拍为 0）；`card_costs` 是各玩家按实际购入价消耗的卡牌成本，`total_card_cost` 是合计；`profit` 是全场净收益，即毛收益减全部卡耗和门票；`ticket_costs` 和 `total_ticket_cost` 为各玩家与合计门票；`easter_egg_value` 为箱内彩蛋总价值；`payoffs` 是每位玩家扣除卡耗与门票后的净收益；`cash_changes` 只记录本次成交现金变化，不含以前买卡和以后回收藏品的现金流。`method=unsold` 且 `winner_id` 为空表示流拍。
+`settlement.gross_profit` 是藏品价值减成交价（流拍为 0）；`card_costs` 是各玩家按实际购入价消耗的卡牌成本，`total_card_cost` 是合计；`profit` 是全场净收益，即毛收益减全部卡耗和门票；`ticket_costs` 和 `total_ticket_cost` 为各玩家与合计门票；`payoffs` 是每位玩家扣除卡耗与门票后的净收益；`cash_changes` 只记录本次成交现金变化，不含以前买卡和以后回收藏品的现金流。`method=unsold` 且 `winner_id` 为空表示流拍。
 
 [返回目录](../HANDBOOK.md)：`bidbrawl handbook`。
-
-彩蛋的品类与品质均为独立的 `easter_egg`，不属于传说档，不计入仅筛选传说的技能或专长。彩蛋整体出现概率为传说物品的千分之一，每件价格统一为 1750 万。已知彩蛋品质或品类后可识别专用轮廓；普通传说品质或 1×1 形状不能断定是彩蛋。

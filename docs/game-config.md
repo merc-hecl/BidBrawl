@@ -18,7 +18,7 @@
 
 物品结构参考 [竞拍盒子](https://bidking.site/data/items) 和 [即刻落槌档案馆](https://ddangcalc.com/zh/items)：同形多候选、分类缩小范围、小物品也可很贵。首版名称与价格为本项目扩展后的平衡数据，不是原作数据的完整移植。
 
-彩蛋 category=easter_egg，quality=easter_egg，1×1，fixed_price=17500000；与普通价格区间分离。抽取时普通品质权重乘1000，彩蛋权重为传说原权重，故彩蛋概率严格为传说概率的千分之一，模板数量不改变总概率。默认彩蛋整体概率为2/100002（约每50001件一次），8个模板平均分配后单件概率为1/400008。`game_config.qualities` 只配置五档常规权重；`rules.qualities`、`/api/config` 与完整 `catalog` 返回的 `qualities` 另含独立彩蛋档。只筛选传说的卡牌或专长不包含彩蛋。
+彩蛋 category=easter_egg，quality=easter_egg，1×1，fixed_price=17500000；与普通价格区间分离。抽取时普通品质权重乘1000，彩蛋权重为传说原权重，故彩蛋概率严格为传说概率的千分之一，模板数量不改变总概率。默认彩蛋整体概率为2/100002（约每50001件一次），8个模板平均分配后单件概率为1/400008。`game_config.qualities` 只配置五档常规权重；`rules.qualities`、`/api/config` 与完整 `catalog` 返回的 `qualities` 另含独立彩蛋档。初始抽检、卡牌、专长与公共线索均排除彩蛋；数量、面积、均价和总价等侦察统计也不包含彩蛋。玩家在结算开箱后获知彩蛋，结算仍计入其完整价值；授权人类观察者的全箱视角保持完整。
 
 22种专长定义在 internal/game/specialties.json，并随房间 game_config.specialties 冻结。steps 描述轮次、范围、数量、字段、均价/存在性及跨轮样本引用。可在 game-config 中覆盖 specialties；玩家用 catalog 查询。
 

@@ -30,21 +30,21 @@ test('handbook renders every configured card, specialty and clue in both languag
   }}finally{setLocale('zh-CN',false);}
 });
 
-test('catalog filters and pagination retain server prices and support empty and egg entries',()=>{
+test('catalog filters and pagination retain server prices without revealing eggs',()=>{
   const selected=rules.catalog.find(i=>i.category==='easter_egg');
-  const egg=renderHandbook(rules,{...newHandbookState(),category:'easter_egg',entry:selected.id});
-  assert.ok(egg.includes('handbook-egg')&&egg.includes('17,500,000'));
-  assert.ok(!egg.includes(t('book.qualityRange')));
-  assert.ok(egg.includes('0.000249995%')&&!egg.includes('handbook-pill">'+t('legendary')));
-  const legendary=renderHandbook(rules,{...newHandbookState(),quality:'legendary'});
-  assert.ok(!legendary.includes('book-entry:'+selected.id));
-  const eggOnly=renderHandbook(rules,{...newHandbookState(),quality:'easter_egg'});
-  assert.ok(eggOnly.includes('book-entry:'+selected.id));
+  try{for(const locale of ['zh-CN','en']){
+    setLocale(locale,false);
+    for(const state of [{},{category:'easter_egg',entry:selected.id},{quality:'easter_egg'},{entry:selected.id,page:1000},{search:selected.name}]){
+      const html=renderHandbook(rules,{...newHandbookState(),...state});
+      assert.ok(!html.includes('book-entry:'+selected.id));
+      assert.doesNotMatch(html,/easter_egg|handbook-egg|17,500,000|0\.00199996%|0\.000249995%/);
+      assert.ok(html.includes(t('book.itemsCount',{count:rules.catalog.filter(item=>item.category!=='easter_egg').length})));
+    }
+  }}finally{setLocale('zh-CN',false);}
   const search=renderHandbook(rules,{...newHandbookState(),search:rules.catalog[0].name,quality:'common',footprint:'1x1'});
   assert.ok(search.includes('1,234'));
   assert.ok(search.includes('0.1%')&&search.includes(t('book.appearanceOdds')));
   assert.ok(search.includes('45%')&&search.includes(t('book.qualityOdds')));
-  assert.ok(egg.includes('0.00199996%')&&egg.includes(t('book.qualityOdds')));
   assert.equal((search.match(/data-action="book-entry:/g)||[]).length,1);
   const second=renderHandbook(rules,{...newHandbookState(),page:1});
   assert.ok(second.includes('book-entry:'+rules.catalog[6].id));

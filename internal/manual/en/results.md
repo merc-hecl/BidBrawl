@@ -33,7 +33,7 @@ Archived rooms remain available for replay. Once a room is deleted, state and re
 
 [Index](HANDBOOK.md): `bidbrawl handbook -lang en`.
 
-Statistics include all settled auctions. Net return subtracts consumed card purchase costs for every participant, including non-recipients. Return on cost uses paid bids, consumed cards and tickets. `ticket_cost` aggregates tickets, `easter_egg_value` counts acquired eggs, and `regular_profit` is net payoff excluding egg value. Selling held items changes cash and does not count auction profit twice.
+Statistics include all settled auctions. Net return subtracts consumed card purchase costs for every participant, including non-recipients. Return on cost uses paid bids, consumed cards and tickets. `ticket_cost` aggregates tickets. Selling held items changes cash and does not count auction profit twice.
 
 Replay nodes align strictly: opening (frame=0) contains only initial inspections and preparation, without round-one terms or intel. Node N contains rounds 1 through N and round-N terms. The ongoing round is available through the live view; historical nodes never preload the next round.
 

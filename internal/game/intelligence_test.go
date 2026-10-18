@@ -213,7 +213,7 @@ func TestAllSpecialtiesSchedulesAndPersistedScopes(t *testing.T) {
 	}
 }
 
-func TestEggProbabilityAndKnownCategoryDisclosure(t *testing.T) {
+func TestEggProbability(t *testing.T) {
 	cfg := DefaultConfig()
 	counts := map[string]int{}
 	for roll := 0; roll < 100002; roll++ {
@@ -240,22 +240,34 @@ func TestEggProbabilityAndKnownCategoryDisclosure(t *testing.T) {
 	if counts["legendary"] != 2000 || counts["common"] != 45000 {
 		t.Fatal("ordinary catalog weights changed")
 	}
+}
+
+func TestScoutingResultsAreUnaffectedByEggs(t *testing.T) {
 	g, _ := New(2)
-	g.items = []Item{{ID: "egg", Category: "easter_egg", Quality: "easter_egg", Price: 17500000, TopLeft: Point{0, 0}, BottomRight: Point{1, 1}}}
-	p := &player{hints: []Hint{{Round: 1, Source: "test", Data: map[string]any{"item_id": "egg", "quality": "legendary"}}}}
-	r, err := g.itemReveals(p)
-	if err != nil || r[0].Category != "" || r[0].Price != nil {
-		t.Fatal("quality alone identified an egg")
-	}
-	p.hints[0].Data["category"] = "easter_egg"
-	r, err = g.itemReveals(p)
-	if err != nil || r[0].Price == nil || *r[0].Price != 17500000 {
-		t.Fatal("known egg category omitted its public fixed value")
-	}
-	p.hints[0].Data = map[string]any{"item_id": "egg", "quality": "easter_egg"}
-	r, err = g.itemReveals(p)
-	if err != nil || r[0].Category != "easter_egg" || r[0].Price == nil || *r[0].Price != 17500000 {
-		t.Fatal("known egg quality omitted its independent category or value")
+	ordinary := []Item{{ID: "ordinary", TemplateID: "test", Name: "Ordinary", Category: "household", Quality: "common", Price: 100, BottomRight: Point{1, 1}}}
+	egg := Item{ID: "egg", Category: "easter_egg", Quality: "easter_egg", Price: 17500000, TopLeft: Point{1, 0}, BottomRight: Point{2, 1}}
+	for _, lot := range [][]Item{ordinary, nil} {
+		withEgg := append(append([]Item{}, lot...), egg)
+		for _, card := range cards.Default().Cards {
+			g.items = lot
+			before := g.effect(card.Effect, nil)
+			g.items = withEgg
+			if after := g.effect(card.Effect, nil); !reflect.DeepEqual(before, after) {
+				t.Fatalf("card %s exposed egg: before=%v after=%v", card.ID, before, after)
+			}
+		}
+		for _, spec := range g.gameConfig.Specialties {
+			before, after := &player{specialty: spec.ID}, &player{specialty: spec.ID}
+			for g.round = 1; g.round <= Rounds; g.round++ {
+				g.items = lot
+				g.giveIntelligence(before)
+				g.items = withEgg
+				g.giveIntelligence(after)
+			}
+			if !reflect.DeepEqual(before.signals, after.signals) {
+				t.Fatalf("specialty %s exposed egg: before=%v after=%v", spec.ID, before.signals, after.signals)
+			}
+		}
 	}
 }
 

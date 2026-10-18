@@ -138,7 +138,7 @@ func (s gameSnapshot) validate() error {
 		}
 		count := 0
 		if s.Phase != "lobby" {
-			count = min(InitialInspectionCount, len(s.Items))
+			count = min(InitialInspectionCount, len(scoutableItems(s.Items)))
 		}
 		if len(p.Inspection) != count {
 			return errors.New("invalid initial inspection count")
@@ -146,7 +146,7 @@ func (s gameSnapshot) validate() error {
 		seen := map[string]bool{}
 		for _, observed := range p.Inspection {
 			item, ok := items[observed.ID]
-			if !ok || seen[observed.ID] || observed != (InspectionItem{item.ID, item.Quality, item.TopLeft, item.BottomRight}) {
+			if !ok || isEasterEgg(item) || seen[observed.ID] || observed != (InspectionItem{item.ID, item.Quality, item.TopLeft, item.BottomRight}) {
 				return errors.New("invalid initial inspection item")
 			}
 			seen[observed.ID] = true
@@ -317,12 +317,6 @@ func (s gameSnapshot) validate() error {
 	}
 	var costTotal int64
 	var ticketTotal int64
-	var eggValue int64
-	for _, i := range s.Items {
-		if i.Category == "easter_egg" {
-			eggValue += i.Price
-		}
-	}
 	for _, p := range s.Players {
 		costTotal += p.CardCost
 		ticketTotal += p.TicketCost
@@ -331,7 +325,7 @@ func (s gameSnapshot) validate() error {
 	if high > 0 {
 		gross = total - high
 	}
-	if (high > 0 && !contains(ties, r.WinnerID) || high == 0 && (r.WinnerID != "" || r.Method != "unsold")) || !slices.Equal(ties, r.Tied) || r.Paid != high || r.Total != total || r.GrossProfit != gross || r.TotalCardCost != costTotal || r.TotalTicketCost != ticketTotal || r.EasterEggValue != eggValue || r.Profit != gross-costTotal-ticketTotal {
+	if (high > 0 && !contains(ties, r.WinnerID) || high == 0 && (r.WinnerID != "" || r.Method != "unsold")) || !slices.Equal(ties, r.Tied) || r.Paid != high || r.Total != total || r.GrossProfit != gross || r.TotalCardCost != costTotal || r.TotalTicketCost != ticketTotal || r.Profit != gross-costTotal-ticketTotal {
 		return errors.New("inconsistent settlement totals or winner")
 	}
 	for _, p := range s.Players {

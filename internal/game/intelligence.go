@@ -143,7 +143,7 @@ func (g *Game) effect(e cards.Effect, p *player) map[string]any { return g.effec
 func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any {
 	pool := []Item{}
 	for _, i := range source {
-		if (e.Category == "" || i.Category == e.Category) && (e.Quality == "" || i.Quality == e.Quality) {
+		if !isEasterEgg(i) && (e.Category == "" || i.Category == e.Category) && (e.Quality == "" || i.Quality == e.Quality) {
 			pool = append(pool, i)
 		}
 	}
@@ -151,12 +151,14 @@ func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any
 		if e.Type == "count" && e.GroupBy != "" {
 			counts := map[string]int{}
 			if e.GroupBy == "quality" {
-				for _, q := range CatalogQualities(g.gameConfig) {
+				for _, q := range g.gameConfig.Qualities {
 					counts[q.ID] = 0
 				}
 			} else {
 				for _, c := range Categories {
-					counts[c.ID] = 0
+					if c.ID != "easter_egg" {
+						counts[c.ID] = 0
+					}
 				}
 			}
 			for _, i := range pool {
@@ -270,7 +272,7 @@ func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any
 			ia, ib := pool[a], pool[b]
 			if e.Selector == "highest" {
 				rank := func(q string) int {
-					for n, v := range []string{"common", "uncommon", "rare", "epic", "legendary", "easter_egg"} {
+					for n, v := range []string{"common", "uncommon", "rare", "epic", "legendary"} {
 						if v == q {
 							return n
 						}
@@ -347,6 +349,9 @@ func (g *Game) giveIntelligence(p *player) {
 			}
 		}
 		for _, item := range g.items {
+			if isEasterEgg(item) {
+				continue
+			}
 			if len(spec.Categories) > 0 && !slices.Contains(spec.Categories, item.Category) || p.category != "" && p.specialty != "region" && p.category != item.Category {
 				continue
 			}

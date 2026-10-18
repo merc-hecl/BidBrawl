@@ -121,18 +121,21 @@ func TestCatalogAppearanceProbabilitiesUseIndependentEggTierAndWarehouse(t *test
 	}
 }
 
-func TestLegendaryEffectsExcludeIndependentEggs(t *testing.T) {
+func TestScoutingEffectsExcludeEggs(t *testing.T) {
 	g, _ := New(2)
 	g.items = []Item{{ID: "legend", Quality: "legendary", Price: 20000}, {ID: "egg", Category: "easter_egg", Quality: "easter_egg", Price: 17500000}}
 	counts := g.cardEffect(cards.Effect{Type: "count", GroupBy: "quality"})["counts"].(map[string]int)
-	if counts["legendary"] != 1 || counts["easter_egg"] != 1 {
-		t.Fatal("quality census merged eggs into legendary", counts)
+	if counts["legendary"] != 1 || len(counts) != len(g.gameConfig.Qualities) {
+		t.Fatal("quality census exposed eggs", counts)
 	}
 	if got := g.cardEffect(cards.Effect{Type: "value", Quality: "legendary"})["total_value"]; got != int64(20000) {
 		t.Fatal("legendary card included egg value", got)
 	}
-	if got := g.cardEffect(cards.Effect{Type: "count", Quality: "easter_egg"})["count"]; got != 1 {
-		t.Fatal("egg filter failed", got)
+	if got := g.cardEffect(cards.Effect{Type: "count", Quality: "easter_egg"})["count"]; got != 0 {
+		t.Fatal("egg filter exposed eggs", got)
+	}
+	if got := g.cardEffect(cards.Effect{Type: "value"})["total_value"]; got != int64(20000) {
+		t.Fatal("aggregate value exposed egg value", got)
 	}
 	bad := DefaultConfig()
 	for n := range bad.Catalog {

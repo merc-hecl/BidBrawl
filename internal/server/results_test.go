@@ -74,7 +74,7 @@ func TestResultsOnlySettledAndStableIdentity(t *testing.T) {
 	}
 	identities := map[string]string{}
 	for _, room := range results.Rooms {
-		if len(room.Settlement) != 12 || room.Settlement["items"] != nil || room.Settlement["decisions"] != nil {
+		if len(room.Settlement) != 11 || room.Settlement["items"] != nil || room.Settlement["decisions"] != nil {
 			t.Fatal("summary must contain economics and settlement stage only")
 		}
 		for _, player := range room.Players {

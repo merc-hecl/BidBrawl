@@ -63,15 +63,6 @@ test('egg outline requires learned category and retains exact rectangular bounds
  assert.ok(html.includes('is-easter-egg')&&html.includes('data-col="2" data-row="3" data-w="1" data-h="1"'));
 });
 
-test('egg quality identifies only the egg tier and uses the public catalog value',()=>{
- const item={id:'egg',quality:'easter_egg',top_left:{x:0,y:0},bottom_right:{x:1,y:1}};
- const view={rules:{catalog:[{quality:'easter_egg',price:17500000}]},initial_inspections:{p1:[item]},public_hints:[]};
- const known=knownItems(view,'p1');
- assert.equal(known[0].category,'easter_egg');assert.equal(known[0].price,17500000);
- const legendary=knownItems({...view,initial_inspections:{p1:[{...item,quality:'legendary'}]}},'p1');
- assert.equal(legendary[0].category,undefined);assert.equal(legendary[0].price,undefined);
-});
-
 test('action details present game facts in both languages without technical payloads',async()=>{
  const {cards}=JSON.parse(await readFile(new URL('../cards/default.json',import.meta.url),'utf8'));
  const {categories,warehouses}=JSON.parse(await readFile(new URL('../game/items.json',import.meta.url),'utf8'));
@@ -140,6 +131,7 @@ test('statistics and agent profile work without a selected room and never filter
   assert.ok(html.includes('Moss')&&!html.includes('data-control="scope"'));
   const profile=dialogContent('stats-agent','account:'+ 'a'.repeat(32),null,results,ui);
   assert.equal(profile.title,'Moss');
+
 });
 source.rules.cards=JSON.parse(await readFile(new URL('../cards/default.json',import.meta.url),'utf8')).cards;
 

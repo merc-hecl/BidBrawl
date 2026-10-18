@@ -61,7 +61,7 @@ function items(rules,book){
   let right='';
   if(current){
     const q=(rules.qualities||[]).find(q=>q.id===current.quality);
-    right=detail(`<span class="eyebrow">${tr('book.catalogDetails')}</span><h2 tabindex="-1">${esc(itemName(current))}</h2><div class="handbook-pills">${pill(esc(name('category',current.category,rules)))}${current.category==='easter_egg'?'':pill(esc(quality(current.quality)))}</div>${current.category==='easter_egg'?'<div class="handbook-egg" aria-hidden="true"></div>':''}<div class="handbook-amount"><div class="coin-amount">${icon('coin')}<strong>${money(current.price)}</strong><span class="sr-only">${tr('book.priceCaption')}</span></div></div><dl>${fact('book.footprint',tr('book.cells',{width:current.width,height:current.height}))}${q&&current.category!=='easter_egg'?fact('book.qualityRange',money(q.min_price)+' – '+money(q.max_price)+' '+tr('coins')):''}${fact('book.qualityOdds',money(current.quality_appearance_probability*100,10)+'%')}${fact('book.appearanceOdds',money(current.appearance_probability*100,10)+'%')}</dl>`,current.id);
+    right=detail(`<span class="eyebrow">${tr('book.catalogDetails')}</span><h2 tabindex="-1">${esc(itemName(current))}</h2><div class="handbook-pills">${pill(esc(name('category',current.category,rules)))}${pill(esc(quality(current.quality)))}</div><div class="handbook-amount"><div class="coin-amount">${icon('coin')}<strong>${money(current.price)}</strong><span class="sr-only">${tr('book.priceCaption')}</span></div></div><dl>${fact('book.footprint',tr('book.cells',{width:current.width,height:current.height}))}${q?fact('book.qualityRange',money(q.min_price)+' – '+money(q.max_price)+' '+tr('coins')):''}${fact('book.qualityOdds',money(current.quality_appearance_probability*100,10)+'%')}${fact('book.appearanceOdds',money(current.appearance_probability*100,10)+'%')}</dl>`,current.id);
   }
   return {controls,body:`${left}${right}`,selected:!!current};
 }
@@ -102,6 +102,7 @@ function specialties(rules,book){
   return {controls,body:left+right,selected:!!selected};
 }
 export function renderHandbook(rules,book,{pending=false,failed=false,roomName=''}={}){
+  if(rules)rules={...rules,catalog:(rules.catalog||[]).filter(item=>item.category!=='easter_egg'&&item.quality!=='easter_egg'),categories:(rules.categories||[]).filter(category=>category.id!=='easter_egg'),qualities:(rules.qualities||[]).filter(quality=>quality.id!=='easter_egg')};
   const section=sections.includes(book.section)?book.section:'items';
   const counts={items:rules?.catalog?.length||0,cards:rules?.cards?.length||0,hints:rules?.public_hint_definitions?.length||0,specialties:rules?.specialties?.length||0};
   const nav=`<nav class="handbook-nav" aria-label="${tr('handbook')}">${sections.map(id=>button(`<strong>${tr('book.section.'+id)}</strong><small>${id==='hints'?tr('book.publicHints',{count:counts[id]}):tr('book.'+id+'Count',{count:counts[id]})}</small>`,'book-section:'+id,section===id?'selected':'',section===id?'aria-current="page"':'')).join('')}</nav>`;

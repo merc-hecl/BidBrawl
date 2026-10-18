@@ -126,7 +126,6 @@ type ObserverDecision struct {
 type Settlement struct {
 	TicketCosts     map[string]int64 `json:"ticket_costs"`
 	TotalTicketCost int64            `json:"total_ticket_cost"`
-	EasterEggValue  int64            `json:"easter_egg_value"`
 	TotalCardCost   int64            `json:"total_card_cost"`
 	CardCosts       map[string]int64 `json:"card_costs"`
 	GrossProfit     int64            `json:"gross_profit"`
@@ -382,7 +381,7 @@ func (g *Game) StartWithAssets(balances map[string]int64) error {
 	// A fresh partial Fisher-Yates shuffle gives each player the same per-item
 	// inclusion probability without letting earlier players consume the pool.
 	for _, p := range g.players {
-		pool := append([]Item(nil), items...)
+		pool := scoutableItems(items)
 		count := min(InitialInspectionCount, len(pool))
 		p.inspection = make([]InspectionItem, 0, count)
 		for i := 0; i < count; i++ {
@@ -403,9 +402,28 @@ func (g *Game) StartWithAssets(balances map[string]int64) error {
 }
 
 func (g *Game) generate() []Item { return g.generateCatalog() }
+
+func isEasterEgg(item Item) bool {
+	return item.Quality == "easter_egg" || item.Category == "easter_egg"
+}
+
+// Scouting never includes eggs, even in aggregate counts, area or value.
+func scoutableItems(items []Item) []Item {
+	pool := make([]Item, 0, len(items))
+	for _, item := range items {
+		if !isEasterEgg(item) {
+			pool = append(pool, item)
+		}
+	}
+	return pool
+}
+
 func (g *Game) planHints(items []Item) ([]Hint, error) {
 	request := hints.Request{ProtocolVersion: 1, BoxWidth: g.width, BoxHeight: g.height, Items: []hints.Item{}}
 	for _, i := range items {
+		if isEasterEgg(i) {
+			continue
+		}
 		request.Items = append(request.Items, hints.Item{ID: i.ID, Quality: i.Quality, Price: i.Price,
 			TopLeft: hints.Point{X: i.TopLeft.X, Y: i.TopLeft.Y}, BottomRight: hints.Point{X: i.BottomRight.X, Y: i.BottomRight.Y}})
 	}
@@ -667,12 +685,6 @@ func (g *Game) settle(r RoundResult) {
 	costs, cash := map[string]int64{}, map[string]int64{}
 	tickets := map[string]int64{}
 	var ticketTotal int64
-	var eggValue int64
-	for _, i := range g.items {
-		if i.Category == "easter_egg" {
-			eggValue += i.Price
-		}
-	}
 	var costTotal int64
 	for _, p := range g.players {
 		costs[p.id] = p.cardCost
@@ -695,7 +707,7 @@ func (g *Game) settle(r RoundResult) {
 	if winner == "" {
 		method = "unsold"
 	}
-	g.settlement = &Settlement{TicketCosts: tickets, TotalTicketCost: ticketTotal, EasterEggValue: eggValue, TotalCardCost: costTotal, CardCosts: costs, GrossProfit: gross, CashChanges: cash, WinnerID: winner, Paid: high, Total: total, Profit: gross - costTotal - ticketTotal, Payoffs: payoffs, Tied: ties, Items: g.items, Round: r.Round, Method: method}
+	g.settlement = &Settlement{TicketCosts: tickets, TotalTicketCost: ticketTotal, TotalCardCost: costTotal, CardCosts: costs, GrossProfit: gross, CashChanges: cash, WinnerID: winner, Paid: high, Total: total, Profit: gross - costTotal - ticketTotal, Payoffs: payoffs, Tied: ties, Items: g.items, Round: r.Round, Method: method}
 	g.phase = "settled"
 }
 
@@ -798,7 +810,6 @@ func (g *Game) itemReveals(p *player) ([]ItemReveal, error) {
 					}
 					r.Round = hint.Round
 					r.Source = hint.Source
-					inferEggPrice(&r)
 					reveals = append(reveals, r)
 				}
 			}
@@ -812,23 +823,9 @@ func (g *Game) itemReveals(p *player) ([]ItemReveal, error) {
 		}
 		reveal.Round = hint.Round
 		reveal.Source = hint.Source
-		inferEggPrice(&reveal)
 		reveals = append(reveals, reveal)
 	}
 	return reveals, nil
-}
-
-func inferEggPrice(r *ItemReveal) {
-	if r.Quality == "easter_egg" {
-		r.Category = "easter_egg"
-	}
-	if r.Category == "easter_egg" {
-		r.Quality = "easter_egg"
-	}
-	if r.Category == "easter_egg" && r.Price == nil {
-		price := int64(17500000)
-		r.Price = &price
-	}
 }
 
 // Card identity comes from the durable skill-use record; raw results stay private.
