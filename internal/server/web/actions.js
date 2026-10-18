@@ -75,13 +75,14 @@ function actionFacts(e,view,card){
  if(p.topic)add('handbookTopic',catalogs[getLocale()]['topic_'+p.topic]?t('topic_'+p.topic):t('unknownSelection'));
  if(p.lang)add('language',t(p.lang==='en'?'languageEnglish':p.lang==='zh-CN'?'languageChinese':'unknownSelection'));
  if(p.frame!==undefined&&Number.isInteger(Number(p.frame)))add('replayPosition',Number(p.frame)?t('round',{round:Number(p.frame)}):t('opening'));
- const effect=card?.effect;
+ const effect=card?{...card.effect,...(card.target&&p.target?{[card.target]:p.target}:{})}:null;
  if(effect){
   const filters=[];
   const qualities=effect.quality?[effect.quality]:effect.qualities||[];
   if(qualities.length)filters.push(t('book.qualityScope',{qualities:qualities.map(q=>catalogs[getLocale()][q]?t(q):t('unknownSelection')).join(' + ')}));
   if(effect.category)filters.push(name('category',effect.category,view.rules.categories));
   if(effect.area)filters.push(t('book.areaScope',{count:effect.area}));
+  if(effect.region)filters.push(catalogs[getLocale()]['book.region.'+effect.region]?t('book.region.'+effect.region):effect.region);
   const target=effect.selector==='largest'?t('largestItem'):effect.selector==='highest'||effect.selector==='smallest'?t('book.shortTarget.'+effect.selector,{count:effect.count||1}):effect.selector==='random'?t('randomItemCount',{count:effect.count||1}):'';
   const scope=[...filters,target].filter(Boolean).join(' · ')||t('wholeCrate');
   add('viewScope',scope);

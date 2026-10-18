@@ -283,6 +283,91 @@
           "uncommon"
         ]
       }
+    },
+    {
+      "id": "category_shapes",
+      "name": "定向测绘",
+      "description": "选择一个常规品类，补看其中最多六件未知轮廓。",
+      "price": 2400,
+      "target": "category",
+      "effect": {
+        "type": "reveal",
+        "selector": "random",
+        "fields": [
+          "shape"
+        ],
+        "count": 6
+      }
+    },
+    {
+      "id": "category_value",
+      "name": "品类估价",
+      "description": "第3轮起选择一个常规品类，查其准确总价，不定位目标。",
+      "price": 6000,
+      "target": "category",
+      "effect": {
+        "type": "value"
+      },
+      "min_round": 3
+    },
+    {
+      "id": "target_quality_count",
+      "name": "定档清点",
+      "description": "选择一种常规品质，只给该档件数，包含零。",
+      "price": 5000,
+      "target": "quality",
+      "effect": {
+        "type": "count"
+      }
+    },
+    {
+      "id": "area_average",
+      "name": "按格估价",
+      "description": "选择恰好占用的格数，查该面积物品均价；空组返回null，不给总体件数。",
+      "price": 3000,
+      "target": "area",
+      "effect": {
+        "type": "average",
+        "measure": "price"
+      }
+    },
+    {
+      "id": "region_census",
+      "name": "分区普查",
+      "description": "选择一个象限，查该区五档品质各自件数；按物品左上角归区。",
+      "price": 5500,
+      "target": "region",
+      "effect": {
+        "type": "count",
+        "group_by": "quality"
+      },
+      "min_round": 2
+    },
+    {
+      "id": "region_value",
+      "name": "分区盘估",
+      "description": "第4轮起选择一个象限，查该区常规物品总价；按物品左上角归区。",
+      "price": 9000,
+      "target": "region",
+      "effect": {
+        "type": "value"
+      },
+      "min_round": 4
+    },
+    {
+      "id": "category_identities",
+      "name": "品类辨识",
+      "description": "选择一个常规品类，定位并辨识其中最多四件未知身份物品。",
+      "price": 3000,
+      "target": "category",
+      "effect": {
+        "type": "reveal",
+        "selector": "random",
+        "fields": [
+          "identity"
+        ],
+        "count": 4
+      }
     }
   ]
 }

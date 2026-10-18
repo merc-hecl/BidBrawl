@@ -47,6 +47,7 @@ bidbrawl host -cards-config ./cards.json
 - `schema_version`：当前为 `1`。
 - `cards`：可用卡牌列表；删除某个定义即移除该卡。可以为空数组，最多 256 个定义。
 - `id`：唯一 ID，满足 `[a-z][a-z0-9_]{0,63}`；引擎按配置查找，不根据具体 ID 判断效果。
+- `target`：可省略；或为 category / quality / area / region。声明后，用卡时必须传明确目标，不能与 effect 的同维度固定过滤条件冲突。目标只能是常规品类/品质、1～16384 格面积或 northwest / northeast / southwest / southeast 象限；固定卡拒绝多余目标，避免静默忽略。
 - `min_round`：最早使用轮次，0 或省略表示第 1 轮，最大为 5。尚未解锁时拒绝用卡，不消耗库存、成本或本轮名额。
 - `price`：每张购买价，必须是 1～1,000,000,000 的整数，不支持免费卡。
 - `name`、`description`：公开名称与说明，分别最多 80、1000 个字符，非空且不能含控制字符。说明由房主维护，应准确反映 effect；玩家也可直接检查公开的 effect。
@@ -62,7 +63,7 @@ bidbrawl host -cards-config ./cards.json
 
 所有效果支持 `quality`（单品质）或 `qualities`（不重复的多个品质，二者互斥）、`category`（目录中的常规品类）和 `area`（恰好占多少格，1～16384）交集过滤。`count` 分组只列过滤范围内的分组，明确保留零值。普通情报不探测彩蛋；审计总价也不含彩蛋。
 
-内置卡现有 23 种：既可查询数量、合并品质数量、面积和均值，也可抽样、辨识身份或查局部总价。广域测绘不揭示品质，六鉴不揭示价格，样本均价不能当成整仓均价。强信息分阶段开放：抽样全检从第 2 轮、品质普查与数码总价从第 3 轮、传说总价从第 4 轮、整仓审计仅第 5 轮。公开说明和 min_round 随房间保存。
+内置卡现有 30 种：既可查询数量、合并品质数量、面积和均值，也可抽样、辨识身份或查局部总价。广域测绘不揭示品质，六鉴不揭示价格，样本均价不能当成整仓均价。强信息分阶段开放：抽样全检从第 2 轮、品质普查与数码总价从第 3 轮、传说总价从第 4 轮、整仓审计仅第 5 轮。公开说明和 min_round 随房间保存。
 
 所有 `reveal` 效果还会在 `self.item_reveals` 中定位目标、揭示轮廓；品质和价格仅按 `fields` 补充。授权观战接口使用相同的物品视野更新迷雾，计数效果不揭示位置。
 
@@ -77,3 +78,17 @@ largest / smallest 按面积比较，highest 按品质从高到低、同品质�
 ## 付费库存与扩展效果
 
 卡牌 definition.price 是每张系统购买价。通过 buy 购买、loadout 选择携带，使用时原子消耗库存，未使用的保留；报价中禁止购买和出售。支持 count 按 quality/category 分组、area/value 聚合与 quality/category 过滤；reveal 支持 count（最多20）、identity/category 字段和 highest selector。随机 reveal 根据本人开局观察、公共单件线索、专长及历史卡结果筛选未知属性。专长结果保存在独立 intelligence 中，不占每轮卡牌名额。
+
+## 根据当前线索选择目标
+
+定向卡的目标在使用时决定，使用 `card -target TARGET`，不是建房或选牌时锁定：
+
+```text
+bidbrawl card -room ROOM_ID -round 2 -card category_shapes -target antiques -reason "公开品类线索与我的观察重叠，补查古董轮廓"
+bidbrawl card -room ROOM_ID -round 3 -card category_value -target jewelry -reason "只核实珠宝价值，其他品类继续估计"
+bidbrawl card -room ROOM_ID -round 2 -card region_census -target southeast -reason "我的已知高品质物集中在右下，查这一分区"
+```
+
+定向测绘/品类辨识/品类估价选择一个品类；定档清点选择一个品质；按格估价选择一个面积（宽×高的积，不是尺寸字符串）；分区普查/分区盘估选择一个象限。品类估价第3轮、分区普查第2轮、分区盘估第4轮解锁。边界中线为 floor(箱宽/2)、floor(箱高/2)，物品按左上角唯一归区，跨线不重复计算。
+
+目标记录在使用者的 self.hints[].data.target 与私有行动参数中，结果冻结保存。目标错误、缺省或未解锁都不耗卡，不占名额；合法目标没有物品时正常消耗，计数/总值为零、均值为 null、揭示列表为空。未侦察区域不能从“没有结果”推断为整仓为空。卡牌仍单局一次，不能换目标重用。

@@ -97,7 +97,7 @@ func TestWithdrawalSkipsFutureRoundsAndStopsPrivateGrowth(t *testing.T) {
 	if !v.Self.Withdrawn || v.Self.Bid == nil || *v.Self.Bid != 0 || len(v.Self.Intelligence) != 1 {
 		t.Fatal("withdrawal did not freeze future participation")
 	}
-	if g.UseCard(tokens[0], 2, "item_count", "no longer playing") == nil {
+	if g.UseCard(tokens[0], 2, "item_count", "", "no longer playing") == nil {
 		t.Fatal("withdrawn player used card")
 	}
 	if _, err := Restore(mustSnapshot(t, g)); err != nil {

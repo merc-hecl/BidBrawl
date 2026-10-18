@@ -553,6 +553,7 @@ func (s *Server) card(w http.ResponseWriter, r *http.Request) {
 	var v struct {
 		Round  int    `json:"round"`
 		Card   string `json:"card"`
+		Target string `json:"target"`
 		Reason string `json:"reason"`
 	}
 	if !decode(w, r, &v) {
@@ -562,7 +563,7 @@ func (s *Server) card(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, err)
 		return
 	}
-	if s.playerAction(w, r, func(g *game.Game, t string) error { return g.UseCard(t, v.Round, v.Card, v.Reason) }) {
+	if s.playerAction(w, r, func(g *game.Game, t string) error { return g.UseCard(t, v.Round, v.Card, v.Target, v.Reason) }) {
 		s.state(w, r)
 	}
 }

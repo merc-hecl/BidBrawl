@@ -78,6 +78,13 @@ func Catalog(cfg cards.Config, geometry game.Config, lang string) string {
 }
 
 var englishCards = map[string][2]string{
+	"category_shapes":        {"Directed survey", "Choose an ordinary category and reveal up to six unknown shapes within it."},
+	"category_value":         {"Category valuation", "From round 3, choose an ordinary category and reveal its exact total price without locations."},
+	"target_quality_count":   {"Selected-tier count", "Choose one ordinary quality and reveal its count, including zero."},
+	"area_average":           {"Chosen-area mean price", "Choose a cell area and reveal mean price of items occupying exactly that area; empty means are null and population count is omitted."},
+	"region_census":          {"Quadrant census", "From round 2, choose a quadrant and reveal its counts by quality, assigning items by top-left corner."},
+	"region_value":           {"Quadrant valuation", "From round 4, choose a quadrant and reveal its ordinary-item total price, assigning items by top-left corner."},
+	"category_identities":    {"Category identification", "Choose an ordinary category and locate and identify up to four items whose identities are unknown."},
 	"common_value":           {"Baseline valuation", "Reveal combined common and uncommon value without separating tiers."},
 	"electronics_value":      {"Electronics valuation", "From round 3, reveal total electronics value without locations."},
 	"antique_identity":       {"Antique identification", "Locate and identify up to four unidentified antiques, without explicit quality or price."},

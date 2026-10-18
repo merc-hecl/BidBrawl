@@ -40,6 +40,8 @@ func TestConfigurationValidation(t *testing.T) {
 		{Type: "count", Qualities: []string{"unknown"}},
 		{Type: "count", Area: -1},
 		{Type: "count", Area: 16385},
+		{Type: "count", Region: "center"},
+		{Type: "count", Qualities: []string{""}},
 	} {
 		cfg := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{{ID: "new_card", Name: "新卡", Description: "测试", Price: 1, Effect: effect}}}
 		if err := cfg.Validate(); err == nil {
@@ -62,6 +64,56 @@ func TestConfigurationValidation(t *testing.T) {
 		if err := cfg.Validate(); err == nil {
 			t.Fatal("invalid catalog accepted")
 		}
+	}
+}
+
+func TestTargetDefinitionsRejectConflictsAndResolveExplicitChoices(t *testing.T) {
+	for _, tc := range []struct {
+		kind, target string
+		effect       Effect
+	}{
+		{"category", "antiques", Effect{Type: "count"}},
+		{"quality", "legendary", Effect{Type: "count"}},
+		{"area", "6", Effect{Type: "average", Measure: "price"}},
+		{"region", "southeast", Effect{Type: "value"}},
+	} {
+		d := Definition{ID: "target", Name: "Target", Description: "Target test", Price: 1, Target: tc.kind, Effect: tc.effect}
+		c := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{d}}
+		if err := c.Validate(); err != nil {
+			t.Fatal(err)
+		}
+		resolved, err := d.ResolveTarget(tc.target)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if resolved.validate() != nil {
+			t.Fatal("invalid target resolution")
+		}
+		if _, err := d.ResolveTarget(""); err == nil {
+			t.Fatal("target silently defaulted", tc.kind)
+		}
+		if _, err := d.ResolveTarget("easter_egg"); err == nil {
+			t.Fatal("target allowed hidden tier", tc.kind)
+		}
+		if d.Effect.Category != "" || d.Effect.Quality != "" || d.Effect.Area != 0 || d.Effect.Region != "" {
+			t.Fatal("target mutated frozen definition")
+		}
+	}
+	for _, d := range []Definition{
+		{Target: "unknown", Effect: Effect{Type: "count"}},
+		{Target: "category", Effect: Effect{Type: "count", Category: "art"}},
+		{Target: "quality", Effect: Effect{Type: "count", Qualities: []string{"epic"}}},
+		{Target: "region", Effect: Effect{Type: "count", Region: "northwest"}},
+		{Target: "area", Effect: Effect{Type: "count", Area: 4}},
+	} {
+		d.ID, d.Name, d.Description, d.Price = "bad", "Bad", "Bad", 1
+		c := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{d}}
+		if c.Validate() == nil {
+			t.Fatal("conflicting target accepted", d)
+		}
+	}
+	if _, err := (Definition{Effect: Effect{Type: "count"}}).ResolveTarget("art"); err == nil {
+		t.Fatal("fixed card accepted ignored target")
 	}
 }
 

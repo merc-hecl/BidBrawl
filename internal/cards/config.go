@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -30,6 +31,7 @@ type Effect struct {
 	Area       int      `json:"area,omitempty"`
 	Measure    string   `json:"measure,omitempty"`
 	SampleSize int      `json:"sample_size,omitempty"`
+	Region     string   `json:"region,omitempty"`
 }
 
 type Definition struct {
@@ -39,6 +41,7 @@ type Definition struct {
 	Effect      Effect `json:"effect"`
 	Price       int64  `json:"price"`
 	MinRound    int    `json:"min_round,omitempty"`
+	Target      string `json:"target,omitempty"`
 }
 
 type Config struct {
@@ -107,6 +110,27 @@ func (c Config) Validate() error {
 	}
 	known := map[string]bool{}
 	for _, card := range c.Cards {
+		switch card.Target {
+		case "":
+		case "category":
+			if card.Effect.Category != "" {
+				return errors.New("category target conflicts with a fixed category")
+			}
+		case "quality":
+			if card.Effect.Quality != "" || len(card.Effect.Qualities) > 0 {
+				return errors.New("quality target conflicts with fixed qualities")
+			}
+		case "area":
+			if card.Effect.Area != 0 {
+				return errors.New("area target conflicts with fixed area")
+			}
+		case "region":
+			if card.Effect.Region != "" {
+				return errors.New("region target conflicts with fixed region")
+			}
+		default:
+			return errors.New("target must be category, quality, area or region")
+		}
 		if card.MinRound < 0 || card.MinRound > 5 {
 			return errors.New("min_round must be 0 to 5")
 		}
@@ -142,6 +166,9 @@ func validText(s string, max int) bool {
 }
 
 func (e Effect) validate() error {
+	if e.Region != "" && !ValidRegion(e.Region) {
+		return errors.New("unknown region filter")
+	}
 	switch e.Type {
 	case "reveal":
 		if e.Selector != "random" && e.Selector != "largest" && e.Selector != "smallest" && e.Selector != "highest" {
@@ -182,10 +209,10 @@ func (e Effect) validate() error {
 		return errors.New("use quality or qualities, with at most five tiers")
 	}
 	seen := map[string]bool{}
-	for _, q := range append(append([]string{}, e.Qualities...), e.Quality) {
-		if q == "" {
-			continue
-		}
+	if e.Quality != "" && !validQuality(e.Quality) {
+		return errors.New("unknown quality filter")
+	}
+	for _, q := range e.Qualities {
 		if seen[q] || !validQuality(q) {
 			return errors.New("unknown or duplicate quality filter")
 		}
@@ -201,6 +228,46 @@ func (e Effect) validate() error {
 		return errors.New("unknown category filter")
 	}
 	return nil
+}
+
+func ValidRegion(id string) bool {
+	return id == "northwest" || id == "northeast" || id == "southwest" || id == "southeast"
+}
+
+// ResolveTarget applies one explicit choice to a copy of the frozen effect.
+// Unused or invalid arguments fail before any inventory or round mutation.
+func (d Definition) ResolveTarget(target string) (Effect, error) {
+	e := d.Effect
+	switch d.Target {
+	case "":
+		if target != "" {
+			return Effect{}, errors.New("this card does not accept a target")
+		}
+	case "category":
+		if !ValidCategory(target) || target == "easter_egg" {
+			return Effect{}, errors.New("target must be an ordinary category ID")
+		}
+		e.Category = target
+	case "quality":
+		if !validQuality(target) || target == "easter_egg" {
+			return Effect{}, errors.New("target must be an ordinary quality ID")
+		}
+		e.Quality = target
+	case "region":
+		if !ValidRegion(target) {
+			return Effect{}, errors.New("target must be northwest, northeast, southwest or southeast")
+		}
+		e.Region = target
+	case "area":
+		n, err := strconv.Atoi(target)
+		if err != nil || n < 1 || n > 16384 {
+			return Effect{}, errors.New("target area must be an integer from 1 to 16384 cells")
+		}
+		e.Area = n
+	default:
+		return Effect{}, errors.New("unknown card target")
+	}
+	return e, nil
 }
 
 func validQuality(q string) bool {

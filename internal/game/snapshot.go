@@ -179,6 +179,15 @@ func (s gameSnapshot) validate() error {
 			if !deck[id] || used[id] || h.Kind != id || h.Source != id || h.Data == nil || h.Round <= lastRound || h.Round > s.Round {
 				return errors.New("invalid private card history")
 			}
+			for _, d := range s.Cards.Cards {
+				if d.ID != id {
+					continue
+				}
+				target, _ := h.Data["target"].(string)
+				if _, err := d.ResolveTarget(target); err != nil || h.Round < d.MinRound {
+					return errors.New("invalid stored card target or unlock round")
+				}
+			}
 			used[id], lastRound = true, h.Round
 		}
 		var spent int64

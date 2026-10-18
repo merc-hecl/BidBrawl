@@ -509,7 +509,7 @@ func ValidateReason(reason string) error {
 	}
 	return nil
 }
-func (g *Game) UseCard(token string, round int, card, reason string) error {
+func (g *Game) UseCard(token string, round int, card, target, reason string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
 	p := g.find(token)
@@ -535,16 +535,29 @@ func (g *Game) UseCard(token string, round int, card, reason string) error {
 		return errors.New("card is not in your deck")
 	}
 	var effect cards.Effect
+	found := false
 	for _, definition := range g.cardConfig.Cards {
 		if definition.ID == card {
+			found = true
 			if round < definition.MinRound {
 				return fmt.Errorf("card unlocks in round %d", definition.MinRound)
 			}
-			effect = definition.Effect
+			var err error
+			effect, err = definition.ResolveTarget(target)
+			if err != nil {
+				return err
+			}
 			break
 		}
 	}
-	p.hints = append(p.hints, Hint{Round: round, Kind: card, Source: card, Data: g.effect(effect, p)})
+	if !found {
+		return errors.New("unknown card")
+	}
+	data := g.effect(effect, p)
+	if target != "" {
+		data["target"] = target
+	}
+	p.hints = append(p.hints, Hint{Round: round, Kind: card, Source: card, Data: data})
 	for _, d := range g.cardConfig.Cards {
 		if d.ID == card {
 			price, ok := p.cardPrices[card]

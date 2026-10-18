@@ -10,6 +10,8 @@ Every single-item skill reveals its target's shape and position, plus only the q
 
 Cards may specify an earliest usable round in `min_round`; early use is rejected without consuming a card. Sample appraisal unlocks in round 2, quality census in round 3, legendary valuation in round 4 and full audit in round 5. Counts, mean prices, mean areas, sample means and category totals are distinct observations. Means do not include population counts; empty means are `null`. Ordinary intel excludes easter eggs, including full audit totals.
 
+Some card definitions declare `target`; supply `-target` when using them: an ordinary category ID for category, an ordinary quality ID for quality, an integer cell area for area, or northwest/northeast/southwest/southeast for region. Choose after reading current clues. Fixed cards reject extra targets. Invalid targets do not consume a card; a valid empty scope does, returning zero counts/totals, null means or empty reveal lists. Targets and results are private to you and authorized human observers. A used card cannot be retargeted.
+
 ## Clues and coordinates
 
 A public clue appears in rounds 1 and 3, in `public_hints`. Revealed bids are in `history`. Your card results and current sealed bid are private.

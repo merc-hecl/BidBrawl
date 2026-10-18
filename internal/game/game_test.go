@@ -85,7 +85,7 @@ func TestLobbyValidation(t *testing.T) {
 func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	g, ts := fixture(t, 2)
 	before, _ := g.Observe("")
-	if e := g.UseCard(ts[0], 1, "largest_price", "protocol test"); e != nil {
+	if e := g.UseCard(ts[0], 1, "largest_price", "", "protocol test"); e != nil {
 		t.Fatal(e)
 	}
 	after, _ := g.Observe("")
@@ -96,10 +96,10 @@ func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	if len(a.Self.Hints) != 1 || len(b.Self.Hints) != 0 {
 		t.Fatal("private hint isolation failed")
 	}
-	if e := g.UseCard(ts[0], 1, "item_count", "protocol test"); e == nil {
+	if e := g.UseCard(ts[0], 1, "item_count", "", "protocol test"); e == nil {
 		t.Fatal("two cards in round accepted")
 	}
-	if e := g.UseCard(ts[1], 1, "largest_quality", "protocol test"); e == nil {
+	if e := g.UseCard(ts[1], 1, "largest_quality", "", "protocol test"); e == nil {
 		t.Fatal("non-deck card accepted")
 	}
 	if e := g.Submit(ts[0], 1, 98765, "protocol test"); e != nil {
@@ -116,7 +116,7 @@ func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	if got := view(t, g, ts[0]); got.Self.Bid == nil || *got.Self.Bid != 98765 {
 		t.Fatal("own bid not returned")
 	}
-	if e := g.UseCard(ts[0], 1, "item_count", "protocol test"); e == nil {
+	if e := g.UseCard(ts[0], 1, "item_count", "", "protocol test"); e == nil {
 		t.Fatal("card after bid accepted")
 	}
 	if e := g.Submit(ts[0], 1, 1, "protocol test"); e == nil {
@@ -138,7 +138,7 @@ func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	if e := g.Submit(ts[0], 1, 1, "protocol test"); e == nil {
 		t.Fatal("stale round accepted")
 	}
-	if e := g.UseCard(ts[0], 2, "largest_price", "protocol test"); e == nil {
+	if e := g.UseCard(ts[0], 2, "largest_price", "", "protocol test"); e == nil {
 		t.Fatal("card reused")
 	}
 	if e := g.Submit(ts[0], 2, 1, "protocol test"); e != nil {

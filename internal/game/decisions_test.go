@@ -91,11 +91,11 @@ func TestDecisionReasonsPrivateAndRequired(t *testing.T) {
 	g, tokens := fixture(t, 2)
 	before, _ := g.Observe("")
 	for _, reason := range []string{"", " \n", strings.Repeat("字", 2001)} {
-		if g.UseCard(tokens[0], 1, "item_count", reason) == nil || g.Submit(tokens[0], 1, 100, reason) == nil {
+		if g.UseCard(tokens[0], 1, "item_count", "", reason) == nil || g.Submit(tokens[0], 1, 100, reason) == nil {
 			t.Fatal("invalid reason accepted")
 		}
 	}
-	if err := g.UseCard(tokens[0], 1, "item_count", "先清点，缩小估值区间。"); err != nil {
+	if err := g.UseCard(tokens[0], 1, "item_count", "", "先清点，缩小估值区间。"); err != nil {
 		t.Fatal(err)
 	}
 	after, _ := g.Observe("")

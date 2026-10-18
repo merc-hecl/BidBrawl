@@ -167,7 +167,7 @@ func (g *Game) effect(e cards.Effect, p *player) map[string]any { return g.effec
 func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any {
 	pool := []Item{}
 	for _, i := range source {
-		if !isEasterEgg(i) && (e.Category == "" || i.Category == e.Category) && (e.Quality == "" || i.Quality == e.Quality) && (len(e.Qualities) == 0 || slices.Contains(e.Qualities, i.Quality)) && (e.Area == 0 || i.area() == e.Area) {
+		if !isEasterEgg(i) && (e.Category == "" || i.Category == e.Category) && (e.Quality == "" || i.Quality == e.Quality) && (len(e.Qualities) == 0 || slices.Contains(e.Qualities, i.Quality)) && (e.Area == 0 || i.area() == e.Area) && (e.Region == "" || itemInRegion(i, e.Region, g.width, g.height)) {
 			pool = append(pool, i)
 		}
 	}
@@ -431,9 +431,7 @@ func (g *Game) giveIntelligence(p *player) {
 				if zone == "" {
 					zone = "northwest"
 				}
-				east := item.TopLeft.X >= g.width/2
-				south := item.TopLeft.Y >= g.height/2
-				if east != strings.HasSuffix(zone, "east") || south != strings.HasPrefix(zone, "south") {
+				if !itemInRegion(item, zone, g.width, g.height) {
 					continue
 				}
 			}
@@ -463,6 +461,10 @@ func (g *Game) giveIntelligence(p *player) {
 		d["scope"] = map[string]any{"categories": spec.Categories, "qualities": step.Qualities, "tag": spec.Tag, "selection": p.category}
 		g.addSignal(p, spec.Name, d)
 	}
+}
+
+func itemInRegion(item Item, region string, width, height int) bool {
+	return (item.TopLeft.X >= width/2) == strings.HasSuffix(region, "east") && (item.TopLeft.Y >= height/2) == strings.HasPrefix(region, "south")
 }
 
 // Eligibility uses only the preceding revealed round, never current sealed bids.

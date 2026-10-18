@@ -185,6 +185,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	sellAll := f.Bool("all", false, "出售全部仓库藏品")
 	round := f.Int("round", 0, "用卡 / 报价的当前轮次，必填，从 state 查看")
 	card := f.String("card", "", "技能卡 ID")
+	cardTarget := f.String("target", "", "card：卡牌要求的品类、品质、面积或象限目标；以 cards 中 target 字段为准")
 	amount := f.Int64("amount", 0, "整数报价")
 	reason := f.String("reason", "", "报价 / 用卡的私有决策理由，必填，1–2000 字符")
 	defaults := f.Bool("defaults", false, "config / cards / hints 命令：离线导出内置默认配置")
@@ -208,6 +209,9 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	}
 	explicit := map[string]bool{}
 	f.Visit(func(v *flag.Flag) { explicit[v.Name] = true })
+	if explicit["target"] && command != "card" {
+		return errors.New("-target is only used by card")
+	}
 	if command == "me" && explicit["account"] {
 		return errors.New("me only queries the logged-in account; -account is not supported")
 	}
@@ -476,7 +480,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 			return err
 		}
 		path = client.RoomPath("/api/card", *room)
-		input = map[string]any{"round": *round, "card": *card, "reason": *reason}
+		input = map[string]any{"round": *round, "card": *card, "target": *cardTarget, "reason": *reason}
 	case "bid":
 		if !explicit["amount"] {
 			return errors.New("-amount is required and must be positive; use withdraw to exit")

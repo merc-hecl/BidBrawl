@@ -30,6 +30,19 @@ test('new intelligence keeps scope, units, unlock rounds and bid conditions visi
  }}finally{setLocale('zh-CN',false);}
 });
 
+test('chosen-target cards describe the requested scope instead of a whole-crate result',()=>{
+ try{for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  for(const id of ['category_shapes','category_value','target_quality_count','area_average','region_census','region_value','category_identities']){
+   const def=cardConfig.cards.find(c=>c.id===id);
+   const html=renderHandbook(rules,{...newHandbookState('cards'),entry:id,detail:true});
+   assert.ok(html.includes(t('book.targetScope.'+def.target)),id);
+   const detail=html.slice(html.indexOf('<section class="handbook-detail'));
+   assert.ok(!detail.includes(t('wholeCrate')),id);
+  }
+ }}finally{setLocale('zh-CN',false);}
+});
+
 test('handbook renders every configured card, specialty and clue in both languages',()=>{
   try{for(const locale of ['zh-CN','en']){
     setLocale(locale,false);

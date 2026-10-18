@@ -27,6 +27,18 @@ test('card call details show combined quality and exact-area scopes',async()=>{
  }}finally{setLocale('zh-CN',false);}
 });
 
+test('card call details show the private chosen target safely',async()=>{
+ const cards=JSON.parse(await readFile(new URL('../cards/default.json',import.meta.url),'utf8')).cards;
+ const view={rules:{cards,categories:[{id:'art',name:'书画艺术'}]}};
+ try{for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  const detail=(card,target)=>actionDetail({action:'card',status:'success',round:3,params:{card,target},result:{data:{count:0}},source:'server'},view);
+  assert.ok(detail('region_census','southeast').includes(t('book.region.southeast')));
+  assert.ok(detail('area_average','6').includes(t('book.areaScope',{count:6})));
+  assert.ok(detail('target_quality_count','legendary').includes(t('legendary')));
+ }}finally{setLocale('zh-CN',false);}
+});
+
 test('item inspector separates quality and item odds without identifying hidden templates',()=>{
  const template={id:'ordinary',quality:'common',quality_appearance_probability:0.45,appearance_probability:0.002};
  const item={id:'visible',quality:'common',template_id:'ordinary',top_left:{x:0,y:0},bottom_right:{x:1,y:1}};

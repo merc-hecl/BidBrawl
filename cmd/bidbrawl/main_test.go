@@ -229,6 +229,44 @@ func TestCLIJoinCardSelection(t *testing.T) {
 	}
 }
 
+func TestCLIChosenCardTargetIsSentAndStoredPrivately(t *testing.T) {
+	s := server.New(game.DefaultConfig(), cards.Default())
+	host := httptest.NewServer(s)
+	defer host.Close()
+	t.Setenv("BIDBRAWL_URL", host.URL)
+	t.Setenv("BIDBRAWL_TOKEN", "")
+	room := cli(t, "create", "-token", s.HostToken, "-players", "2")["room_id"].(string)
+	credential := cli(t, "register", "-name", "Target buyer")["credential"].(string)
+	a := cli(t, "login", "-credential", credential)["token"].(string)
+	credential = cli(t, "register", "-name", "Other target player")["credential"].(string)
+	b := cli(t, "login", "-credential", credential)["token"].(string)
+	cli(t, "buy", "-token", a, "-card", "target_quality_count")
+	cli(t, "join", "-room", room, "-token", a, "-cards", "target_quality_count")
+	cli(t, "join", "-room", room, "-token", b)
+	cli(t, "start", "-room", room, "-token", s.HostToken)
+	for _, target := range []string{"", "easter_egg", "unknown"} {
+		if err := run(context.Background(), []string{"card", "-room", room, "-token", a, "-round", "1", "-card", "target_quality_count", "-target", target, "-reason", "validate target"}); err == nil {
+			t.Fatal("bad target accepted")
+		}
+	}
+	v := cli(t, "card", "-room", room, "-token", a, "-round", "1", "-card", "target_quality_count", "-target", "legendary", "-reason", "count one tier from current clues")
+	self := v["self"].(map[string]any)
+	hint := self["hints"].([]any)[0].(map[string]any)["data"].(map[string]any)
+	if hint["target"] != "legendary" || self["card_cost"] != float64(5000) {
+		t.Fatal("target or cost lost")
+	}
+	for _, token := range []string{"", b} {
+		other := cli(t, "state", "-room", room, "-token", token)
+		raw, _ := json.Marshal(other)
+		if bytes.Contains(raw, []byte(`"target":"legendary"`)) || bytes.Contains(raw, []byte("count one tier from current clues")) {
+			t.Fatal("private target leaked")
+		}
+	}
+	if err := run(context.Background(), []string{"catalog", "-target", "art"}); err == nil {
+		t.Fatal("irrelevant target silently ignored")
+	}
+}
+
 func TestCLIProtocolGameFlow(t *testing.T) {
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit"}, Cards: []cards.Definition{
 		{ID: "audit", Name: "自定义全检", Description: "最大物品品质与价格", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price"}}},

@@ -16,13 +16,13 @@ func TestCardRoundGateIsAtomicAndDurable(t *testing.T) {
 		t.Fatal(err)
 	}
 	before := mustSnapshot(t, g)
-	if err := g.UseCard(a, 1, "audit", "seek full value"); err == nil {
+	if err := g.UseCard(a, 1, "audit", "", "seek full value"); err == nil {
 		t.Fatal("early audit accepted")
 	}
 	if !bytes.Equal(before, mustSnapshot(t, g)) {
 		t.Fatal("rejected card changed costs, allowance or observations")
 	}
-	if err := g.UseCard(a, 1, "random_shape", "use an unlocked card instead"); err != nil {
+	if err := g.UseCard(a, 1, "random_shape", "", "use an unlocked card instead"); err != nil {
 		t.Fatal(err)
 	}
 	for round := 1; round < 5; round++ {
@@ -34,7 +34,7 @@ func TestCardRoundGateIsAtomicAndDurable(t *testing.T) {
 	}
 	g, _ = Restore(mustSnapshot(t, g))
 	public, _ := g.Observe("")
-	if err := g.UseCard(a, 5, "audit", "value the final offer"); err != nil {
+	if err := g.UseCard(a, 5, "audit", "", "value the final offer"); err != nil {
 		t.Fatal(err)
 	}
 	after, _ := g.Observe("")
@@ -104,6 +104,83 @@ func TestFilteredMeansAndCombinedTiers(t *testing.T) {
 	}
 }
 
+func TestChosenCardTargetIsPrivateAtomicAndSurvivesRestore(t *testing.T) {
+	for _, tc := range []struct{ card, target, key string }{
+		{"category_value", "art", "total_value"},
+		{"target_quality_count", "legendary", "count"},
+		{"area_average", "4", "average_price"},
+		{"region_census", "northwest", "counts"},
+	} {
+		t.Run(tc.card, func(t *testing.T) {
+			g, _ := New(2)
+			_, a, _ := g.Join("A", []string{tc.card})
+			_, b, _ := g.Join("B", nil)
+			if err := g.Start(); err != nil {
+				t.Fatal(err)
+			}
+			for g.round < 3 {
+				round := g.round
+				for _, tok := range []string{a, b} {
+					if err := g.Submit(tok, round, 100, "equal offers for target fixture"); err != nil {
+						t.Fatal(err)
+					}
+				}
+			}
+			before := mustSnapshot(t, g)
+			for _, target := range []string{"", "invalid", "easter_egg"} {
+				if g.UseCard(a, 3, tc.card, target, "test rejected target") == nil {
+					t.Fatal("invalid target accepted", target)
+				}
+				if !bytes.Equal(before, mustSnapshot(t, g)) {
+					t.Fatal("invalid target changed allowance, state or costs")
+				}
+			}
+			public, _ := g.Observe("")
+			if err := g.UseCard(a, 3, tc.card, tc.target, "follow my visible observations"); err != nil {
+				t.Fatal(err)
+			}
+			d := view(t, g, a).Self.Hints[0].Data
+			if d["target"] != tc.target {
+				t.Fatal("chosen target not retained")
+			}
+			if _, ok := d[tc.key]; !ok {
+				t.Fatal("missing targeted result", d)
+			}
+			after, _ := g.Observe("")
+			if !bytes.Equal(public, after) || len(view(t, g, b).Self.Hints) > 0 {
+				t.Fatal("target or result leaked")
+			}
+			restored, err := Restore(mustSnapshot(t, g))
+			if err != nil {
+				t.Fatal(err)
+			}
+			x, _ := g.Observe(a)
+			y, _ := restored.Observe(a)
+			if !bytes.Equal(x, y) {
+				t.Fatal("restart changed target or result")
+			}
+		})
+	}
+}
+
+func TestRegionalEffectsUseTopLeftCornerAndExcludeEggs(t *testing.T) {
+	g, _ := New(2)
+	g.width, g.height = 5, 5
+	g.items = []Item{
+		{ID: "nw", Quality: "rare", Price: 100, TopLeft: Point{0, 0}, BottomRight: Point{3, 3}},
+		{ID: "ne", Quality: "rare", Price: 200, TopLeft: Point{2, 0}, BottomRight: Point{5, 2}},
+		{ID: "sw", Quality: "rare", Price: 300, TopLeft: Point{0, 2}, BottomRight: Point{2, 5}},
+		{ID: "se", Quality: "rare", Price: 400, TopLeft: Point{2, 2}, BottomRight: Point{5, 5}},
+		{ID: "egg", Category: "easter_egg", Quality: "easter_egg", Price: 17500000, TopLeft: Point{2, 2}, BottomRight: Point{3, 3}},
+	}
+	for region, want := range map[string]int64{"northwest": 100, "northeast": 200, "southwest": 300, "southeast": 400} {
+		d := g.effect(cards.Effect{Type: "value", Region: region}, nil)
+		if d["total_value"] != want {
+			t.Fatal("region overlaps, misses dividing line or reveals egg", region, d)
+		}
+	}
+}
+
 func TestConfiguredCardsAndSnapshot(t *testing.T) {
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit", "census"}, Cards: []cards.Definition{
 		{ID: "audit", Name: "组合全检", Description: "最大物品全部信息", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price", "shape"}}},
@@ -131,7 +208,7 @@ func TestConfiguredCardsAndSnapshot(t *testing.T) {
 		{ID: "c", Quality: "common", Price: 40, TopLeft: Point{4, 0}, BottomRight: Point{5, 1}},
 	}
 	before := view(t, g, "")
-	if err := g.UseCard(a, 1, "audit", "protocol test"); err != nil {
+	if err := g.UseCard(a, 1, "audit", "", "protocol test"); err != nil {
 		t.Fatal(err)
 	}
 	data := view(t, g, a).Self.Hints[0].Data
@@ -143,14 +220,14 @@ func TestConfiguredCardsAndSnapshot(t *testing.T) {
 	}
 	_ = g.Submit(a, 1, 100, "protocol test")
 	_ = g.Submit(b, 1, 100, "protocol test")
-	if err := g.UseCard(a, 2, "census", "protocol test"); err != nil {
+	if err := g.UseCard(a, 2, "census", "", "protocol test"); err != nil {
 		t.Fatal(err)
 	}
 	data = view(t, g, a).Self.Hints[1].Data
 	if data["count"] != float64(3) {
 		t.Fatal("configured count ignored", data)
 	}
-	if err := g.UseCard(a, 2, "census", "protocol test"); err == nil {
+	if err := g.UseCard(a, 2, "census", "", "protocol test"); err == nil {
 		t.Fatal("configured card reused")
 	}
 	if !reflect.DeepEqual(view(t, g, "").Rules.DefaultDeck, []string{"audit", "census"}) {

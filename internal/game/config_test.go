@@ -129,7 +129,7 @@ func TestConfiguredPricesWeightsBidsAndRestore(t *testing.T) {
 					t.Fatal("generator ignored configured prices/weights")
 				}
 			}
-			if err = g.UseCard(a, 1, "largest_price", "protocol fixture"); err != nil {
+			if err = g.UseCard(a, 1, "largest_price", "", "protocol fixture"); err != nil {
 				t.Fatal(err)
 			}
 			if got := view(t, g, a).Self.Hints[0].Data["price"]; got != float64(1_234_567) {

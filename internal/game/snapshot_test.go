@@ -22,7 +22,7 @@ func TestSnapshotPreservesPrivateStateAndSettlement(t *testing.T) {
 	if err := g.Start(); err != nil {
 		t.Fatal(err)
 	}
-	if err := g.UseCard(tokens[0], 1, "random_shape", "protocol test"); err != nil {
+	if err := g.UseCard(tokens[0], 1, "random_shape", "", "protocol test"); err != nil {
 		t.Fatal(err)
 	}
 	if err := g.Submit(tokens[0], 1, 77777, "protocol test"); err != nil {
@@ -82,7 +82,7 @@ func TestRestoreRejectsInconsistentSnapshots(t *testing.T) {
 		tokens = append(tokens, token)
 	}
 	_ = g.Start()
-	_ = g.UseCard(tokens[0], 1, "item_count", "protocol test")
+	_ = g.UseCard(tokens[0], 1, "item_count", "", "protocol test")
 	data, _ := g.Snapshot()
 	for name, corrupt := range map[string]func(*gameSnapshot){
 		"negative assets":      func(s *gameSnapshot) { s.Players[0].Assets = -1 },

@@ -157,7 +157,7 @@ func TestObserverItemRevealsPreserveOnlyLearnedFields(t *testing.T) {
 				t.Fatal(err)
 			}
 			public, _ := g.Observe("")
-			if err := g.UseCard(token, 1, "scan", "inspect the largest item"); err != nil {
+			if err := g.UseCard(token, 1, "scan", "", "inspect the largest item"); err != nil {
 				t.Fatal(err)
 			}
 			data, err := g.ObserveObserver()
