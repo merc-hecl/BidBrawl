@@ -24,6 +24,7 @@ const hasSearch=(text,query)=>String(text).toLocaleLowerCase(getLocale()).includ
 export function effectText(effect,step={}){
   if(step.mode==='presence')return t('book.effect.presence');
   if(step.mode==='average')return t(step.sample_size?'book.effect.sampleAverage':'book.effect.average',{count:step.sample_size});
+  if(effect.type==='average')return t(effect.measure==='area'?'book.effect.averageArea':effect.sample_size?'book.effect.sampleAverage':'book.effect.average',{count:effect.sample_size});
   if(effect.type==='reveal'){
     const target=step.all?t('book.target.all'):t('book.target.'+(effect.selector||'random'),{count:effect.count||1});
     const fields=[t('book.field.shape'),...(effect.fields||[]).filter(f=>f!=='shape').map(f=>t('book.field.'+f))];
@@ -35,17 +36,19 @@ function scope(effect,rules,specialty,step={}){
   const parts=[];
   const categories=effect.category?[effect.category]:(specialty?.categories||[]);
   if(categories.length)parts.push(list(categories.map(id=>name('category',id,rules))));
-  const qualities=effect.quality?[effect.quality]:(step.qualities||[]);
+  const qualities=effect.quality?[effect.quality]:(effect.qualities||step.qualities||[]);
   if(qualities.length)parts.push(t('book.qualityScope',{qualities:list(qualities.map(quality))}));
+  if(effect.area)parts.push(t('book.areaScope',{count:effect.area}));
   if(specialty?.tag)parts.push(t(specialty.tag==='clock'?'book.clockScope':'book.tagScope',{tag:specialty.tag}));
   if(specialty?.id==='region')parts.push(t('book.regionScope'));
   return parts.length?parts.join(' · '):t('wholeCrate');
 }
 const cardGroup=card=>card.effect.type==='reveal'?'individual':'aggregate';
+const resultKey=effect=>effect.type==='average'?(effect.sample_size?'sample_average':'average_'+effect.measure):effect.group_by?effect.group_by+'_count':effect.type;
 function cardSummary(card,rules){
   const effect=card.effect;
   if(effect.type==='reveal')return t('book.scopeEffect',{scope:[effect.category||effect.quality?scope(effect,rules):'',t('book.shortTarget.'+(effect.selector||'random'),{count:effect.count||1})].filter(Boolean).join(' · '),effect:list(['shape',...(effect.fields||[]).filter(f=>f!=='shape')].map(f=>t('book.field.'+f)))});
-  return t('book.scopeEffect',{scope:scope(effect,rules),effect:t('book.result.'+(effect.group_by?effect.group_by+'_count':effect.type))});
+  return t('book.scopeEffect',{scope:scope(effect,rules),effect:t('book.result.'+resultKey(effect))});
 }
 const specialtyGroup=spec=>spec.categories?.length||spec.tag?'category':spec.steps.some(s=>s.qualities?.length||s.effect.quality)?'quality':'geometry';
 
@@ -71,10 +74,10 @@ function cards(rules,book){
   const controls=`<div class="handbook-controls">${filterButtons(['all','individual','aggregate'].map(id=>[id,t('book.cardFilter.'+id,{count:all.filter(c=>id==='all'||cardGroup(c)===id).length})]),book.filter)}${search(book)}</div>`;
   const left=`<section class="handbook-list panel" data-region="book-cards"><header><strong>${tr('book.cardsCount',{count:filtered.length})}</strong><small>${tr('book.systemPrice')}</small></header><div class="handbook-card-list">${filtered.map(c=>{const localized=localizeCard(c);return entry(c.id,localized.name,cardSummary(c,rules),selected?.id===c.id,`<span class="handbook-price">${money(c.price)}</span>`);}).join('')||noMatch()}</div></section>`;
   let right='';
-  if(selected){const c=localizeCard(selected),fields=c.effect.type==='reveal'?['shape',...(c.effect.fields||[]).filter(f=>f!=='shape')].map(f=>t('book.field.'+f)):[scope(c.effect,rules),t('book.result.'+(c.effect.group_by?c.effect.group_by+'_count':c.effect.type))];right=detail(`<span class="eyebrow">${tr('book.cardDetails')}</span><h2 tabindex="-1">${esc(c.name)}</h2><div class="handbook-amount"><strong>${money(c.price)}</strong><small>${tr('book.cardPriceCaption')}</small></div><p class="handbook-description">${esc(c.description)}</p><div class="handbook-pills">${fields.map(f=>pill(esc(f))).join('')}</div>`,selected.id);}
+  if(selected){const c=localizeCard(selected),fields=c.effect.type==='reveal'?['shape',...(c.effect.fields||[]).filter(f=>f!=='shape')].map(f=>t('book.field.'+f)):[scope(c.effect,rules),t('book.result.'+resultKey(c.effect))];right=detail(`<span class="eyebrow">${tr('book.cardDetails')}</span><h2 tabindex="-1">${esc(c.name)}</h2><div class="handbook-amount"><strong>${money(c.price)}</strong><small>${tr('book.cardPriceCaption')}</small></div><p class="handbook-description">${esc(c.description)}</p><div class="handbook-pills">${fields.map(f=>pill(esc(f))).join('')}${c.min_round>1?pill(tr('book.availableRound',{round:c.min_round})):''}</div>`,selected.id);}
   return {controls,body:left+right,selected:!!selected};
 }
-const builtinHints=new Set(['random_shape','random_quality','quality_count','quality_average','random_quality_price','quality_presence','quality_largest_area']);
+const builtinHints=new Set(['random_shape','random_quality','quality_count','quality_average','random_quality_price','quality_presence','quality_largest_area','category_count','category_quality_count','region_quality_count','quality_total_area','quality_average_area']);
 function hints(rules,book){
   const all=rules.public_hint_definitions||[];
   const flow=book.filter==='flow';
@@ -96,7 +99,7 @@ function specialties(rules,book){
   const left=`<section class="handbook-list panel" data-region="book-specialties"><header><strong>${tr('book.specialtiesCount',{count:filtered.length})}</strong></header><div class="handbook-specialty-grid">${filtered.map(s=>entry(s.id,localizeName('specialty',s),s.steps.map(step=>String(step.round).padStart(2,'0')).join(' · '),selected?.id===s.id)).join('')||noMatch()}</div></section>`;
   let right='';
   if(selected){
-    const steps=selected.steps.map(step=>`<article class="handbook-step"><span aria-label="${tr('round',{round:step.round})}">${String(step.round).padStart(2,'0')}</span><div><strong>${esc(effectText(step.effect,step))}</strong><p>${esc(scope(step.effect,rules,selected,step))}</p>${step.remember?`<small>${tr('book.remember')}</small>`:''}${step.from_sample?`<small>${tr('book.fromSample')}</small>`:''}</div></article>`).join('');
+    const steps=selected.steps.map(step=>`<article class="handbook-step"><span aria-label="${tr('round',{round:step.round})}">${String(step.round).padStart(2,'0')}</span><div><strong>${esc(effectText(step.effect,step))}</strong><p>${esc(scope(step.effect,rules,selected,step))}</p>${step.condition?`<small>${tr('book.condition.'+step.condition)}</small>`:''}${step.remember?`<small>${tr('book.remember')}</small>`:''}${step.from_sample?`<small>${tr('book.fromSample')}</small>`:''}</div></article>`).join('');
     right=detail(`<span class="eyebrow">${tr('book.specialtyDetails')}</span><h2 tabindex="-1">${esc(localizeName('specialty',selected))}</h2><div class="handbook-steps">${steps}</div>`,selected.id);
   }
   return {controls,body:left+right,selected:!!selected};

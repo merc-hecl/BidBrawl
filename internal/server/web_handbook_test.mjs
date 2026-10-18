@@ -10,6 +10,26 @@ const cardConfig=await json('../cards/default.json'),specialties=await json('../
 const hintConfig=await json('../hints/default.json');
 const rules=hostReference({game,qualities:[...game.qualities,{id:'easter_egg',name:'彩蛋',min_price:17500000,max_price:17500000,weight:0}],catalog:catalog.items.map(i=>({...i,price:i.fixed_price??1234,quality_appearance_probability:i.category==='easter_egg'?2/100002:game.qualities.find(q=>q.id===i.quality).weight/100,appearance_probability:i.category==='easter_egg'?2/100002/8:0.001})),cards:cardConfig,specialties,categories:catalog.categories,public_hint_definitions:hintConfig.plugins});
 
+test('new intelligence keeps scope, units, unlock rounds and bid conditions visible',()=>{
+ try{for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  const card=id=>renderHandbook(rules,{...newHandbookState('cards'),entry:id,detail:true});
+  assert.ok(card('four_cell_average').includes(t('book.areaScope',{count:4})));
+  assert.ok(card('precious_count').includes(t('epic'))&&card('precious_count').includes(t('legendary')));
+  assert.ok(card('legendary_average_area').includes(t('book.result.average_area')));
+  assert.ok(card('audit').includes(t('book.availableRound',{round:5})));
+  for(const id of ['momentum','contrarian']){
+   const condition=specialties.find(s=>s.id===id).steps[1].condition;
+   const html=renderHandbook(rules,{...newHandbookState('specialties'),entry:id});
+   assert.ok(html.includes(t('book.condition.'+condition)));
+  }
+  for(const kind of ['category_count','category_quality_count','region_quality_count','quality_total_area','quality_average_area']){
+   const html=renderHandbook(rules,{...newHandbookState('hints'),entry:kind});
+   assert.ok(html.includes(t('book.hint.'+kind+'.example')));
+  }
+ }}finally{setLocale('zh-CN',false);}
+});
+
 test('handbook renders every configured card, specialty and clue in both languages',()=>{
   try{for(const locale of ['zh-CN','en']){
     setLocale(locale,false);
