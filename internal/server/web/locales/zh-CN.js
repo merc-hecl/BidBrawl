@@ -1,4 +1,5 @@
 export default {
+  "book.shortTarget.chosen": "选中的一件物品",
   "intelAverageArea": "平均占格：{value}。",
   "book.qualityOdds":"品质出现概率",
   "book.appearanceOdds":"单件出现概率",

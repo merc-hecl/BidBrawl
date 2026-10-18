@@ -49,7 +49,7 @@ const resultKey=effect=>effect.type==='average'?(effect.sample_size?'sample_aver
 function cardSummary(card,rules){
   const effect=card.effect;
   const chosenScope=card.target?t('book.targetScope.'+card.target):'';
-  if(effect.type==='reveal')return t('book.scopeEffect',{scope:[chosenScope,effect.category||effect.quality||effect.area||effect.region||effect.qualities?.length?scope(effect,rules):'',t('book.shortTarget.'+(effect.selector||'random'),{count:effect.count||1})].filter(Boolean).join(' · '),effect:list(['shape',...(effect.fields||[]).filter(f=>f!=='shape')].map(f=>t('book.field.'+f)))});
+  if(effect.type==='reveal')return t('book.scopeEffect',{scope:[chosenScope,effect.category||effect.quality||effect.area||effect.region||effect.qualities?.length?scope(effect,rules):'',t('book.shortTarget.'+(card.target==='item'?'chosen':effect.selector||'random'),{count:effect.count||1})].filter(Boolean).join(' · '),effect:list(['shape',...(effect.fields||[]).filter(f=>f!=='shape')].map(f=>t('book.field.'+f)))});
   return t('book.scopeEffect',{scope:chosenScope||scope(effect,rules),effect:t('book.result.'+resultKey(effect))});
 }
 const specialtyGroup=spec=>spec.categories?.length||spec.tag?'category':spec.steps.some(s=>s.qualities?.length||s.effect.quality)?'quality':'geometry';

@@ -1,4 +1,5 @@
 export default {
+  "book.shortTarget.chosen": "The chosen item",
   "intelAverageArea": "Mean occupied cells: {value}.",
   "book.qualityOdds":"Quality appearance probability",
   "book.appearanceOdds":"Item appearance probability",
