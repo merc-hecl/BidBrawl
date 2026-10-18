@@ -46,7 +46,7 @@ test('activity calls remain individually inspectable, escaped and observer-only'
  assert.ok(rows.includes('× 2')&&rows.includes('action-detail:1')&&rows.includes('action-detail:2'));
  assert.ok(!rows.includes('other-player-secret')&&!rows.includes('<script>'));
  assert.ok(rows.includes('&lt;script&gt;'));
- assert.ok(!actionDetail(v.activities[3],v).includes(t('withdrawAccepted')));
+ assert.ok(actionDetail(v.activities[3],v).includes(t('activity_rejected')));
  const tabs=activityTabs(v,{actionRound:2});
  assert.match(tabs,/data-action="action-round:3"[^>]*disabled/);
  assert.deepEqual(normalizeView(v,false).activities,[]);
@@ -252,8 +252,6 @@ test('opening and revealed round labels use matching terms; live selects only th
    const html=renderContent(aligned,emptyStats,{...ui,cursor});
    const phase=html.match(/<div class="room-phase paper">(.*?)<\/div>/s)[1];
    assert.ok(phase.includes(cursor===0?t('opening'):t('round',{round:cursor})));
-   if(cursor===0)assert.ok(!phase.includes(t('roundThreshold',{ratio:2}))&&!phase.includes(t('finalPriceRule')));
-   else assert.ok(phase.includes(t('roundThreshold',{ratio:[2,1.6,1.3,1.1][cursor-1]})));
   }
   const live=withFrames({...aligned,phase:'bidding',round:2,history:aligned.history.slice(0,1),settlement:undefined});
   const html=renderContent(live,emptyStats,{...ui,cursor:null});
@@ -263,7 +261,7 @@ test('opening and revealed round labels use matching terms; live selects only th
  }
 });
 
-test('player pane shows only selected player and round reasons and explains restricted access',()=>{
+test('player pane shows only selected player and round reasons and marks restricted access',()=>{
   const recorded=withFrames({...source,decisions:[
     {round:1,player_id:'p1',action:'bid',reason:'first-round-rationale'},
     {round:2,player_id:'p2',action:'card',card_id:'item_count',reason:'second-round-rationale'}
@@ -282,7 +280,7 @@ test('player pane shows only selected player and round reasons and explains rest
   const latest=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:null,observer:true});
   assert.ok(!latest.includes('first-round-rationale')&&!latest.includes('second-round-rationale'));
   const anonymous=renderContent(recorded,emptyStats,{...ui,page:'room',cursor:1,observer:false});
-  assert.ok(anonymous.includes(t('activityRestricted'))&&!anonymous.includes('data-action="observer-login"'));
+  assert.ok(anonymous.includes(t('activityRestrictedTitle'))&&!anonymous.includes('data-action="observer-login"'));
   assert.ok(!anonymous.includes('first-round-rationale')&&!anonymous.includes('second-round-rationale'));
 });
 

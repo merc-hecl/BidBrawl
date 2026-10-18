@@ -108,7 +108,7 @@ func (s *Server) auditRequest(next http.Handler, w http.ResponseWriter, r *http.
 		r.Body = io.NopCloser(bytes.NewReader(raw))
 		var input map[string]any
 		_ = json.Unmarshal(raw, &input)
-		for _, key := range []string{"round", "card", "quantity", "amount", "specialty", "category", "cards", "ids", "all", "players", "warehouse", "ticket_fee", "topic", "lang"} {
+		for _, key := range []string{"round", "card", "quantity", "amount", "specialty", "category", "cards", "ids", "all", "players", "ticket_fee", "topic", "lang"} {
 			if value, ok := input[key]; ok {
 				switch v := value.(type) {
 				case string:

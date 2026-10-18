@@ -270,7 +270,7 @@ const live=observe({getRoom:()=>ui.room,getObserver:()=>ui.observer,getSort:()=>
     if(source&&!knownItems(observation(source,ui.cursor),ui.observer?ui.focusPlayer:null).some(item=>item.id===ui.focusItem))ui.focusItem=null;
     if(data.rooms){
       const previous=rooms.find(room=>room.room_id===ui.room);
-      rooms=data.rooms.rooms;ui.warehouses=data.rooms.warehouses||[];
+      rooms=data.rooms.rooms;
       if(!rooms.some(room=>room.archived_at))ui.bulkMode=false;
       ui.selectedRooms=new Set([...ui.selectedRooms].filter(id=>rooms.some(room=>room.room_id===id&&room.archived_at)));
       if(ui.roomMenu&&!rooms.some(room=>room.room_id===ui.roomMenu&&room.phase!=='bidding'&&!room.archived_at))ui.roomMenu=null;
@@ -343,7 +343,7 @@ dialog.addEventListener('submit',async event=>{
   event.preventDefault();if(managing)return;managing=true;
   const submit=event.target.querySelector('[type=submit]');submit.disabled=true;
   try{
-    const data=new FormData(event.target),room=await post('/api/create',{name:data.get('name').trim(),players:Number(data.get('players')),warehouse:data.get('warehouse')||'mixed',ticket_fee:Number(data.get('ticket'))});
+    const data=new FormData(event.target),room=await post('/api/create',{name:data.get('name').trim(),players:Number(data.get('players')),ticket_fee:Number(data.get('ticket'))});
     dialog.close();chooseRoom(room.room_id);live.refresh({state:true,rooms:true});
   }catch{$('create-room-error').hidden=false;}
   finally{managing=false;submit.disabled=false;}

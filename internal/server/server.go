@@ -12,6 +12,7 @@ import (
 	"errors"
 	"io"
 	"io/fs"
+	"math/big"
 	"net/http"
 	"sort"
 	"strings"
@@ -288,10 +289,9 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var v struct {
-		Name      string `json:"name"`
-		Players   int    `json:"players"`
-		Warehouse string `json:"warehouse"`
-		Ticket    *int64 `json:"ticket_fee"`
+		Name    string `json:"name"`
+		Players int    `json:"players"`
+		Ticket  *int64 `json:"ticket_fee"`
 	}
 	if !decode(w, r, &v) {
 		return
@@ -309,11 +309,14 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 		fail(w, 400, e)
 		return
 	}
-	if v.Warehouse != "" {
-		if err := g.SetWarehouse(v.Warehouse); err != nil {
-			fail(w, 400, err)
-			return
-		}
+	warehouse, err := rand.Int(rand.Reader, big.NewInt(int64(len(game.Warehouses))))
+	if err != nil {
+		roomFailure(w, err)
+		return
+	}
+	if err := g.SetWarehouse(game.Warehouses[warehouse.Int64()].ID); err != nil {
+		roomFailure(w, err)
+		return
 	}
 	s.mu.Lock()
 	defer s.mu.Unlock()

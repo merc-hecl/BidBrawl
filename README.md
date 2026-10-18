@@ -35,7 +35,7 @@ WebUI 采用手绘纸面风格，支持浅色和深色模式；大厅提供房�
 
 统计始终来自该数据库中全部已结算房间的公开摘要，不依赖当前房间；无房间选择时也可访问。跨宿主重启保留，按永久账号身份汇总，不把重复的 `p1` 席位当作同一个 Agent。每个房间只结算一次，重复启动或查询不会增加统计样本；房间保留创建时间和结算时间。回看按保存的公共轮次重建，不能还原中途提交的具体时间或历史提交状态；实际成交轮报价和结算同时公开。
 
-局域网：`bidbrawl host -listen 0.0.0.0:8787`，其他机器通过 `-url http://房主IP:8787` 连接。房间由人类或 Agent 显式创建，支持 2–7 人；启动配置用于新建房间，已存房间按各自快照恢复。邀请链接使用接收者能访问的宿主地址，不能把仅本机可访问的 `127.0.0.1` 链接发给另一台电脑。房主需允许对应端口通过防火墙。
+局域网：`bidbrawl host -listen 0.0.0.0:8787`，其他机器通过 `-url http://房主IP:8787` 连接。房间由人类或 Agent 显式创建，支持 2–7 人；建房时系统在综合仓库、数码货仓和旧宅藏品中等概率随机选定一种，创建者不能指定。物品箱类型可在准备阶段读取 state 的 rules.warehouse / context.warehouse，入房、开局及重启不重抽；启动配置用于新建房间，已存房间按各自快照恢复。邀请链接使用接收者能访问的宿主地址，不能把仅本机可访问的 `127.0.0.1` 链接发给另一台电脑。房主需允许对应端口通过防火墙。
 
 ## 配置与二次开发
 
@@ -136,7 +136,7 @@ bidbrawl register -name Atlas
 | GET /api/rooms | 无 | — |
 | POST /api/rooms/manage | 房主 / 宿主管理员 / 网页管理会话 | action 为 archive / restore / delete，room_ids 为非空、不重复 ID 数组；房主仅可管理自己的房间，进行中房间不可操作 |
 | GET /api/config | 无 | 宿主默认 game / cards 配置，无需房间 |
-| GET /api/catalog | 无 | 可选 room（房间冻结配置）、size（宽x高，格）、quality（品质 ID / 名称）、name（中英文名称，部分匹配，忽略大小写）、category（品类 ID）；条件取交集，返回 catalog 模板与 count；不筛选时另附品质、品类、专长与仓库类型，不涉及实际箱内物品 |
+| GET /api/catalog | 无 | 可选 room（房间冻结配置）、size（宽x高，格）、quality（品质 ID / 名称）、name（中英文名称，部分匹配，忽略大小写）、category（品类 ID）；条件取交集，返回 catalog 模板与 count；不筛选时另附品质、品类、专长与物品箱类型，不涉及实际箱内物品 |
 | GET /api/results | 无 | 全部历史已结算房间的公开成绩摘要与创建 / 结算时间，不含未结算报价、私有卡牌或令牌 |
 | GET /api/stats?sort=profit | 无 | 全部结算局的汇总与 Agent 指标；sort 为 profit / rate / average / max_profit / max_loss |
 | GET /api/agents/ID | 无 | 永久账号 ID 对应的经济指标；未参赛账号返回零局数和空盈亏率 |
@@ -149,7 +149,7 @@ bidbrawl register -name Atlas
 | GET /api/observer/state?room=ID | 观察者 | 公共观察 + 完整箱体 items、全员决策理由、初始抽检及技能揭示的单件物品属性，不含完整原始技能结果 |
 | GET /api/observer/replay?room=ID | 观察者 | 带完整箱体 items、全员理由、用卡 ID 和玩家已知物品记录的复盘及 frames，可加 frame=N，不含完整原始技能结果 |
 | GET /api/observer/events | 观察者 | 私有 SSE，包含 observer_changed 更新提醒 |
-| POST /api/create | 玩家会话 / 管理员 / 人类网页 | name、players |
+| POST /api/create | 玩家会话 / 管理员 / 人类网页 | name、players、可选 ticket_fee；物品箱类型由系统随机选定，不接受 warehouse |
 | POST /api/invite?room=ID | 创建者 / 管理员 / 人类网页 | —，生成房间邀请路径 |
 | POST /api/join?room=ID | 会话 | cards |
 | POST /api/start?room=ID | 创建者 / 管理员 / 人类网页 | — |

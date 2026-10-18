@@ -11,7 +11,6 @@ export const newHandbookState=(section='items')=>({section:sections.includes(sec
 export const hostReference=data=>({...data.game,qualities:data.qualities,catalog:data.catalog,cards:data.cards.cards,categories:data.categories,specialties:data.specialties,public_hint_definitions:data.public_hint_definitions});
 
 const pill=content=>`<span class="handbook-pill">${content}</span>`;
-const note=(title,body)=>`<div class="handbook-note"><strong>${tr(title)}</strong><p>${body}</p></div>`;
 const fact=(title,value)=>`<div><dt>${tr(title)}</dt><dd>${value}</dd></div>`;
 const search=book=>`<input type="search" data-control="book-search" value="${esc(book.search)}" placeholder="${tr('book.search.'+book.section)}" aria-label="${tr('book.search.'+book.section)}">`;
 const option=(id,label,current)=>`<option value="${esc(id)}" ${id===current?'selected':''}>${esc(label)}</option>`;
@@ -72,7 +71,7 @@ function cards(rules,book){
   const controls=`<div class="handbook-controls">${filterButtons(['all','individual','aggregate'].map(id=>[id,t('book.cardFilter.'+id,{count:all.filter(c=>id==='all'||cardGroup(c)===id).length})]),book.filter)}${search(book)}</div>`;
   const left=`<section class="handbook-list panel" data-region="book-cards"><header><strong>${tr('book.cardsCount',{count:filtered.length})}</strong><small>${tr('book.systemPrice')}</small></header><div class="handbook-card-list">${filtered.map(c=>{const localized=localizeCard(c);return entry(c.id,localized.name,cardSummary(c,rules),selected?.id===c.id,`<span class="handbook-price">${money(c.price)}</span>`);}).join('')||noMatch()}</div></section>`;
   let right='';
-  if(selected){const c=localizeCard(selected),fields=c.effect.type==='reveal'?['shape',...(c.effect.fields||[]).filter(f=>f!=='shape')].map(f=>t('book.field.'+f)):[scope(c.effect,rules),t('book.result.'+(c.effect.group_by?c.effect.group_by+'_count':c.effect.type))];right=detail(`<span class="eyebrow">${tr('book.cardDetails')}</span><h2 tabindex="-1">${esc(c.name)}</h2><div class="handbook-amount"><strong>${money(c.price)}</strong><small>${tr('book.cardPriceCaption')}</small></div><p class="handbook-description">${esc(c.description)}</p><div class="handbook-pills">${fields.map(f=>pill(esc(f))).join('')}</div>${note('book.useLimits',tr('book.cardLimits'))}<p class="handbook-muted">${tr('book.cardCostNote')}</p>`,selected.id);}
+  if(selected){const c=localizeCard(selected),fields=c.effect.type==='reveal'?['shape',...(c.effect.fields||[]).filter(f=>f!=='shape')].map(f=>t('book.field.'+f)):[scope(c.effect,rules),t('book.result.'+(c.effect.group_by?c.effect.group_by+'_count':c.effect.type))];right=detail(`<span class="eyebrow">${tr('book.cardDetails')}</span><h2 tabindex="-1">${esc(c.name)}</h2><div class="handbook-amount"><strong>${money(c.price)}</strong><small>${tr('book.cardPriceCaption')}</small></div><p class="handbook-description">${esc(c.description)}</p><div class="handbook-pills">${fields.map(f=>pill(esc(f))).join('')}</div>`,selected.id);}
   return {controls,body:left+right,selected:!!selected};
 }
 const builtinHints=new Set(['random_shape','random_quality','quality_count','quality_average','random_quality_price','quality_presence','quality_largest_area']);
@@ -82,18 +81,18 @@ function hints(rules,book){
   const entries=flow?['ticket','reveal','settlement'].map(id=>({id,kind:id})):all.map((d,i)=>({id:d.id,kind:builtinHints.has(d.builtin)?d.builtin:'custom',number:i+1}));
   const selected=entries.find(h=>h.id===book.entry)||entries[0];
   const title=h=>t('book.'+(flow?'event.':'hint.')+h.kind+'.title',{number:h.number});
-  const controls=`<div class="handbook-controls">${filterButtons([['all',t('book.publicHints',{count:all.length})],['flow',t('book.flowEvents')]],book.filter)}<p>${tr('book.hintTiming')}</p></div>`;
-  const left=`<section class="handbook-list panel" data-region="book-hints:${flow}"><header><strong>${tr(flow?'book.flowEvents':'book.hintDirectory')}</strong></header><div class="handbook-hint-list">${entries.map(h=>entry(h.id,title(h),t('book.'+(flow?'event.':'hint.')+h.kind+'.summary'),selected?.id===h.id)).join('')||noMatch()}</div>${flow?'':`<small>${tr('book.priceClueLimit')}</small>`}</section>`;
+  const controls=`<div class="handbook-controls">${filterButtons([['all',t('book.publicHints',{count:all.length})],['flow',t('book.flowEvents')]],book.filter)}</div>`;
+  const left=`<section class="handbook-list panel" data-region="book-hints:${flow}"><header><strong>${tr(flow?'book.flowEvents':'book.hintDirectory')}</strong></header><div class="handbook-hint-list">${entries.map(h=>entry(h.id,title(h),t('book.'+(flow?'event.':'hint.')+h.kind+'.summary'),selected?.id===h.id)).join('')||noMatch()}</div></section>`;
   let right='';
   if(selected){
     const base='book.'+(flow?'event.':'hint.')+selected.kind;
-    right=detail(`<div class="handbook-detail-head"><h2 tabindex="-1">${esc(title(selected))}</h2>${pill(tr('book.example'))}</div><div class="handbook-example"><p>${tr(base+'.example',{fee:money(rules.ticket_fee??0)})}</p></div><p class="handbook-description">${tr(base+'.summary')}</p>${flow?`<p class="handbook-muted">${tr(selected.kind==='settlement'?'profitRule':selected.kind==='ticket'?'ticketNonrefundable':'instantRule')}</p>`:`<dl>${fact('book.when',tr('book.hintWhen'))}${selected.kind==='quality_average'?fact('book.eligibleCount',tr('book.halfCrate')):''}</dl>`}`,selected.id);
+    right=detail(`<div class="handbook-detail-head"><h2 tabindex="-1">${esc(title(selected))}</h2>${pill(tr('book.example'))}</div><div class="handbook-example"><p>${tr(base+'.example',{fee:money(rules.ticket_fee??0)})}</p></div>${flow?'':`<dl>${fact('book.when',tr('book.hintWhen'))}${selected.kind==='quality_average'?fact('book.eligibleCount',tr('book.halfCrate')):''}</dl>`}`,selected.id);
   }
   return {controls,body:left+right,selected:!!selected};
 }
 function specialties(rules,book){
   const all=rules.specialties||[],filtered=all.filter(s=>book.filter==='all'||specialtyGroup(s)===book.filter),selected=filtered.find(s=>s.id===book.entry)||filtered[0];
-  const controls=`<div class="handbook-controls">${filterButtons(['all','category','quality','geometry'].map(id=>[id,t('book.specialtyFilter.'+id,{count:all.length})]),book.filter)}<p>${tr('book.specialtyChoice')}</p></div>`;
+  const controls=`<div class="handbook-controls">${filterButtons(['all','category','quality','geometry'].map(id=>[id,t('book.specialtyFilter.'+id,{count:all.length})]),book.filter)}</div>`;
   const left=`<section class="handbook-list panel" data-region="book-specialties"><header><strong>${tr('book.specialtiesCount',{count:filtered.length})}</strong></header><div class="handbook-specialty-grid">${filtered.map(s=>entry(s.id,localizeName('specialty',s),s.steps.map(step=>String(step.round).padStart(2,'0')).join(' · '),selected?.id===s.id)).join('')||noMatch()}</div></section>`;
   let right='';
   if(selected){

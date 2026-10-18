@@ -21,8 +21,8 @@ export function intelligenceSummary(data,view){
  if(data.counts)return Object.entries(data.counts).map(([key,value])=>`${localizeName('category',view.rules.categories?.find(c=>c.id===key))||(catalogs[getLocale()][key]?t(key):t('unknownSelection'))} ${money(value)}`).join(' · ');
  if(data.area!==undefined)return t('intelArea',{count:data.area});
  if(data.count!==undefined)return t('intelCount',{count:data.count});
- if(data.item_id)return [data.name,data.quality?t(data.quality):null,data.price!==undefined?money(data.price):null].filter(Boolean).join(' · ')||t('intelItems');
- return data.message||t('intelItems');
+ if(data.item_id)return [data.name||data.item_id,data.quality?t(data.quality):null,data.price!==undefined?money(data.price):null].filter(Boolean).join(' · ');
+ return data.message||'';
 }
 function grouped(events){
  const rows=[];for(const event of events){const last=rows.at(-1);if(last&&readActions.has(event.action)&&event.status==='success'&&last.event.action===event.action&&last.event.round===event.round&&last.event.status===event.status){last.events.push(event)}else rows.push({event,events:[event]})}return rows;
@@ -100,10 +100,10 @@ export function actionDetail(e,view){
  const amount=e.action==='bid'?e.params?.amount:success&&['ticket','card'].includes(e.action)?e.cost??0:undefined;
  const amountLabel=e.action==='bid'?'offerAmount':e.action==='card'?'cardCost':'actionSpend';
  const result=actionOutcome(e,view),outcome=result?`<section class="action-outcome"><strong>${esc(result)}</strong></section>`:'';
- return `<article class="action-detail"><header><h3>${esc(activityTitle(e,view))}</h3><span class="${e.status==='rejected'?'negative':'positive'}">${tr(status)}</span></header>${amount!==undefined?`<div class="action-amount"><small>${tr(amountLabel)} · ${tr('coins')}</small><strong class="action-detail-amount">${money(amount)}</strong></div>`:''}${card?`<div class="action-card-help"><p>${esc(card.description)}</p>${button(tr('cardHelp',{name:card.name}),'card:'+card.id,'text-button')}</div>`:''}${e.reason?`<section class="action-reason-block"><small>${tr(e.action==='withdraw'?'withdrawReason':'submittedReason')}</small><p>${esc(e.reason)}</p></section>`:''}${e.action==='ticket'?outcome:''}<h4>${tr('actionDetails')}</h4><dl>${actionFacts(e,view,card)}</dl>${e.action==='ticket'?'':outcome}${e.action==='withdraw'&&success?`<div class="withdraw-note"><strong>${tr('withdrawAccepted')}</strong><p>${tr('withdrawConsequences')}</p><p>${tr('ticketNonrefundable')}</p></div>`:''}</article>`;
+ return `<article class="action-detail"><header><h3>${esc(activityTitle(e,view))}</h3><span class="${e.status==='rejected'?'negative':'positive'}">${tr(status)}</span></header>${amount!==undefined?`<div class="action-amount"><small>${tr(amountLabel)} · ${tr('coins')}</small><strong class="action-detail-amount">${money(amount)}</strong></div>`:''}${card?`<div class="action-card-help"><p>${esc(card.description)}</p>${button(tr('cardHelp',{name:card.name}),'card:'+card.id,'text-button')}</div>`:''}${e.reason?`<section class="action-reason-block"><small>${tr(e.action==='withdraw'?'withdrawReason':'submittedReason')}</small><p>${esc(e.reason)}</p></section>`:''}${e.action==='ticket'?outcome:''}<h4>${tr('actionDetails')}</h4><dl>${actionFacts(e,view,card)}</dl>${e.action==='ticket'?'':outcome}</article>`;
 }
 export function fullActivity(view,ui){
- if(!ui.observer)return `<p class="peek-empty">${tr('activityRestricted')}</p>`;
+ if(!ui.observer)return `<p class="peek-empty">${tr('activityRestrictedTitle')}</p>`;
  const round=selectedActivityRound(view,ui),list=playerActivities(view,ui.focusPlayer).filter(e=>e.round===round&&matchesFilter(e,ui.actionFilter||'all')),selected=list.find(e=>e.id===ui.actionID);
  const player=view.players.find(p=>p.id===ui.focusPlayer),specialty=view.rules.specialties?.find(s=>s.id===player?.specialty);
  return `<p class="activity-context">${esc(player?.name||'')} · ${esc(localizeName('specialty',specialty))} · ${tr('authorizedObserver')}</p>${activityTabs(view,ui)}<div class="full-activity-layout"><div class="full-activity-list">${activityListHead(view,ui,round)}${actionRows(view,ui.focusPlayer,round,ui.actionFilter||'all',selected?.id)}</div><div class="full-activity-detail">${actionDetail(selected,view)}</div></div>`;

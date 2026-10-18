@@ -44,7 +44,7 @@ function hints(view) {
 function settlement(view) {
   if(!view.settlement)return `<div class="pending-settlement"><span>${tr('pending')}</span></div>`;
   const r=view.settlement,winner=view.players.find(p=>p.id===r.winner_id);
- if(r.method==='unsold')return `<div class="settlement"><h3>${tr('unsold')}</h3>${details([['totalValue',money(r.total_value)],['profit',signed(r.profit)]])}<p>${tr('unsoldNote')}</p></div>`;
+ if(r.method==='unsold')return `<div class="settlement"><h3>${tr('unsold')}</h3>${details([['totalValue',money(r.total_value)],['profit',signed(r.profit)]])}</div>`;
   return `<div class="settlement"><div><p class="eyebrow">${tr('finalOutcome',{round:r.round,method:t(r.method==='instant'?'instantSale':r.tied_players.length>1?'tieWin':'highestWins')})}</p><h3>${tr('winner',{name:winner?.name||r.winner_id})}</h3></div>${details([['paid',money(r.paid)],['totalValue',money(r.total_value)],['grossProfit',signed(r.gross_profit??r.profit)],['cardCost',money(r.total_card_cost||0)],['ticketFee',money(r.total_ticket_cost||0)],['easterEggValue',money(r.easter_egg_value||0)],['profit',`<span class="${r.profit>=0?'positive':'negative'}">${signed(r.profit)}</span>`]])}</div>`;
 }
 function inventory(view,ui) {
@@ -85,7 +85,7 @@ export function renderContent(source,results,ui) {
 export function dialogContent(kind,id,source,results,ui) {
   const view=source?observation(source,ui.cursor):null;
   if(kind==='room-access')return {title:t('createRoom'),content:`<p class="room-access-message">${tr('createRoomAccess')}</p>`};
-  if(kind==='create-room')return {title:t('createRoom'),content:`<form id="create-room-form" class="room-form"><label>${tr('roomName')}<input name="name" maxlength="32" required autocomplete="off" placeholder="${tr('roomNamePlaceholder')}"></label><label>${tr('players')}<select name="players">${[2,3,4,5,6,7].map(count=>`<option value="${count}" ${count===4?'selected':''}>${count}</option>`).join('')}</select></label><label>${tr('warehouseType')}<select name="warehouse">${(ui.warehouses||[]).map(w=>`<option value="${esc(w.id)}">${esc(w.name)}</option>`).join('')}</select></label><label>${tr('ticketFee')}<input name="ticket" type="number" min="0" max="1000000000" step="1" value="5000" required></label><small>${tr('ticketNonrefundable')}</small><p id="create-room-error" class="negative" hidden>${tr('createRoomError')}</p><button type="submit" class="quiet">${tr('createRoom')}</button></form>`};
+  if(kind==='create-room')return {title:t('createRoom'),content:`<form id="create-room-form" class="room-form"><label>${tr('roomName')}<input name="name" maxlength="32" required autocomplete="off"></label><label>${tr('players')}<select name="players">${[2,3,4,5,6,7].map(count=>`<option value="${count}" ${count===4?'selected':''}>${count}</option>`).join('')}</select></label><label>${tr('ticketFee')}<input name="ticket" type="number" min="0" max="1000000000" step="1" value="5000" required></label><p id="create-room-error" class="negative" hidden>${tr('createRoomError')}</p><button type="submit" class="quiet">${tr('createRoom')}</button></form>`};
   if(kind==='invite-room')return {title:t('invitePlayers'),content:`<div class="invite-content"><label for="invite-link">${tr('inviteLink')}</label><div class="invite-copy"><input id="invite-link" readonly value="${esc(id)}">${button(tr('copyInvite'),'copy-invite','quiet')}</div><label>${tr('joinCommand')}</label><code class="join-command">bidbrawl join -invite "${esc(id)}"</code></div>`};
   if(kind==='room-error')return {title:t('roomActionError'),content:''};
   if(kind==='avatars')return {title:t('avatarGallery'),content:avatarGallery()};
@@ -106,7 +106,7 @@ export function dialogContent(kind,id,source,results,ui) {
     const pairs=[['players',tr('playersRule',{count:rules.player_count})],['rounds',tr('roundsRule',{count:rules.rounds})],['sale',(rules.early_settlement_multipliers||[]).some(Boolean)?tr('instantRule'):tr('saleRule',{round:rules.rounds})],['ties',tr('tieRule')],['publicClues',tr('publicCluesRule')],['bidPublication',tr('bidPublicationRule')],['privateSkills',tr('privateRule')],['box',tr('dimensions',{width:rules.box_width,height:rules.box_height})],['coordinates',tr('coordinatesRule')],['profit',tr('profitRule')],['otherReturn',tr('otherCostRule')]];
     const geometry=rules.game_config?.items;
     if(geometry)pairs.push(['itemMax',`${geometry.max_width} × ${geometry.max_height}`]);
-    pairs.push(['ticketFee',money(rules.ticket_fee||0)+' · '+tr('ticketNonrefundable')]);
+    pairs.push(['ticketFee',money(rules.ticket_fee||0)]);
     pairs.push(['cardLimit',tr('cardsCount',{count:5})]);
     pairs.push(['warehouseType',esc((rules.warehouses||[]).find(w=>w.id===rules.warehouse)?.name||rules.warehouse||'mixed')]);
  pairs.push(['initialInspection',tr('inspectionRule',{count:rules.initial_inspection_count})]);

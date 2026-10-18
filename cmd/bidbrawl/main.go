@@ -180,7 +180,6 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	specialty := f.String("specialty", "analysis", "鉴定专长 ID，用 catalog 查看22种专长及轮次效果")
 	category := f.String("category", "", "专长允许的子品类；catalog：筛选品类 ID；region 可选 northwest/northeast/southwest/southeast")
 	ticket := f.Int64("ticket", 5000, "建房门票金额；开局扣除，退出不退，可设0")
-	warehouse := f.String("warehouse", "mixed", "建房仓库：mixed / tech / estate")
 	quantity := f.Int("quantity", 1, "购买卡牌数量，1–99")
 	itemIDs := f.String("items", "", "出售的仓库物品 ID，逗号分隔")
 	sellAll := f.Bool("all", false, "出售全部仓库藏品")
@@ -445,7 +444,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		method, path = "GET", "/api/"+command
 	case "create":
 		path = "/api/create"
-		input = map[string]any{"name": *name, "players": *players, "warehouse": *warehouse}
+		input = map[string]any{"name": *name, "players": *players}
 		if explicit["ticket"] {
 			input.(map[string]any)["ticket_fee"] = *ticket
 		}

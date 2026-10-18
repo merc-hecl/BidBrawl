@@ -11,7 +11,6 @@
 .handbook-heading h1{margin:8px 0}
 .handbook-heading>.paper-button{flex:none}
 .handbook-controls{display:flex;align-items:center;gap:12px;min-height:48px;flex-wrap:wrap}
-.handbook-controls>p{color:var(--muted);font-size:14px}
 .handbook-controls input,.handbook-select{min-height:44px;background:transparent;border:1px solid var(--line);border-radius:12px}
 .handbook-controls input{flex:1;min-width:180px;max-width:360px;padding:9px 16px;font-size:15px}
 .handbook-controls input::placeholder{color:var(--muted);opacity:1}
@@ -40,9 +39,8 @@
 .handbook-detail-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}.handbook-detail-head h2{min-width:0;flex:1}
 .handbook-amount{border-top:1px solid var(--line);padding-top:18px;display:grid;gap:8px}.handbook-amount strong{font:44px/1.5 'Space Grotesk Variable',var(--body);overflow-wrap:anywhere}.handbook-amount small{font-size:14px;color:var(--muted)}
 .handbook-amount .coin-amount{gap:12px}.handbook-amount .coin-amount>.icon{width:28px;height:28px;flex:none}
-.handbook-description{font-size:17px;line-height:1.7}.handbook-muted{font-size:14px;color:var(--muted)}
+.handbook-description{font-size:17px;line-height:1.7}
 .handbook-pills{display:flex;gap:8px;flex-wrap:wrap;align-items:flex-start}.handbook-pill{font-size:14px;color:var(--muted);padding:8px 16px;min-height:40px;display:inline-flex;align-items:center;background:var(--soft);border-radius:12px;overflow-wrap:anywhere}
-.handbook-note{padding:16px;background:var(--soft);border-radius:14px;display:grid;gap:8px}.handbook-note>strong{color:var(--accent);font-size:14px}.handbook-note p{font-size:15px;color:var(--muted);line-height:1.6}
 .handbook-detail dl>div{padding:12px 0;gap:16px}.handbook-detail dt{font-size:15px;flex:1;min-width:0}.handbook-detail dd{font-size:15px;flex:1}
 .handbook-detail>small{color:var(--accent);font-size:13px}
 .handbook-card-list,.handbook-hint-list{display:grid;gap:4px}
