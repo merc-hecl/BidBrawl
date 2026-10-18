@@ -917,5 +917,195 @@
         ]
       }
     ]
+  },
+  {
+    "id": "momentum",
+    "name": "领价追踪",
+    "description": "第1轮四件轮廓；第2至4轮，若上轮为唯一正最高价，每轮补鉴定一件未知物品。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape"
+          ],
+          "count": 4
+        }
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        },
+        "condition": "previous_unique_highest"
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        },
+        "condition": "previous_unique_highest"
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        },
+        "condition": "previous_unique_highest"
+      }
+    ]
+  },
+  {
+    "id": "contrarian",
+    "name": "跟价研判",
+    "description": "第1轮总件数；第2至4轮，若上轮正报价低于最高价，依次获得传说占格、四件抽样均价、最高品质一件完整鉴定。",
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "area",
+          "quality": "legendary"
+        },
+        "condition": "previous_below_highest"
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "average",
+          "measure": "price",
+          "sample_size": 4
+        },
+        "condition": "previous_below_highest"
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "highest",
+          "fields": [
+            "quality",
+            "price",
+            "identity"
+          ],
+          "count": 1
+        },
+        "condition": "previous_below_highest"
+      }
+    ]
+  },
+  {
+    "id": "antiques",
+    "name": "古器溯源",
+    "description": "第1轮古董件数；第2轮三件轮廓，第3轮同批品质，第4轮同批两件价格。",
+    "categories": [
+      "antiques"
+    ],
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "count"
+        }
+      },
+      {
+        "round": 2,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "shape"
+          ],
+          "count": 3
+        },
+        "remember": "antiques"
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "quality"
+          ],
+          "count": 3
+        },
+        "from_sample": "antiques"
+      },
+      {
+        "round": 4,
+        "effect": {
+          "type": "reveal",
+          "selector": "random",
+          "fields": [
+            "price"
+          ],
+          "count": 2
+        },
+        "from_sample": "antiques"
+      }
+    ]
+  },
+  {
+    "id": "sports",
+    "name": "户外检验",
+    "description": "第1轮运动品最高品质一件的轮廓与品质，第3轮整类平均占格，第5轮整类总值。",
+    "categories": [
+      "sports"
+    ],
+    "steps": [
+      {
+        "round": 1,
+        "effect": {
+          "type": "reveal",
+          "selector": "highest",
+          "fields": [
+            "quality"
+          ],
+          "count": 1
+        }
+      },
+      {
+        "round": 3,
+        "effect": {
+          "type": "average",
+          "measure": "area"
+        }
+      },
+      {
+        "round": 5,
+        "effect": {
+          "type": "value"
+        }
+      }
+    ]
   }
 ]

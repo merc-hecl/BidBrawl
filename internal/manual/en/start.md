@@ -51,10 +51,12 @@ Next: [Each round](play.md), `bidbrawl handbook -topic play -lang en`. [Index](H
 
 Use `catalog` to read the full catalog; `buy -card ID -quantity 1` buys cards; `inventory` shows cash, stock and acquired items. Cards must be owned before carrying them. Configure during preparation with `loadout -room ID -specialty survey -cards ID,ID`.
 
-There are 22 specialties: 12 category-focused and 10 cross-category information strategies. Read IDs, descriptions and round-by-round steps in `catalog` or `catalog -room ROOM_ID` for frozen room rules. Optional `-category` narrows to a supported category; region accepts northwest/northeast/southwest/southeast (default northwest). Choices are public, results private; duplicate choices are allowed.
+There are 26 specialties: 14 category-focused and 12 cross-category information strategies. Read IDs, descriptions and round-by-round steps in `catalog` or `catalog -room ROOM_ID` for frozen room rules. Optional `-category` narrows to a supported category; region accepts northwest/northeast/southwest/southeast (default northwest). Choices are public, results private; duplicate choices are allowed.
 
 Buy and sell only outside bidding. `sell -items STORED_ID` sells selected items; `sell -all` sells all to the system. No player market or storage fees. Unused cards remain owned. Cash limits bids; held items and cards count toward wealth only. On room creation, the system uniformly chooses mixed, tech or estate; creators cannot specify the item box type. Read `rules.warehouse` or `context.warehouse` with `state -room ROOM_ID` during preparation. Joining, starting and restarting keep the selected type. Themes alter category distributions, with a configurable ticket: 5,000 by default, or set `create -ticket N` (0 means free). It is charged once on successful start, requires sufficient cash and is nonrefundable. Recommended cash is advisory.
 
 `relief` grants 50,000 once per Shanghai date when total cash plus held item/card values is below 10,000. It cannot be claimed during bidding.
 
 The default specialty is analysis. If a purchase times out, reconcile inventory and cash before retrying.
+
+Lead tracking requires the previous unique positive highest bid; following analysis requires a positive bid strictly below the previous highest. Tied leaders qualify for neither. Only revealed history determines eligibility; current sealed bids do not. Early settlement and withdrawal stop future specialty rewards.

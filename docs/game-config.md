@@ -24,10 +24,14 @@
 
 彩蛋 category=easter_egg，quality=easter_egg，1×1，fixed_price=17500000；与普通价格区间分离。抽取时普通品质权重乘1000，彩蛋权重为传说原权重，故彩蛋概率严格为传说概率的千分之一，模板数量不改变总概率。默认彩蛋整体概率为2/100002（约每50001件一次），8个模板平均分配后单件概率为1/400008。`game_config.qualities` 只配置五档常规权重；`rules.qualities`、`/api/config` 与完整 `catalog` 返回的 `qualities` 另含独立彩蛋档。初始抽检、卡牌、专长与公共线索均排除彩蛋；数量、面积、均价和总价等侦察统计也不包含彩蛋。玩家在结算开箱后获知彩蛋，结算仍计入其完整价值；授权人类观察者的全箱视角保持完整。
 
-22种专长定义在 internal/game/specialties.json，并随房间 game_config.specialties 冻结。steps 描述轮次、范围、数量、字段、均价/存在性及跨轮样本引用。可在 game-config 中覆盖 specialties；玩家用 catalog 查询。
+26种专长定义在 internal/game/specialties.json，并随房间 game_config.specialties 冻结。steps 描述轮次、范围、数量、字段、均价/存在性及跨轮样本引用。可在 game-config 中覆盖 specialties；玩家用 catalog 查询。
 
 ticket_fee 默认为5000，建房 ticket_fee 可覆盖（CLI -ticket），0为免费。成功开局时房间状态和全部门票在同一事务中提交；不足或持久化失败不扣票。退出用 POST /api/withdraw，拒绝报0；退出不退款、不收额外罚金。
 
 私有行动存于房间 activities：请求只记录白名单参数、结果摘要、状态、时间和理由，不存凭据或完整原始请求。服务器事件与CLI上报来源分开；手册离线且匿名时无法记录。公开 state/replay/SSE 不携带私有行动、计数或修订号，个人 self.activities 和独立观察接口按权限读取，复盘帧在后端裁剪未来行动。
 
 均价结果不附带范围总件数，避免直接等价于精确总值。家居专长已在第1轮给件数，因此第3轮采用最多3件抽样均价（sample_size=3），第5轮仍给完整总值；样本均价包含 sample_count/sample_limit 并明确标识。通过付费品质普查与均价组合推导总值属于预期的情报组合收益。
+
+条件专长的 step.condition 可省略，或为 previous_unique_highest（上一轮唯一正最高价）、previous_below_highest（上一轮正报价严格低于最高价）。只读取前一轮公开 history；并列最高不触发这两个条件。第1轮禁止配置上一轮条件，提前成交后也没有下一轮奖励。弃权者不再获得专长信息。
+
+领价追踪让早期争价承担被提前成交的风险；跟价研判从跟价获得统计和抽样信息，但不保证获箱或盈利。古器溯源沿同批样本分轮补属性，户外检验以极值目标、均面积与整类总价形成不同节奏。所有结果保存后复用，不在 state 查询或重连时重算。

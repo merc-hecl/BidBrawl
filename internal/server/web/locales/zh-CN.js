@@ -626,4 +626,12 @@ export default {
   "card.electronics_value.description": "第3轮起显示数码电子品类总价，不定位目标。",
   "card.common_value.name": "基础盘估",
   "card.common_value.description": "显示普通与优良物品的合计价格，不拆分两档。",
+  "specialty.momentum.name": "领价追踪",
+  "specialty.momentum.description": "第1轮四件轮廓；第2至4轮，若上轮为唯一正最高价，每轮补鉴定一件未知物品。",
+  "specialty.contrarian.name": "跟价研判",
+  "specialty.contrarian.description": "第1轮总件数；第2至4轮，若上轮正报价低于最高价，依次获得传说占格、四件抽样均价、最高品质一件完整鉴定。",
+  "specialty.antiques.name": "古器溯源",
+  "specialty.antiques.description": "第1轮古董件数；第2轮三件轮廓，第3轮同批品质，第4轮同批两件价格。",
+  "specialty.sports.name": "户外检验",
+  "specialty.sports.description": "第1轮运动品最高品质一件的轮廓与品质，第3轮整类平均占格，第5轮整类总值。",
 };

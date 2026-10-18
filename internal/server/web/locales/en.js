@@ -626,4 +626,12 @@ export default {
   "card.electronics_value.description": "From round 3, reveal total electronics value without locations.",
   "card.common_value.name": "Baseline valuation",
   "card.common_value.description": "Reveal combined common and uncommon value without separating tiers.",
+  "specialty.momentum.name": "Lead tracking",
+  "specialty.momentum.description": "Four shapes in round 1. In rounds 2–4, fully appraise one unknown item if your previous revealed bid was the unique positive highest.",
+  "specialty.contrarian.name": "Following analysis",
+  "specialty.contrarian.description": "Total count in round 1. If your previous positive bid was below the highest, rounds 2/3/4 give legendary area, a four-item sample mean and one top-quality appraisal.",
+  "specialty.antiques.name": "Antique provenance",
+  "specialty.antiques.description": "Antique count in round 1; three shapes in round 2, qualities of the same sample in round 3 and two sample prices in round 4.",
+  "specialty.sports.name": "Outdoor inspection",
+  "specialty.sports.description": "One top-quality sports item shape and quality in round 1, category mean cell area in round 3 and total category value in round 5.",
 };

@@ -20,6 +20,7 @@ type Specialty struct {
 	Steps       []SpecialtyStep `json:"steps"`
 }
 type SpecialtyStep struct {
+	Condition  string       `json:"condition,omitempty"`
 	Round      int          `json:"round"`
 	Effect     cards.Effect `json:"effect"`
 	Qualities  []string     `json:"qualities,omitempty"`
@@ -81,12 +82,35 @@ func validateSpecialties(v []Specialty) error {
 			return errors.New("invalid specialty catalog")
 		}
 		ids[s.ID] = true
+		samples := map[string]bool{}
 		for _, c := range s.Categories {
 			if !ValidCategory(c) {
 				return errors.New("invalid specialty category")
 			}
 		}
 		for _, step := range s.Steps {
+			if step.FromSample != "" && !samples[step.FromSample] {
+				return errors.New("from_sample must reference an earlier remembered sample")
+			}
+			if step.Remember != "" {
+				if samples[step.Remember] || step.Effect.Type != "reveal" {
+					return errors.New("remember requires a unique reveal sample")
+				}
+				samples[step.Remember] = true
+			}
+			seenQualities := map[string]bool{}
+			for _, q := range step.Qualities {
+				if !slices.Contains([]string{"common", "uncommon", "rare", "epic", "legendary"}, q) || seenQualities[q] {
+					return errors.New("invalid specialty quality filter")
+				}
+				seenQualities[q] = true
+			}
+			if step.Condition != "" && step.Condition != "previous_unique_highest" && step.Condition != "previous_below_highest" {
+				return errors.New("unknown specialty condition")
+			}
+			if step.Condition != "" && step.Round == 1 {
+				return errors.New("previous-round condition cannot trigger in round 1")
+			}
 			if step.Round < 1 || step.Round > 5 || !slices.Contains([]string{"", "average", "presence"}, step.Mode) {
 				return errors.New("invalid specialty step")
 			}
@@ -363,7 +387,7 @@ func (g *Game) giveIntelligence(p *player) {
 		return
 	}
 	for _, step := range spec.Steps {
-		if step.Round != g.round {
+		if step.Round != g.round || !g.specialtyCondition(p, step.Condition) {
 			continue
 		}
 		pool := []Item{}
@@ -439,6 +463,33 @@ func (g *Game) giveIntelligence(p *player) {
 		d["scope"] = map[string]any{"categories": spec.Categories, "qualities": step.Qualities, "tag": spec.Tag, "selection": p.category}
 		g.addSignal(p, spec.Name, d)
 	}
+}
+
+// Eligibility uses only the preceding revealed round, never current sealed bids.
+func (g *Game) specialtyCondition(p *player, condition string) bool {
+	if condition == "" {
+		return true
+	}
+	if len(g.history) == 0 || g.history[len(g.history)-1].Round != g.round-1 {
+		return false
+	}
+	last := g.history[len(g.history)-1]
+	var high, own int64
+	leaders := 0
+	for _, bid := range last.Bids {
+		if bid.PlayerID == p.id {
+			own = bid.Amount
+		}
+		if bid.Amount > high {
+			high, leaders = bid.Amount, 1
+		} else if bid.Amount == high {
+			leaders++
+		}
+	}
+	if condition == "previous_unique_highest" {
+		return high > 0 && own == high && leaders == 1
+	}
+	return condition == "previous_below_highest" && own > 0 && own < high
 }
 func signalItemIDs(d map[string]any) []string {
 	out := []string{}

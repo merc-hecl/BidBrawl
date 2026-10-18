@@ -153,7 +153,7 @@ func TestCatalogIsDataDrivenAndInvalidFilesFail(t *testing.T) {
 }
 
 func TestAllSpecialtiesSchedulesAndPersistedScopes(t *testing.T) {
-	if len(Specialties) != 22 {
+	if len(Specialties) != 26 {
 		t.Fatal("specialty pool incomplete")
 	}
 	for _, spec := range Specialties {
@@ -171,7 +171,7 @@ func TestAllSpecialtiesSchedulesAndPersistedScopes(t *testing.T) {
 				v := view(t, g, a)
 				expected := 0
 				for _, step := range spec.Steps {
-					if step.Round <= round {
+					if step.Round <= round && step.Condition == "" {
 						expected++
 					}
 				}
@@ -302,5 +302,96 @@ func TestAverageIntelDoesNotGiveFreeTotalAndSampleAverageIsDistinct(t *testing.T
 	g.giveIntelligence(p)
 	if p.signals[0].Data["average_price"] != nil {
 		t.Fatal("empty average invented a value")
+	}
+}
+
+func TestBidConditionedIntelUsesOnlyRevealedHistory(t *testing.T) {
+	g, _ := New(2)
+	_, a, _ := g.Join("A", nil)
+	_, b, _ := g.Join("B", nil)
+	if err := g.Configure(a, "momentum", "", nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := g.Configure(b, "contrarian", "", nil); err != nil {
+		t.Fatal(err)
+	}
+	if err := g.Start(); err != nil {
+		t.Fatal(err)
+	}
+	for _, r := range []struct {
+		a, b    int64
+		signals int
+	}{{100, 90, 2}, {100, 100, 2}, {110, 100, 3}} {
+		round := g.round
+		before := view(t, g, a).Self.Intelligence
+		if err := g.Submit(a, round, r.a, "test an eligible public bid position"); err != nil {
+			t.Fatal(err)
+		}
+		if !reflect.DeepEqual(before, view(t, g, a).Self.Intelligence) {
+			t.Fatal("sealed bid triggered intelligence")
+		}
+		if err := g.Submit(b, round, r.b, "test the previous revealed-round condition"); err != nil {
+			t.Fatal(err)
+		}
+		for _, tok := range []string{a, b} {
+			if len(view(t, g, tok).Self.Intelligence) != r.signals {
+				t.Fatal("wrong conditional trigger", round, view(t, g, tok).Self.Intelligence)
+			}
+		}
+		public, _ := g.Observe("")
+		if bytes.Contains(public, []byte(`"intelligence"`)) {
+			t.Fatal("conditional private information leaked")
+		}
+		restored, err := Restore(mustSnapshot(t, g))
+		if err != nil {
+			t.Fatal(err)
+		}
+		x, _ := g.Observe(a)
+		y, _ := restored.Observe(a)
+		if !bytes.Equal(x, y) {
+			t.Fatal("restart rerolled conditional rewards")
+		}
+		g = restored
+	}
+	if err := g.Submit(a, 4, 130, "close at the existing fourth-round multiplier"); err != nil {
+		t.Fatal(err)
+	}
+	if err := g.Submit(b, 4, 100, "finalize multiplier fixture"); err != nil {
+		t.Fatal(err)
+	}
+	if g.phase != "settled" || g.settlement.Round != 4 || len(view(t, g, a).Self.Intelligence) != 3 {
+		t.Fatal("early settlement granted future rewards or changed")
+	}
+}
+
+func TestSpecialtyConditionsIgnoreTiesZeroAndMissingHistory(t *testing.T) {
+	g, _ := New(2)
+	p := &player{id: "a"}
+	g.round = 2
+	for _, bids := range [][]Bid{nil, {{"a", 0}, {"b", 0}}, {{"a", 100}, {"b", 100}}, {{"a", 0}, {"b", 100}}, {{"b", 100}}} {
+		g.history = []RoundResult{{Round: 1, Bids: bids}}
+		if g.specialtyCondition(p, "previous_unique_highest") || g.specialtyCondition(p, "previous_below_highest") {
+			t.Fatal("ineligible bid qualified", bids)
+		}
+	}
+	g.history = []RoundResult{{Round: 0, Bids: []Bid{{"a", 100}, {"b", 90}}}}
+	if g.specialtyCondition(p, "previous_unique_highest") {
+		t.Fatal("stale history qualified")
+	}
+}
+
+func TestSpecialtyConfigRejectsInvalidTriggersAndSamples(t *testing.T) {
+	for _, step := range []SpecialtyStep{
+		{Round: 1, Condition: "previous_unique_highest", Effect: cards.Effect{Type: "count"}},
+		{Round: 2, Condition: "current_highest", Effect: cards.Effect{Type: "count"}},
+		{Round: 2, FromSample: "missing", Effect: cards.Effect{Type: "count"}},
+		{Round: 2, Remember: "x", Effect: cards.Effect{Type: "count"}},
+		{Round: 2, Qualities: []string{"easter_egg"}, Effect: cards.Effect{Type: "count"}},
+	} {
+		cfg := DefaultConfig()
+		cfg.Specialties = []Specialty{{ID: "bad", Name: "Bad", Steps: []SpecialtyStep{step}}}
+		if cfg.Validate() == nil {
+			t.Fatal("invalid specialty accepted", step)
+		}
 	}
 }

@@ -60,7 +60,7 @@ bidbrawl sell -all
 bidbrawl relief
 ```
 
-共有 22 种专长：12 种侧重品类（家居、数码、工具、书画、珠宝、载具、古籍、乐器、玩具、钟表、军品、器械），10 种侧重跨品类的尺寸、品质、估价、样本或分区情报。用 `catalog` 查看 `specialties` 中各 ID、description 和逐轮 steps；指定房间用 `catalog -room ROOM_ID`。可用 `-category` 缩小到该专长支持的子类；region 选 northwest / northeast / southwest / southeast，默认 northwest。专长可重复选择，选择公开、结果私有。
+共有 26 种专长：14 种侧重品类（家居、数码、工具、书画、珠宝、载具、古籍、乐器、玩具、钟表、军品、器械、古董、运动），12 种侧重跨品类的尺寸、品质、估价、样本或分区情报。用 `catalog` 查看 `specialties` 中各 ID、description 和逐轮 steps；指定房间用 `catalog -room ROOM_ID`。可用 `-category` 缩小到该专长支持的子类；region 选 northwest / northeast / southwest / southeast，默认 northwest。专长可重复选择，选择公开、结果私有。
 
 购买与系统回收在非竞拍时间可用，包括房间准备阶段。买卡扣现金、使用消耗，未用卡保留，最多携带五张不同卡、每轮最多使用一张。库存中卡牌以实际购入价记录成本。仓库的出售 ID 见 inventory.items[].id；藏品无玩家市场、无保管费。
 
@@ -69,3 +69,5 @@ bidbrawl relief
 现金、藏品与卡牌合计价值不足 10,000 时，每个上海日期可手动领取一次 50,000 救济金，竞拍中不可领取。
 
 未指定专长时默认珍品计数（analysis）。购买响应超时后，先核对 inventory 和现金，再决定是否重试，避免重复购买。
+
+领价追踪根据上一轮唯一正最高价触发；跟价研判要求上一轮正报价严格低于最高价。并列最高不满足任一条件。仅使用已经揭晓的报价判断，当前暗标不参与；提前成交或弃权后没有后续专长奖励。
