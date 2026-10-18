@@ -6950,19 +6950,90 @@
   "warehouses": [
     {
       "id": "mixed",
-      "name": "综合仓库",
+      "name": "综合物品箱",
+      "recommended_cash": 600000
+    },
+    {
+      "id": "home",
+      "name": "家居生活物品箱",
+      "favored_categories": [
+        "furniture",
+        "household"
+      ],
       "recommended_cash": 600000
     },
     {
       "id": "tech",
-      "name": "数码货仓",
-      "favored_category": "electronics",
+      "name": "数码办公物品箱",
+      "favored_categories": [
+        "electronics",
+        "computers"
+      ],
+      "recommended_cash": 600000
+    },
+    {
+      "id": "workshop",
+      "name": "工业工具物品箱",
+      "favored_categories": [
+        "tools",
+        "machinery"
+      ],
       "recommended_cash": 600000
     },
     {
       "id": "estate",
-      "name": "旧宅藏品",
-      "favored_category": "art",
+      "name": "艺术古董物品箱",
+      "favored_categories": [
+        "art",
+        "antiques"
+      ],
+      "recommended_cash": 600000
+    },
+    {
+      "id": "treasure",
+      "name": "珠宝矿藏物品箱",
+      "favored_categories": [
+        "jewelry",
+        "minerals"
+      ],
+      "recommended_cash": 600000
+    },
+    {
+      "id": "mobility",
+      "name": "交通能源物品箱",
+      "favored_categories": [
+        "transport",
+        "energy"
+      ],
+      "recommended_cash": 600000
+    },
+    {
+      "id": "archives",
+      "name": "图书文档物品箱",
+      "favored_categories": [
+        "books",
+        "documents"
+      ],
+      "recommended_cash": 600000
+    },
+    {
+      "id": "leisure",
+      "name": "文娱收藏物品箱",
+      "favored_categories": [
+        "music",
+        "toys",
+        "collectibles"
+      ],
+      "recommended_cash": 600000
+    },
+    {
+      "id": "expedition",
+      "name": "野外装备物品箱",
+      "favored_categories": [
+        "sports",
+        "medical",
+        "military"
+      ],
       "recommended_cash": 600000
     }
   ]

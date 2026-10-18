@@ -1,4 +1,4 @@
-import {t,money,getLocale,localizeCard,localizeName,catalogs} from './i18n.js';
+import {t,money,getLocale,localizeCard,localizeName,localizeItemName,catalogs} from './i18n.js';
 import {esc,icon,button} from './html.js';
 
 const tr=(key,args)=>esc(t(key,args));
@@ -12,6 +12,15 @@ export function activityTitle(e,view){
  if(e.action==='specialty')return t('action_specialty')+(e.result?.title?' · '+(localizeName('specialty',view.rules.specialties?.find(s=>s.name===e.result.title))||e.result.title):'');
  return catalogs[getLocale()]['action_'+e.action]?t('action_'+e.action):t('actionOther');
 }
+export function intelligenceTitle(hint,view){
+ const data=hint.data||{},title=data.translations?.[getLocale()]?.title||data.title;
+ if(hint.source==='specialty'){
+  const specialty=view.rules.specialties?.find(s=>s.id===hint.kind);
+  return !title||title===specialty?.name?localizeName('specialty',specialty)||t('specialtyIntel'):title;
+ }
+ const definition=view.rules.cards?.find(c=>c.id===hint.source);
+ return title||(definition?localizeCard(definition).name:t('privateSkills'));
+}
 export function intelligenceSummary(data,view){
  if(!data)return '';
  if(data.items)return t('intelSample',{count:data.items.length});
@@ -22,8 +31,8 @@ export function intelligenceSummary(data,view){
  if(data.counts)return Object.entries(data.counts).map(([key,value])=>`${localizeName('category',view.rules.categories?.find(c=>c.id===key))||(catalogs[getLocale()][key]?t(key):t('unknownSelection'))} ${money(value)}`).join(' · ');
  if(data.area!==undefined)return t('intelArea',{count:data.area});
  if(data.count!==undefined)return t('intelCount',{count:data.count});
- if(data.item_id)return [data.name||data.item_id,data.quality?t(data.quality):null,data.price!==undefined?money(data.price):null].filter(Boolean).join(' · ');
- return data.message||'';
+ if(data.item_id)return [localizeItemName(data,view.rules.catalog)||data.item_id,data.quality?t(data.quality):null,data.price!==undefined?money(data.price):null].filter(Boolean).join(' · ');
+ return data.translations?.[getLocale()]?.message||data.message||'';
 }
 function grouped(events){
  const rows=[];for(const event of events){const last=rows.at(-1);if(last&&readActions.has(event.action)&&event.status==='success'&&last.event.action===event.action&&last.event.round===event.round&&last.event.status===event.status){last.events.push(event)}else rows.push({event,events:[event]})}return rows;

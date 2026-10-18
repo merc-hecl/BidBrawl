@@ -1,4 +1,4 @@
-import {t, money, signed, localizeCard, getLocale} from './i18n.js';
+import {t, money, signed, localizeCard, localizeName, localizeItemName, getLocale} from './i18n.js';
 import {observation} from './model.js';
 import {esc,icon,button} from './html.js';
 import {roomView,avatarGallery} from './room-ui.js';
@@ -49,8 +49,8 @@ function settlement(view) {
 }
 function inventory(view,ui) {
   if(!view.settlement)return '';
-  const items=view.settlement.items.filter(item=>(ui.quality==='all'||item.quality===ui.quality)&&(item.id+' '+(item.name||'')+' '+(item.category||'')).toLowerCase().includes(ui.search.toLowerCase()));
-  return `<section class="panel" data-region="inventory"><div class="inventory-controls"><label>${tr('quality')} <select data-control="quality" aria-label="${tr('quality')}"><option value="all">${tr('allQuality')}</option>${['common','uncommon','rare','epic','legendary',...(view.settlement.items.some(item=>item.category==='easter_egg'||item.quality==='easter_egg')?['easter_egg']:[])].map(q=>`<option value="${q}" ${ui.quality===q?'selected':''}>${tr(q)}</option>`).join('')}</select></label><input data-control="search" aria-label="${tr('searchItem')}" placeholder="${tr('searchItem')}" value="${esc(ui.search)}"><small>${tr('itemCountRatio',{count:items.length,total:view.settlement.items.length})}</small></div><div class="inventory-table table-scroll"><table><thead><tr>${['id','quality','area','bounds','value'].map(key=>`<th>${tr(key)}</th>`).join('')}</tr></thead><tbody>${items.map(item=>`<tr><td>${button(esc(item.name||item.id),'select-item:'+item.id,'text-button')}</td><td><i class="quality-${esc(item.quality)}"></i>${quality(item.quality)}</td><td>${item.bottom_right.x-item.top_left.x} × ${item.bottom_right.y-item.top_left.y}</td><td class="mono">(${item.top_left.x}, ${item.top_left.y}) → (${item.bottom_right.x}, ${item.bottom_right.y})</td><td>${money(item.price)}</td></tr>`).join('')}</tbody></table>${items.length?'':empty('noItems')}</div></section>`;
+  const items=view.settlement.items.filter(item=>(ui.quality==='all'||item.quality===ui.quality)&&(item.id+' '+(localizeItemName(item,view.rules.catalog)||'')+' '+(item.name||'')+' '+(item.category||'')).toLowerCase().includes(ui.search.toLowerCase()));
+  return `<section class="panel" data-region="inventory"><div class="inventory-controls"><label>${tr('quality')} <select data-control="quality" aria-label="${tr('quality')}"><option value="all">${tr('allQuality')}</option>${['common','uncommon','rare','epic','legendary',...(view.settlement.items.some(item=>item.category==='easter_egg'||item.quality==='easter_egg')?['easter_egg']:[])].map(q=>`<option value="${q}" ${ui.quality===q?'selected':''}>${tr(q)}</option>`).join('')}</select></label><input data-control="search" aria-label="${tr('searchItem')}" placeholder="${tr('searchItem')}" value="${esc(ui.search)}"><small>${tr('itemCountRatio',{count:items.length,total:view.settlement.items.length})}</small></div><div class="inventory-table table-scroll"><table><thead><tr>${['id','quality','area','bounds','value'].map(key=>`<th>${tr(key)}</th>`).join('')}</tr></thead><tbody>${items.map(item=>`<tr><td>${button(esc(localizeItemName(item,view.rules.catalog)||item.id),'select-item:'+item.id,'text-button')}</td><td><i class="quality-${esc(item.quality)}"></i>${quality(item.quality)}</td><td>${item.bottom_right.x-item.top_left.x} × ${item.bottom_right.y-item.top_left.y}</td><td class="mono">(${item.top_left.x}, ${item.top_left.y}) → (${item.bottom_right.x}, ${item.bottom_right.y})</td><td>${money(item.price)}</td></tr>`).join('')}</tbody></table>${items.length?'':empty('noItems')}</div></section>`;
 }
 function stats(results,ui) {
   const rows=results.agents,profit=results.profit;
@@ -108,9 +108,11 @@ export function dialogContent(kind,id,source,results,ui) {
     if(geometry)pairs.push(['itemMax',`${geometry.max_width} × ${geometry.max_height}`]);
     pairs.push(['ticketFee',money(rules.ticket_fee||0)]);
     pairs.push(['cardLimit',tr('cardsCount',{count:5})]);
-    pairs.push(['warehouseType',esc((rules.warehouses||[]).find(w=>w.id===rules.warehouse)?.name||rules.warehouse||'mixed')]);
- pairs.push(['initialInspection',tr('inspectionRule',{count:rules.initial_inspection_count})]);
-    return {title:t('rules'),content:button(icon('book')+tr('handbook'),'handbook','paper-button')+details(pairs).replace('<dl>','<dl class="rule-grid">')+`<details class="card-rules"><summary>${tr('cardCatalog')}</summary>${(rules.cards||[]).map(localizeCard).map(card=>`<article><h3>${esc(card.name)} · ${money(card.price||0)} ${tr('coins')}</h3><p>${esc(card.description)}</p></article>`).join('')}</details>`};
+    const warehouse=(rules.warehouses||[]).find(w=>w.id===(rules.warehouse||'mixed'));
+    pairs.push(['warehouseType',esc(localizeName('warehouse',warehouse)||rules.warehouse||t('warehouse.mixed.name'))]);
+    pairs.push(['favoredCategories',warehouse?.favored_categories?.length?warehouse.favored_categories.map(id=>esc(localizeName('category',rules.categories?.find(c=>c.id===id))||id)).join(' · '):tr('noCategoryPreference')]);
+    pairs.push(['initialInspection',tr('inspectionRule',{count:rules.initial_inspection_count})]);
+    return {title:t('rules'),content:button(icon('book')+tr('handbook'),'handbook','paper-button')+details(pairs).replace('<dl>','<dl class="rule-grid">')};
   }
   const seated=kind==='agent'?view?.players.find(player=>player.id===id):null;
   const record=ui.agentProfile || results.agents.find(agent=>agent.id===(kind==='stats-agent'?id:seated?.agent_id));

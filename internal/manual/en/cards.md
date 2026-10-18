@@ -24,7 +24,7 @@ Items are rectangles. Count, positions, qualities and prices are hidden until re
 
 ## View the catalog
 
-`appearance_probability` is the baseline probability per draw (0–1), using the current configuration and warehouse preference. Item details show it as a percentage. Remaining space changes the conditional probabilities of later placements.
+`appearance_probability` is the baseline probability per draw (0–1), using the current configuration and item box category preference. Item details show it as a percentage. Remaining space changes the conditional probabilities of later placements.
 
 Search public item templates with combinable filters:
 

@@ -1,14 +1,14 @@
-import {t,money,getLocale,localizeCard,localizeName,catalogs} from './i18n.js';
+import {t,money,getLocale,localizeCard,localizeName,localizeItemName as itemName,catalogs} from './i18n.js';
 import {esc,icon,button} from './html.js';
 
-const sections=['items','cards','hints','specialties'];
+const sections=['items','cards','hints','specialties','boxes'];
 const tr=(key,args)=>esc(t(key,args));
 const list=values=>new Intl.ListFormat(getLocale(),{style:'short',type:'conjunction'}).format(values);
 const quality=q=>catalogs[getLocale()][q]?t(q):q;
 const name=(kind,id,rules)=>localizeName(kind,(rules[kind==='category'?'categories':'specialties']||[]).find(x=>x.id===id))||t('unknownSelection');
-export const itemName=item=>item.translations?.[getLocale()]||item.name;
+export {itemName};
 export const newHandbookState=(section='items')=>({section:sections.includes(section)?section:'items',entry:null,search:'',category:'all',quality:'all',footprint:'all',filter:'all',page:0,detail:false});
-export const hostReference=data=>({...data.game,qualities:data.qualities,catalog:data.catalog,cards:data.cards.cards,categories:data.categories,specialties:data.specialties,public_hint_definitions:data.public_hint_definitions});
+export const hostReference=data=>({...data.game,qualities:data.qualities,catalog:data.catalog,cards:data.cards.cards,categories:data.categories,warehouses:data.warehouses,specialties:data.specialties,public_hint_definitions:data.public_hint_definitions});
 
 const pill=content=>`<span class="handbook-pill">${content}</span>`;
 const fact=(title,value)=>`<div><dt>${tr(title)}</dt><dd>${value}</dd></div>`;
@@ -106,16 +106,29 @@ function specialties(rules,book){
   }
   return {controls,body:left+right,selected:!!selected};
 }
+function boxes(rules,book){
+  const categories=box=>(box.favored_categories||[]).map(id=>name('category',id,rules));
+  const all=rules.warehouses||[],filtered=all.filter(box=>hasSearch([localizeName('warehouse',box),box.name,...categories(box),...(box.favored_categories||[]).map(id=>rules.categories?.find(c=>c.id===id)?.name||id)].join(' '),book.search));
+  const selected=filtered.find(box=>box.id===book.entry)||filtered[0];
+  const controls=`<div class="handbook-controls">${search(book)}</div>`;
+  const left=`<section class="handbook-list panel" data-region="book-boxes"><header><strong>${tr('book.boxesCount',{count:filtered.length})}</strong></header><div class="handbook-box-list">${filtered.map(box=>entry(box.id,localizeName('warehouse',box),categories(box).join(' · ')||t('noCategoryPreference'),selected?.id===box.id)).join('')||noMatch()}</div></section>`;
+  let right='';
+  if(selected){
+    const favored=selected.favored_categories||[],related=(rules.specialties||[]).filter(s=>s.categories?.some(id=>favored.includes(id)));
+    right=detail(`<span class="eyebrow">${tr('book.boxDetails')}</span><h2 tabindex="-1">${esc(localizeName('warehouse',selected))}</h2><div class="handbook-pills">${(categories(selected).length?categories(selected):[t('noCategoryPreference')]).map(category=>pill(esc(category))).join('')}</div><p class="handbook-description">${tr(favored.length?'book.boxBias':'book.boxMixed')}</p><dl class="handbook-box-facts">${fact('book.boxSelection',tr('book.boxSelectionRule'))}${fact('book.boxShared',tr('book.boxSharedRule'))}${related.length?fact('book.boxSpecialties',esc(list(related.map(s=>localizeName('specialty',s))))):''}</dl>`,selected.id);
+  }
+  return {controls,body:left+right,selected:!!selected};
+}
 export function renderHandbook(rules,book,{pending=false,failed=false,roomName=''}={}){
   if(rules)rules={...rules,catalog:(rules.catalog||[]).filter(item=>item.category!=='easter_egg'&&item.quality!=='easter_egg'),categories:(rules.categories||[]).filter(category=>category.id!=='easter_egg'),qualities:(rules.qualities||[]).filter(quality=>quality.id!=='easter_egg')};
   const section=sections.includes(book.section)?book.section:'items';
-  const counts={items:rules?.catalog?.length||0,cards:rules?.cards?.length||0,hints:rules?.public_hint_definitions?.length||0,specialties:rules?.specialties?.length||0};
+  const counts={items:rules?.catalog?.length||0,cards:rules?.cards?.length||0,hints:rules?.public_hint_definitions?.length||0,specialties:rules?.specialties?.length||0,boxes:rules?.warehouses?.length||0};
   const nav=`<nav class="handbook-nav" aria-label="${tr('handbook')}">${sections.map(id=>button(`<strong>${tr('book.section.'+id)}</strong><small>${id==='hints'?tr('book.publicHints',{count:counts[id]}):tr('book.'+id+'Count',{count:counts[id]})}</small>`,'book-section:'+id,section===id?'selected':'',section===id?'aria-current="page"':'')).join('')}</nav>`;
   const head=`<header class="handbook-heading"><div><span class="eyebrow">${tr('handbook')} / ${String(sections.indexOf(section)+1).padStart(2,'0')}</span><h1>${tr('book.section.'+section)}</h1></div>${button(icon('arrow')+tr(roomName?'book.backRoom':'book.backLobby'),'book-exit','paper-button')}</header>`;
   let content;
   if(pending||!rules)content=`<div class="handbook-status" role="status"><p>${tr(failed?'book.loadError':'loading')}</p>${failed?button(tr('book.retry'),'book-retry','paper-button'):''}</div>`;
   else{
-    const view=({items,cards,hints,specialties})[section](rules,book);
+    const view=({items,cards,hints,specialties,boxes})[section](rules,book);
     content=`${view.controls}<div class="handbook-reader ${book.detail&&view.selected?'has-detail':''}" data-region="book-reader:${section}">${view.body}</div>`;
   }
   return `<section class="handbook" data-region="handbook">${nav}<div class="handbook-main">${head}${content}</div></section>`;

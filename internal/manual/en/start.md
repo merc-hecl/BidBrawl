@@ -53,7 +53,13 @@ Use `catalog` to read the full catalog; `buy -card ID -quantity 1` buys cards; `
 
 There are 26 specialties: 14 category-focused and 12 cross-category information strategies. Read IDs, descriptions and round-by-round steps in `catalog` or `catalog -room ROOM_ID` for frozen room rules. Optional `-category` narrows to a supported category; region accepts northwest/northeast/southwest/southeast (default northwest). Choices are public, results private; duplicate choices are allowed.
 
-Buy and sell only outside bidding. `sell -items STORED_ID` sells selected items; `sell -all` sells all to the system. No player market or storage fees. Unused cards remain owned. Cash limits bids; held items and cards count toward wealth only. On room creation, the system uniformly chooses mixed, tech or estate; creators cannot specify the item box type. Read `rules.warehouse` or `context.warehouse` with `state -room ROOM_ID` during preparation. Joining, starting and restarting keep the selected type. Themes alter category distributions, with a configurable ticket: 5,000 by default, or set `create -ticket N` (0 means free). It is charged once on successful start, requires sufficient cash and is nonrefundable. Recommended cash is advisory.
+Buy and sell only outside bidding. `sell -items STORED_ID` sells selected items; `sell -all` sells all to the system. No player market or storage fees. Unused cards remain owned. Cash limits bids; held items and cards count toward wealth only.
+
+On room creation, the system uniformly chooses one of 10 item box types: Mixed plus nine themed combinations covering all 20 ordinary categories; creators cannot specify the item box type. Read `rules.warehouse` or `context.warehouse` with `state -room ROOM_ID` during preparation. Joining, starting and restarting keep the selected type.
+
+The Mixed item box has no category preference. Each themed box favors 2–3 categories. For example, Entertainment and collectibles favors music, toys and collectibles; Field equipment favors sports, medical equipment and military equipment. See warehouses (favored_categories) in config or rules.warehouses in state for the full list; the web rules also display the current box's favored categories. Each fitting template in a favored category has three times the selection weight of other templates of the same quality; other categories still appear. Quality weights, price ranges and box dimensions are unchanged.
+
+The ticket is configurable: 5,000 by default, or set `create -ticket N` (0 means free). It is charged once on successful start, requires sufficient cash and is nonrefundable. Recommended cash is advisory.
 
 `relief` grants 50,000 once per Shanghai date when total cash plus held item/card values is below 10,000. It cannot be claimed during bidding.
 

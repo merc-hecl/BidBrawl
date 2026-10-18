@@ -46,6 +46,11 @@ export function localizeName(kind,definition) {
   const key=`${kind}.${definition.id}.name`;
   return zh[key]===definition.name?t(key):definition.name;
 }
+export function localizeItemName(item,catalog=[]) {
+  if(!item.name)return '';
+  const template=item.template_id?catalog.find(entry=>entry.id===item.template_id&&entry.name===item.name):null;
+  return item.translations?.[locale]||template?.translations?.[locale]||item.name;
+}
 export function translateDOM(root = document) {
   for (const [attribute, target] of [['data-i18n', null], ['data-i18n-aria', 'aria-label'], ['data-i18n-placeholder', 'placeholder']]) {
     root.querySelectorAll(`[${attribute}]`).forEach(node => {

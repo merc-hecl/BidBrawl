@@ -8,7 +8,7 @@ const json=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'
 const game=await json('../game/default.json'),catalog=await json('../game/items.json');
 const cardConfig=await json('../cards/default.json'),specialties=await json('../game/specialties.json');
 const hintConfig=await json('../hints/default.json');
-const rules=hostReference({game,qualities:[...game.qualities,{id:'easter_egg',name:'彩蛋',min_price:17500000,max_price:17500000,weight:0}],catalog:catalog.items.map(i=>({...i,price:i.fixed_price??1234,quality_appearance_probability:i.category==='easter_egg'?2/100002:game.qualities.find(q=>q.id===i.quality).weight/100,appearance_probability:i.category==='easter_egg'?2/100002/8:0.001})),cards:cardConfig,specialties,categories:catalog.categories,public_hint_definitions:hintConfig.plugins});
+const rules=hostReference({game,qualities:[...game.qualities,{id:'easter_egg',name:'彩蛋',min_price:17500000,max_price:17500000,weight:0}],catalog:catalog.items.map(i=>({...i,price:i.fixed_price??1234,quality_appearance_probability:i.category==='easter_egg'?2/100002:game.qualities.find(q=>q.id===i.quality).weight/100,appearance_probability:i.category==='easter_egg'?2/100002/8:0.001})),cards:cardConfig,specialties,categories:catalog.categories,warehouses:catalog.warehouses,public_hint_definitions:hintConfig.plugins});
 
 test('new intelligence keeps scope, units, unlock rounds and bid conditions visible',()=>{
  try{for(const locale of ['zh-CN','en']){
@@ -43,11 +43,11 @@ test('chosen-target cards describe the requested scope instead of a whole-crate 
  }}finally{setLocale('zh-CN',false);}
 });
 
-test('handbook renders every configured card, specialty and clue in both languages',()=>{
+test('handbook renders every configured card, specialty, clue and box in both languages',()=>{
   try{for(const locale of ['zh-CN','en']){
     setLocale(locale,false);
-    for(const section of ['items','cards','hints','specialties']){
-      const definitions=section==='items'?rules.catalog.slice(0,6):section==='cards'?rules.cards:section==='hints'?rules.public_hint_definitions:rules.specialties;
+    for(const section of ['items','cards','hints','specialties','boxes']){
+      const definitions={items:rules.catalog.slice(0,6),cards:rules.cards,hints:rules.public_hint_definitions,specialties:rules.specialties,boxes:rules.warehouses}[section];
       for(const def of definitions){
         const html=renderHandbook(rules,{...newHandbookState(section),entry:def.id,detail:true});
         assert.ok(html.includes('book-entry:'+def.id),def.id);

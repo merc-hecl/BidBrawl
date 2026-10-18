@@ -7,6 +7,7 @@ import (
 	"errors"
 	"io"
 	"os"
+	"slices"
 )
 
 // Catalog data is deliberately text-only. Category, footprint and quality narrow
@@ -31,10 +32,10 @@ type ItemTemplate struct {
 	Tags                         []string          `json:"tags,omitempty"`
 }
 type Warehouse struct {
-	ID              string `json:"id"`
-	Name            string `json:"name"`
-	Category        string `json:"favored_category,omitempty"`
-	RecommendedCash int64  `json:"recommended_cash"`
+	ID              string   `json:"id"`
+	Name            string   `json:"name"`
+	Categories      []string `json:"favored_categories,omitempty"`
+	RecommendedCash int64    `json:"recommended_cash"`
 }
 type ItemCatalog struct {
 	Categories []Category     `json:"categories"`
@@ -99,6 +100,15 @@ func ValidWarehouse(id string) bool {
 	}
 	return false
 }
+func warehouseCategories(id string) []string {
+	for _, box := range Warehouses {
+		if box.ID == id {
+			return box.Categories
+		}
+	}
+	return nil
+}
+
 func (g *Game) SetWarehouse(id string) error {
 	g.mu.Lock()
 	defer g.mu.Unlock()
@@ -141,17 +151,12 @@ func catalogForWarehouse(cfg Config, warehouse string) []ItemTemplate {
 	}
 	// Baseline for one draw with the full candidate pool and sufficient space.
 	// Later placements narrow that pool by their remaining width and height.
-	favored := ""
-	for _, w := range Warehouses {
-		if w.ID == warehouse {
-			favored = w.Category
-		}
-	}
+	favored := warehouseCategories(warehouse)
 	totals := map[string]int{}
 	for _, item := range out {
 		if item.Width <= cfg.Box.Width && item.Height <= cfg.Box.Height {
 			weight := 1
-			if item.Category == favored && item.Quality != "easter_egg" {
+			if slices.Contains(favored, item.Category) && item.Quality != "easter_egg" {
 				weight = 3
 			}
 			totals[item.Quality] += weight
@@ -190,7 +195,7 @@ func catalogForWarehouse(cfg Config, warehouse string) []ItemTemplate {
 			continue
 		}
 		weight := 1
-		if item.Category == favored {
+		if slices.Contains(favored, item.Category) {
 			weight = 3
 		}
 		probability = (1 - eggProbability) * qualityProbability * float64(weight) / float64(totals[item.Quality])
@@ -215,12 +220,7 @@ func (g *Game) generateCatalogWith(choose func(int) int) []Item {
 			legendaryWeight = q.Weight
 		}
 	}
-	favored := ""
-	for _, w := range Warehouses {
-		if w.ID == g.warehouse {
-			favored = w.Category
-		}
-	}
+	favored := warehouseCategories(g.warehouse)
 	for {
 		x := 0
 		for j := 1; j < g.width; j++ {
@@ -253,7 +253,7 @@ func (g *Game) generateCatalogWith(choose func(int) int) []Item {
 				continue
 			}
 			pool = append(pool, t)
-			if t.Category == favored {
+			if slices.Contains(favored, t.Category) {
 				pool = append(pool, t, t)
 			}
 		}

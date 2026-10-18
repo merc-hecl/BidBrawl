@@ -236,7 +236,7 @@ function hideTip(){$('item-tooltip').hidden=true;}
 function showTip(target){
   if(!source||ui.page!=='room'||$('content').inert||ui.focusPlayer||ui.focusItem)return hideTip();
   const item=knownItems(observation(source,ui.cursor),ui.observer?ui.focusPlayer:null).find(item=>item.id===target.dataset.item);if(!item)return hideTip();
-  const tip=$('item-tooltip'),box=target.getBoundingClientRect();tip.innerHTML=itemTip(item);tip.hidden=false;
+  const tip=$('item-tooltip'),box=target.getBoundingClientRect();tip.innerHTML=itemTip(item,source.rules.catalog);tip.hidden=false;
   tip.style.left=Math.max(8,Math.min(innerWidth-tip.offsetWidth-8,box.right+9))+'px';
   tip.style.top=Math.max(8,Math.min(innerHeight-tip.offsetHeight-8,box.top))+'px';
 }

@@ -2,6 +2,7 @@ package game
 
 import (
 	"math"
+	"slices"
 	"strings"
 	"testing"
 
@@ -30,6 +31,36 @@ func TestBuiltinCatalogHasDistinctBilingualIdentities(t *testing.T) {
 	for base, count := range families {
 		if count == 5 {
 			t.Fatalf("five-tier prefix copies returned: %s", base)
+		}
+	}
+}
+
+func TestItemBoxesCoverEveryOrdinaryCategory(t *testing.T) {
+	ids, favored := map[string]bool{}, map[string]int{}
+	for _, box := range Warehouses {
+		if ids[box.ID] {
+			t.Fatalf("duplicate item box ID: %s", box.ID)
+		}
+		ids[box.ID] = true
+		if len(box.Categories) == 0 {
+			if box.ID != "mixed" {
+				t.Fatalf("only the mixed box may have no category preference: %s", box.ID)
+			}
+			continue
+		}
+		for _, category := range box.Categories {
+			if !ValidCategory(category) || category == "easter_egg" {
+				t.Fatalf("invalid item box preference: %s", category)
+			}
+			favored[category]++
+		}
+	}
+	if !ids["mixed"] {
+		t.Fatal("missing mixed item box")
+	}
+	for _, category := range Categories {
+		if category.ID != "easter_egg" && favored[category.ID] != 1 {
+			t.Fatalf("category %s needs exactly one preferred item box, got %d", category.ID, favored[category.ID])
 		}
 	}
 }
@@ -77,23 +108,30 @@ func TestCatalogAppearanceProbabilitiesUseIndependentEggTierAndWarehouse(t *test
 			t.Fatal("per-item probability must divide the egg pool")
 		}
 	}
-	g, _ := New(2)
-	if err := g.SetWarehouse("tech"); err != nil {
-		t.Fatal(err)
-	}
-	check(g.Catalog(), 2.0/100002)
-	var electronics, other float64
-	for _, item := range g.Catalog() {
-		if item.Quality == "common" {
-			if item.Category == "electronics" {
-				electronics = *item.AppearanceProbability
-			} else {
-				other = *item.AppearanceProbability
+	for _, box := range Warehouses {
+		g, _ := New(2)
+		if err := g.SetWarehouse(box.ID); err != nil {
+			t.Fatal(err)
+		}
+		check(g.Catalog(), 2.0/100002)
+		if len(box.Categories) == 0 {
+			continue
+		}
+		preferred, other := map[string]float64{}, 0.0
+		for _, item := range g.Catalog() {
+			if item.Quality == "common" {
+				if slices.Contains(box.Categories, item.Category) {
+					preferred[item.Category] = *item.AppearanceProbability
+				} else {
+					other = *item.AppearanceProbability
+				}
 			}
 		}
-	}
-	if math.Abs(electronics-3*other) > 1e-12 {
-		t.Fatal("warehouse preference not reflected")
+		for _, category := range box.Categories {
+			if preferred[category] == 0 || other == 0 || math.Abs(preferred[category]-3*other) > 1e-12 {
+				t.Fatalf("item box %s preference not reflected for %s", box.ID, category)
+			}
+		}
 	}
 	for n := range cfg.Qualities {
 		if cfg.Qualities[n].ID == "legendary" {
