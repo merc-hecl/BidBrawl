@@ -27,12 +27,12 @@ export function roomButtons(rooms, selected, group) {
 function bids(view) {
   const rounds=Array.from({length:view.rules.rounds},(_,i)=>{
     const record=view.history.find(h=>h.round===i+1),high=Math.max(0,...(record?.bids||[]).map(b=>b.amount));
-    return {record,high,tied:high>0&&record.bids.filter(b=>b.amount===high).length>1,zero:!!record?.bids.length&&high===0};
+    return {record,high,zero:!!record?.bids.length&&high===0};
   });
-  return `<section class="bid-ledger"><div class="bid-legend"><span class="bid-key">${tr('highestShort')}</span><span>${tr('roundHighest')}</span><span class="bid-key is-sale">${tr('settlement')}</span><span>${tr('settledBid')}</span></div><div class="table-scroll"><table class="bid-table"><thead><tr><th scope="col">${tr('players')}</th>${rounds.map(({zero},i)=>`<th scope="col">${label(i+1)}<small>${i===view.settlement?.round-1?tr('finalRound'):zero?tr('allZeroBids'):tr('round',{round:i+1})}</small></th>`).join('')}</tr></thead><tbody>${view.players.map(player=>`<tr><th scope="row">${button(esc(player.name),'agent:'+player.id,'text-button agent-name')}</th>${rounds.map(({record,high,tied},r)=>{
+  return `<section class="bid-ledger"><div class="table-scroll"><table class="bid-table"><thead><tr><th scope="col">${tr('players')}</th>${rounds.map(({zero},i)=>`<th scope="col">${label(i+1)}<small>${i===view.settlement?.round-1?tr('finalRound'):zero?tr('allZeroBids'):tr('round',{round:i+1})}</small></th>`).join('')}</tr></thead><tbody>${view.players.map(player=>`<tr><th scope="row">${button(esc(player.name),'agent:'+player.id,'text-button agent-name')}</th>${rounds.map(({record,high},r)=>{
     const bid=record?.bids.find(b=>b.player_id===player.id),leader=!!bid&&high>0&&bid.amount===high;
     const sale=!!bid&&view.settlement?.round===r+1&&view.settlement.winner_id===player.id;
-    return `<td><div class="bid-cell ${sale?'is-sale':leader?'is-highest':''}">${bid?`<strong>${bid.amount===0?tr('withdrawn'):money(bid.amount)}</strong>${sale?`<small>${icon('crown')}${tr('settledBid')}</small>`:leader?`<small>${tr(tied?'tiedHighest':'highestShort')}</small>`:''}`:r+1===view.round&&view.phase==='bidding'?`<span class="sealed-bid">${tr('sealed')}</span>`:'—'}</div></td>`;
+    return `<td><div class="bid-cell ${sale?'is-sale':leader?'is-highest':''}">${bid?`<strong>${bid.amount===0?tr('withdrawn'):money(bid.amount)}</strong>${sale?`<small role="img" aria-label="${tr('settledBid')}">${icon('crown')}</small>`:''}`:r+1===view.round&&view.phase==='bidding'?`<span class="sealed-bid">${tr('sealed')}</span>`:'—'}</div></td>`;
   }).join('')}</tr>`).join('')}</tbody></table>${view.players.length?'':empty('noBids')}</div></section>`;
 }
 function hints(view) {
