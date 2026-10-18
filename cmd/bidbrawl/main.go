@@ -185,7 +185,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	sellAll := f.Bool("all", false, "出售全部仓库藏品")
 	round := f.Int("round", 0, "用卡 / 报价的当前轮次，必填，从 state 查看")
 	card := f.String("card", "", "技能卡 ID")
-	cardTarget := f.String("target", "", "card：卡牌要求的品类、品质、面积或象限目标；以 cards 中 target 字段为准")
+	cardTarget := f.String("target", "", "card：卡牌要求的品类、品质、面积、象限或已观察物品 ID；以 cards 中 target 字段为准")
 	amount := f.Int64("amount", 0, "整数报价")
 	reason := f.String("reason", "", "报价 / 用卡的私有决策理由，必填，1–2000 字符")
 	defaults := f.Bool("defaults", false, "config / cards / hints 命令：离线导出内置默认配置")

@@ -20,19 +20,20 @@ import (
 var defaultJSON []byte
 
 type Effect struct {
-	Type       string   `json:"type"`
-	Selector   string   `json:"selector,omitempty"`
-	Fields     []string `json:"fields,omitempty"`
-	GroupBy    string   `json:"group_by,omitempty"`
-	Category   string   `json:"category,omitempty"`
-	Quality    string   `json:"quality,omitempty"`
-	Count      int      `json:"count,omitempty"`
-	Qualities  []string `json:"qualities,omitempty"`
-	Area       int      `json:"area,omitempty"`
-	Measure    string   `json:"measure,omitempty"`
-	SampleSize int      `json:"sample_size,omitempty"`
-	Region     string   `json:"region,omitempty"`
-	ItemID     string   `json:"item_id,omitempty"`
+	Type        string   `json:"type"`
+	Selector    string   `json:"selector,omitempty"`
+	Fields      []string `json:"fields,omitempty"`
+	GroupBy     string   `json:"group_by,omitempty"`
+	Category    string   `json:"category,omitempty"`
+	Quality     string   `json:"quality,omitempty"`
+	Count       int      `json:"count,omitempty"`
+	Qualities   []string `json:"qualities,omitempty"`
+	Area        int      `json:"area,omitempty"`
+	Measure     string   `json:"measure,omitempty"`
+	SampleSize  int      `json:"sample_size,omitempty"`
+	Region      string   `json:"region,omitempty"`
+	ItemID      string   `json:"item_id,omitempty"`
+	UnknownOnly bool     `json:"unknown_only,omitempty"`
 }
 
 type Definition struct {
@@ -171,6 +172,9 @@ func validText(s string, max int) bool {
 }
 
 func (e Effect) validate() error {
+	if e.UnknownOnly && e.Type != "reveal" {
+		return errors.New("unknown_only is only used by reveal")
+	}
 	if e.ItemID != "" && (!validText(e.ItemID, 64) || e.Type != "reveal") {
 		return errors.New("item_id requires a valid single-item reveal target")
 	}

@@ -83,12 +83,26 @@ func validateSpecialties(v []Specialty) error {
 		}
 		ids[s.ID] = true
 		samples := map[string]bool{}
+		lastRound := 0
 		for _, c := range s.Categories {
 			if !ValidCategory(c) {
 				return errors.New("invalid specialty category")
 			}
 		}
 		for _, step := range s.Steps {
+			if step.Round < lastRound {
+				return errors.New("specialty steps must be ordered by round")
+			}
+			lastRound = step.Round
+			if step.All && step.Effect.Type != "reveal" {
+				return errors.New("all is only used by reveal")
+			}
+			if step.Mode == "average" && step.Effect.Type != "value" {
+				return errors.New("average mode requires a value effect")
+			}
+			if step.Mode == "presence" && (step.Effect.Type != "count" || step.Effect.GroupBy != "") {
+				return errors.New("presence mode requires an ungrouped count effect")
+			}
 			if step.FromSample != "" && !samples[step.FromSample] {
 				return errors.New("from_sample must reference an earlier remembered sample")
 			}
@@ -247,7 +261,7 @@ func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any
 		return map[string]any{key: value, "category": e.Category, "quality": e.Quality}
 	}
 	known := g.knownItemFields(p)
-	if e.Selector == "random" && p != nil {
+	if (e.Selector == "random" || e.UnknownOnly) && p != nil {
 		fresh := []Item{}
 		for _, i := range pool {
 			for _, f := range e.Fields {
@@ -448,11 +462,12 @@ func (g *Game) giveIntelligence(p *player) {
 			e.Count = len(pool)
 		}
 		if step.Mode == "average" {
-			e = cards.Effect{Type: "average", Measure: "price", SampleSize: step.SampleSize}
+			e.Type, e.Measure, e.SampleSize = "average", "price", step.SampleSize
 		}
 		d := g.effectOn(e, p, pool)
 		if step.Mode == "presence" {
-			d = map[string]any{"present": len(pool) > 0}
+			count, _ := d["count"].(int)
+			d = map[string]any{"present": count > 0}
 		}
 		if counts, ok := d["counts"].(map[string]int); ok && len(step.Qualities) > 0 {
 			for q := range counts {

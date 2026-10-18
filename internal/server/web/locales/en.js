@@ -628,7 +628,7 @@ export default {
   "card.common_value.name": "Baseline valuation",
   "card.common_value.description": "Reveal combined common and uncommon value without separating tiers.",
   "specialty.momentum.name": "Lead tracking",
-  "specialty.momentum.description": "Four shapes in round 1. In rounds 2–4, fully appraise one unknown item if your previous revealed bid was the unique positive highest.",
+  "specialty.momentum.description": "Four shapes in round 1. In rounds 2–4, the previous unique positive highest bidder fully appraises the highest-quality item not yet fully appraised.",
   "specialty.contrarian.name": "Following analysis",
   "specialty.contrarian.description": "Total count in round 1. If your previous positive bid was below the highest, rounds 2/3/4 give legendary area, a four-item sample mean and one top-quality appraisal.",
   "specialty.antiques.name": "Antique provenance",
@@ -685,4 +685,5 @@ export default {
   "card.focused_appraisal.name": "Focused appraisal",
   "card.focused_appraisal.description": "From round 2, choose one ordinary item you have observed and fully appraise its quality, price and identity. Unknown IDs are not valid targets.",
   "chosenItem": "Selected item {id}",
+  "book.unknownOnly": "Select only candidates with unknown requested attributes",
 };

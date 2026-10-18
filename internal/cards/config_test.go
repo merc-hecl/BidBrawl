@@ -42,6 +42,7 @@ func TestConfigurationValidation(t *testing.T) {
 		{Type: "count", Area: 16385},
 		{Type: "count", Region: "center"},
 		{Type: "count", Qualities: []string{""}},
+		{Type: "count", UnknownOnly: true},
 	} {
 		cfg := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{{ID: "new_card", Name: "新卡", Description: "测试", Price: 1, Effect: effect}}}
 		if err := cfg.Validate(); err == nil {

@@ -628,7 +628,7 @@ export default {
   "card.common_value.name": "基础盘估",
   "card.common_value.description": "显示普通与优良物品的合计价格，不拆分两档。",
   "specialty.momentum.name": "领价追踪",
-  "specialty.momentum.description": "第1轮四件轮廓；第2至4轮，若上轮为唯一正最高价，每轮补鉴定一件未知物品。",
+  "specialty.momentum.description": "第1轮四件轮廓；第2至4轮，若上轮为唯一正最高价，完整鉴定尚未完全鉴定物品中品质最高的一件。",
   "specialty.contrarian.name": "跟价研判",
   "specialty.contrarian.description": "第1轮总件数；第2至4轮，若上轮正报价低于最高价，依次获得传说占格、四件抽样均价、最高品质一件完整鉴定。",
   "specialty.antiques.name": "古器溯源",
@@ -685,4 +685,5 @@ export default {
   "card.focused_appraisal.name": "定点鉴价",
   "card.focused_appraisal.description": "第2轮起选择一件本人已观察到的常规物品，完整鉴定其品质、价格与身份。未知ID不能作为目标。",
   "chosenItem": "选定物品 {id}",
+  "book.unknownOnly": "仅在仍有未知请求属性的候选中选择",
 };

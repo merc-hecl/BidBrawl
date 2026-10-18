@@ -343,6 +343,18 @@ func TestBidConditionedIntelUsesOnlyRevealedHistory(t *testing.T) {
 				t.Fatal("wrong conditional trigger", round, view(t, g, tok).Self.Intelligence)
 			}
 		}
+		ids := map[string]bool{}
+		for _, h := range g.find(a).signals {
+			if h.Round == 1 {
+				continue
+			}
+			for _, id := range signalItemIDs(h.Data) {
+				if ids[id] {
+					t.Fatal("conditional reward repeated a fully appraised target")
+				}
+				ids[id] = true
+			}
+		}
 		public, _ := g.Observe("")
 		if bytes.Contains(public, []byte(`"intelligence"`)) {
 			t.Fatal("conditional private information leaked")
@@ -392,11 +404,37 @@ func TestSpecialtyConfigRejectsInvalidTriggersAndSamples(t *testing.T) {
 		{Round: 2, FromSample: "missing", Effect: cards.Effect{Type: "count"}},
 		{Round: 2, Remember: "x", Effect: cards.Effect{Type: "count"}},
 		{Round: 2, Qualities: []string{"easter_egg"}, Effect: cards.Effect{Type: "count"}},
+		{Round: 2, Mode: "average", Effect: cards.Effect{Type: "count"}},
+		{Round: 2, Mode: "presence", Effect: cards.Effect{Type: "count", GroupBy: "quality"}},
+		{Round: 2, All: true, Effect: cards.Effect{Type: "count"}},
 	} {
 		cfg := DefaultConfig()
 		cfg.Specialties = []Specialty{{ID: "bad", Name: "Bad", Steps: []SpecialtyStep{step}}}
 		if cfg.Validate() == nil {
 			t.Fatal("invalid specialty accepted", step)
 		}
+	}
+}
+
+func TestSpecialtyAverageAndPresenceHonorEffectFilters(t *testing.T) {
+	g, _ := New(2)
+	g.gameConfig.Specialties = []Specialty{{ID: "filtered", Name: "Filtered", Categories: []string{"household"}, Steps: []SpecialtyStep{
+		{Round: 1, Mode: "average", Effect: cards.Effect{Type: "value", Quality: "rare", Area: 4}},
+		{Round: 2, Mode: "presence", Effect: cards.Effect{Type: "count", Quality: "legendary"}},
+	}}}
+	if err := g.gameConfig.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	g.items = []Item{{ID: "rare", Category: "household", Quality: "rare", Price: 100, BottomRight: Point{2, 2}}, {ID: "epic", Category: "household", Quality: "epic", Price: 900, BottomRight: Point{1, 1}}}
+	p := &player{specialty: "filtered"}
+	g.round = 1
+	g.giveIntelligence(p)
+	if p.signals[0].Data["average_price"] != float64(100) {
+		t.Fatal("average discarded effect filters", p.signals[0])
+	}
+	g.round = 2
+	g.giveIntelligence(p)
+	if p.signals[1].Data["present"] != false {
+		t.Fatal("presence used unfiltered specialty population", p.signals[1])
 	}
 }

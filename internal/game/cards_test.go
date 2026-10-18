@@ -253,6 +253,31 @@ func TestFocusedAppraisalRequiresPersonalObservationAndPersists(t *testing.T) {
 	}
 }
 
+func TestUnknownExtremaAdvanceWithoutChangingFixedTargets(t *testing.T) {
+	g, _ := New(2)
+	g.items = []Item{
+		{ID: "top", Quality: "legendary", Price: 50000, Name: "Top", TemplateID: "top", BottomRight: Point{2, 2}},
+		{ID: "second", Quality: "epic", Price: 10000, Name: "Second", TemplateID: "second", BottomRight: Point{3, 3}},
+		{ID: "low", Quality: "common", Price: 100, Name: "Low", TemplateID: "low", BottomRight: Point{4, 4}},
+	}
+	p := &player{inspection: []InspectionItem{{ID: "top", Quality: "legendary"}}}
+	e := cards.Effect{Type: "reveal", Selector: "highest", Fields: []string{"quality", "price", "identity"}, UnknownOnly: true}
+	for _, want := range []string{"top", "second", "low"} {
+		d := g.effect(e, p)
+		if d["item_id"] != want {
+			t.Fatal("unknown extrema skipped an incomplete item or repeated a completed one", want, d)
+		}
+		p.signals = append(p.signals, Hint{Data: d})
+	}
+	if d := g.effect(e, p); d["count"] != 0 {
+		t.Fatal("exhausted extrema repeated known information", d)
+	}
+	e.UnknownOnly = false
+	if d := g.effect(e, p); d["item_id"] != "top" {
+		t.Fatal("fixed extremum unexpectedly advanced", d)
+	}
+}
+
 func TestConfiguredCardsAndSnapshot(t *testing.T) {
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit", "census"}, Cards: []cards.Definition{
 		{ID: "audit", Name: "组合全检", Description: "最大物品全部信息", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price", "shape"}}},

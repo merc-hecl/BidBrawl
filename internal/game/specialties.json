@@ -922,7 +922,7 @@
   {
     "id": "momentum",
     "name": "领价追踪",
-    "description": "第1轮四件轮廓；第2至4轮，若上轮为唯一正最高价，每轮补鉴定一件未知物品。",
+    "description": "第1轮四件轮廓；第2至4轮，若上轮为唯一正最高价，完整鉴定尚未完全鉴定物品中品质最高的一件。",
     "steps": [
       {
         "round": 1,
@@ -939,13 +939,14 @@
         "round": 2,
         "effect": {
           "type": "reveal",
-          "selector": "random",
+          "selector": "highest",
           "fields": [
             "quality",
             "price",
             "identity"
           ],
-          "count": 1
+          "count": 1,
+          "unknown_only": true
         },
         "condition": "previous_unique_highest"
       },
@@ -953,13 +954,14 @@
         "round": 3,
         "effect": {
           "type": "reveal",
-          "selector": "random",
+          "selector": "highest",
           "fields": [
             "quality",
             "price",
             "identity"
           ],
-          "count": 1
+          "count": 1,
+          "unknown_only": true
         },
         "condition": "previous_unique_highest"
       },
@@ -967,13 +969,14 @@
         "round": 4,
         "effect": {
           "type": "reveal",
-          "selector": "random",
+          "selector": "highest",
           "fields": [
             "quality",
             "price",
             "identity"
           ],
-          "count": 1
+          "count": 1,
+          "unknown_only": true
         },
         "condition": "previous_unique_highest"
       }
