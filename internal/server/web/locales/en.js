@@ -680,4 +680,8 @@ export default {
   "book.region.northeast": "Northeast quadrant",
   "book.region.southwest": "Southwest quadrant",
   "book.region.southeast": "Southeast quadrant",
+  "book.targetScope.item": "Choose an already observed item on use",
+  "card.focused_appraisal.name": "Focused appraisal",
+  "card.focused_appraisal.description": "From round 2, choose one ordinary item you have observed and fully appraise its quality, price and identity. Unknown IDs are not valid targets.",
+  "chosenItem": "Selected item {id}",
 };

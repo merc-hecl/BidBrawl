@@ -167,7 +167,7 @@ func (g *Game) effect(e cards.Effect, p *player) map[string]any { return g.effec
 func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any {
 	pool := []Item{}
 	for _, i := range source {
-		if !isEasterEgg(i) && (e.Category == "" || i.Category == e.Category) && (e.Quality == "" || i.Quality == e.Quality) && (len(e.Qualities) == 0 || slices.Contains(e.Qualities, i.Quality)) && (e.Area == 0 || i.area() == e.Area) && (e.Region == "" || itemInRegion(i, e.Region, g.width, g.height)) {
+		if !isEasterEgg(i) && (e.Category == "" || i.Category == e.Category) && (e.Quality == "" || i.Quality == e.Quality) && (len(e.Qualities) == 0 || slices.Contains(e.Qualities, i.Quality)) && (e.Area == 0 || i.area() == e.Area) && (e.Region == "" || itemInRegion(i, e.Region, g.width, g.height)) && (e.ItemID == "" || i.ID == e.ItemID) {
 			pool = append(pool, i)
 		}
 	}
@@ -246,68 +246,7 @@ func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any
 		}
 		return map[string]any{key: value, "category": e.Category, "quality": e.Quality}
 	}
-	known := map[string]map[string]bool{}
-	if p != nil {
-		for _, i := range p.inspection {
-			known[i.ID] = map[string]bool{"shape": true, "quality": true}
-		}
-		for _, h := range append(append([]Hint{}, p.hints...), p.signals...) {
-			mark := func(d map[string]any) {
-				id, _ := d["item_id"].(string)
-				if id == "" {
-					return
-				}
-				if known[id] == nil {
-					known[id] = map[string]bool{}
-				}
-				known[id]["shape"] = true // Every private item result also locates its target.
-				for key := range d {
-					if key == "top_left" {
-						known[id]["shape"] = true
-					}
-					if key == "name" {
-						known[id]["identity"] = true
-					}
-					known[id][key] = true
-				}
-			}
-			mark(h.Data)
-			if list, ok := h.Data["items"].([]any); ok {
-				for _, v := range list {
-					if d, ok := v.(map[string]any); ok {
-						mark(d)
-					}
-				}
-			}
-			if list, ok := h.Data["items"].([]map[string]any); ok {
-				for _, d := range list {
-					mark(d)
-				}
-			}
-		}
-	}
-	for _, h := range g.hints {
-		d, ok := h.Data["fact"].(map[string]any)
-		if !ok {
-			continue
-		}
-		id, _ := d["item_id"].(string)
-		if id == "" {
-			continue
-		}
-		if known[id] == nil {
-			known[id] = map[string]bool{}
-		}
-		if _, ok := d["quality"]; ok {
-			known[id]["quality"] = true
-		}
-		if _, ok := d["price"]; ok {
-			known[id]["price"] = true
-		}
-		if _, ok := d["top_left"]; ok {
-			known[id]["shape"] = true
-		}
-	}
+	known := g.knownItemFields(p)
 	if e.Selector == "random" && p != nil {
 		fresh := []Item{}
 		for _, i := range pool {
@@ -379,6 +318,73 @@ func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any
 		return results[0]
 	}
 	return map[string]any{"items": results, "count": len(results)}
+}
+
+// knownItemFields merges explicit personal and public observations only.
+func (g *Game) knownItemFields(p *player) map[string]map[string]bool {
+	known := map[string]map[string]bool{}
+	if p != nil {
+		for _, i := range p.inspection {
+			known[i.ID] = map[string]bool{"shape": true, "quality": true}
+		}
+		for _, h := range append(append([]Hint{}, p.hints...), p.signals...) {
+			mark := func(d map[string]any) {
+				id, _ := d["item_id"].(string)
+				if id == "" {
+					return
+				}
+				if known[id] == nil {
+					known[id] = map[string]bool{}
+				}
+				known[id]["shape"] = true // Every private item result also locates its target.
+				for key := range d {
+					if key == "top_left" {
+						known[id]["shape"] = true
+					}
+					if key == "name" {
+						known[id]["identity"] = true
+					}
+					known[id][key] = true
+				}
+			}
+			mark(h.Data)
+			if list, ok := h.Data["items"].([]any); ok {
+				for _, v := range list {
+					if d, ok := v.(map[string]any); ok {
+						mark(d)
+					}
+				}
+			}
+			if list, ok := h.Data["items"].([]map[string]any); ok {
+				for _, d := range list {
+					mark(d)
+				}
+			}
+		}
+	}
+	for _, h := range g.hints {
+		d, ok := h.Data["fact"].(map[string]any)
+		if !ok {
+			continue
+		}
+		id, _ := d["item_id"].(string)
+		if id == "" {
+			continue
+		}
+		if known[id] == nil {
+			known[id] = map[string]bool{}
+		}
+		if _, ok := d["quality"]; ok {
+			known[id]["quality"] = true
+		}
+		if _, ok := d["price"]; ok {
+			known[id]["price"] = true
+		}
+		if _, ok := d["top_left"]; ok {
+			known[id]["shape"] = true
+		}
+	}
+	return known
 }
 
 func (g *Game) giveIntelligence(p *player) {

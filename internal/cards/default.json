@@ -368,6 +368,23 @@
         ],
         "count": 4
       }
+    },
+    {
+      "id": "focused_appraisal",
+      "name": "定点鉴价",
+      "description": "第2轮起选择一件本人已观察到的常规物品，完整鉴定其品质、价格与身份。未知ID不能作为目标。",
+      "target": "item",
+      "min_round": 2,
+      "price": 2500,
+      "effect": {
+        "type": "reveal",
+        "selector": "random",
+        "fields": [
+          "quality",
+          "price",
+          "identity"
+        ]
+      }
     }
   ]
 }

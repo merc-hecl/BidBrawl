@@ -181,6 +181,78 @@ func TestRegionalEffectsUseTopLeftCornerAndExcludeEggs(t *testing.T) {
 	}
 }
 
+func TestFocusedAppraisalRequiresPersonalObservationAndPersists(t *testing.T) {
+	cfg := geometryConfig(Dimensions{10, 1}, ItemLimits{1, 1})
+	ordinary := []ItemTemplate{}
+	for _, item := range cfg.Catalog {
+		if item.Category != "easter_egg" {
+			ordinary = append(ordinary, item)
+		}
+	}
+	cfg.Catalog = ordinary
+	g, err := NewWithConfig(2, cfg, cards.Default())
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, a, _ := g.Join("A", []string{"focused_appraisal"})
+	_, b, _ := g.Join("B", nil)
+	if err := g.Start(); err != nil {
+		t.Fatal(err)
+	}
+	for _, tok := range []string{a, b} {
+		if err := g.Submit(tok, 1, 100, "equal offers for observed-target fixture"); err != nil {
+			t.Fatal(err)
+		}
+	}
+	p := g.find(a)
+	known := g.knownItemFields(p)
+	var hidden Item
+	for _, i := range g.items {
+		if known[i.ID] == nil {
+			hidden = i
+			break
+		}
+	}
+	if hidden.ID == "" {
+		t.Fatal("fixture has no hidden item")
+	}
+	before := mustSnapshot(t, g)
+	for _, target := range []string{hidden.ID, "guessed-item-id", hidden.TemplateID} {
+		if g.UseCard(a, 2, "focused_appraisal", target, "target not observed") == nil {
+			t.Fatal("unobserved target accepted", target)
+		}
+		if !bytes.Equal(before, mustSnapshot(t, g)) {
+			t.Fatal("unobserved target changed game")
+		}
+	}
+	target := p.inspection[0].ID
+	public, _ := g.Observe("")
+	if err := g.UseCard(a, 2, "focused_appraisal", target, "appraise a known candidate"); err != nil {
+		t.Fatal(err)
+	}
+	v := view(t, g, a)
+	d := v.Self.Hints[0].Data
+	if d["item_id"] != target || d["target"] != target || d["price"] == nil || d["template_id"] == nil {
+		t.Fatal("chosen item was not fully appraised", d)
+	}
+	after, _ := g.Observe("")
+	if !bytes.Equal(public, after) {
+		t.Fatal("chosen item became public")
+	}
+	restored, err := Restore(mustSnapshot(t, g))
+	if err != nil {
+		t.Fatal(err)
+	}
+	x, _ := g.Observe(a)
+	y, _ := restored.Observe(a)
+	if !bytes.Equal(x, y) {
+		t.Fatal("chosen appraisal changed on restart")
+	}
+	if len(view(t, g, b).Self.Hints) > 0 {
+		t.Fatal("another player received appraisal")
+	}
+}
+
 func TestConfiguredCardsAndSnapshot(t *testing.T) {
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit", "census"}, Cards: []cards.Definition{
 		{ID: "audit", Name: "组合全检", Description: "最大物品全部信息", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price", "shape"}}},

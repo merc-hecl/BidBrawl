@@ -32,6 +32,7 @@ type Effect struct {
 	Measure    string   `json:"measure,omitempty"`
 	SampleSize int      `json:"sample_size,omitempty"`
 	Region     string   `json:"region,omitempty"`
+	ItemID     string   `json:"item_id,omitempty"`
 }
 
 type Definition struct {
@@ -128,8 +129,12 @@ func (c Config) Validate() error {
 			if card.Effect.Region != "" {
 				return errors.New("region target conflicts with fixed region")
 			}
+		case "item":
+			if card.Effect.ItemID != "" || card.Effect.Type != "reveal" || card.Effect.Count > 1 {
+				return errors.New("item target requires a single-item reveal without fixed item_id")
+			}
 		default:
-			return errors.New("target must be category, quality, area or region")
+			return errors.New("target must be category, quality, area, region or item")
 		}
 		if card.MinRound < 0 || card.MinRound > 5 {
 			return errors.New("min_round must be 0 to 5")
@@ -166,6 +171,9 @@ func validText(s string, max int) bool {
 }
 
 func (e Effect) validate() error {
+	if e.ItemID != "" && (!validText(e.ItemID, 64) || e.Type != "reveal") {
+		return errors.New("item_id requires a valid single-item reveal target")
+	}
 	if e.Region != "" && !ValidRegion(e.Region) {
 		return errors.New("unknown region filter")
 	}
@@ -264,6 +272,11 @@ func (d Definition) ResolveTarget(target string) (Effect, error) {
 			return Effect{}, errors.New("target area must be an integer from 1 to 16384 cells")
 		}
 		e.Area = n
+	case "item":
+		if !validText(target, 64) {
+			return Effect{}, errors.New("target must be an observed item ID")
+		}
+		e.ItemID = target
 	default:
 		return Effect{}, errors.New("unknown card target")
 	}

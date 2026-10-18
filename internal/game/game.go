@@ -547,6 +547,9 @@ func (g *Game) UseCard(token string, round int, card, target, reason string) err
 			if err != nil {
 				return err
 			}
+			if definition.Target == "item" && g.knownItemFields(p)[target] == nil {
+				return errors.New("target must be an item you have already observed")
+			}
 			break
 		}
 	}

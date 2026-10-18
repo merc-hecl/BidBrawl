@@ -36,6 +36,7 @@ test('card call details show the private chosen target safely',async()=>{
   assert.ok(detail('region_census','southeast').includes(t('book.region.southeast')));
   assert.ok(detail('area_average','6').includes(t('book.areaScope',{count:6})));
   assert.ok(detail('target_quality_count','legendary').includes(t('legendary')));
+  assert.ok(detail('focused_appraisal','observed-id').includes(t('chosenItem',{id:'observed-id'})));
  }}finally{setLocale('zh-CN',false);}
 });
 

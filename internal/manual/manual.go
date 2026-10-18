@@ -78,6 +78,7 @@ func Catalog(cfg cards.Config, geometry game.Config, lang string) string {
 }
 
 var englishCards = map[string][2]string{
+	"focused_appraisal":      {"Focused appraisal", "From round 2, choose one ordinary item you have observed and fully appraise its quality, price and identity. Unknown IDs are not valid targets."},
 	"category_shapes":        {"Directed survey", "Choose an ordinary category and reveal up to six unknown shapes within it."},
 	"category_value":         {"Category valuation", "From round 3, choose an ordinary category and reveal its exact total price without locations."},
 	"target_quality_count":   {"Selected-tier count", "Choose one ordinary quality and reveal its count, including zero."},

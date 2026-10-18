@@ -680,4 +680,8 @@ export default {
   "book.region.northeast": "右上象限",
   "book.region.southwest": "左下象限",
   "book.region.southeast": "右下象限",
+  "book.targetScope.item": "使用时选择一件已观察物品",
+  "card.focused_appraisal.name": "定点鉴价",
+  "card.focused_appraisal.description": "第2轮起选择一件本人已观察到的常规物品，完整鉴定其品质、价格与身份。未知ID不能作为目标。",
+  "chosenItem": "选定物品 {id}",
 };
