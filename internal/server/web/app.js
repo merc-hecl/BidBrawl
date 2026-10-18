@@ -79,7 +79,7 @@ function updateDialog() {
     if(dialog.open&&dialog.querySelector('#create-room-form'))return;
   }
   if(activeDialog.kind==='delete-rooms'&&!ui.manage){dialog.close();return;}
-  const content=activeDialog.kind==='delete-rooms'?deleteRoomsDialog(ui.deleteTargets,ui):dialogContent(activeDialog.kind,activeDialog.id,source,results,ui);
+  const content=activeDialog.kind==='delete-rooms'?deleteRoomsDialog(ui.deleteTargets,ui):dialogContent(activeDialog.kind,activeDialog.id,source,results,{...ui,theme:document.documentElement.dataset.theme});
   if(!content){dialog.close();return;}
   dialog.className=['hints','bids','inventory','room-info','activities'].includes(activeDialog.kind)?'drawer drawer-'+activeDialog.kind:'';
   patchContent(dialog,`<div class="dialog-head"><h2 id="dialog-title">${esc(content.title)}</h2><button class="dialog-close" aria-label="${esc(t('close'))}">${icon('close')}</button></div>${content.content}`);
@@ -181,7 +181,7 @@ document.addEventListener('click',event=>{
   if(kind==='undo-room-archive'&&ui.notice?.undo){changeRooms('restore',ui.notice.ids);return;}
   if(kind==='back-lobby'){navigate('rooms');return;}
   if(kind==='room-switch'){dialog.close();setSidebar(true);return;}
-  if(kind==='toggle-theme'){toggleTheme();return;}
+  if(kind==='toggle-theme'){toggleTheme();updateDialog();return;}
   if(kind==='toggle-language'){$('language-button').click();return;}
   if(kind==='rules'){showDialog('rules');return;}
   if(['avatars','hints','inventory','bids','room-info'].includes(kind)){hideTip();showDialog(kind);return;}
