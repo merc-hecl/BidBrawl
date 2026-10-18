@@ -317,24 +317,37 @@ test('room renders persisted avatars and item bounds',()=>{
   assert.equal((html.match(/data-item=/g)||[]).length,2);
 });
 
-test('fog follows the selected inspection, clears on session loss and lifts at settlement',()=>{
+test('observer sees the full box in all frames, selected players keep their vision and session loss restores public fog',()=>{
   const first={id:'private-first',quality:'rare',top_left:{x:0,y:0},bottom_right:{x:2,y:2}};
   const second={id:'private-second',quality:'epic',top_left:{x:2,y:0},bottom_right:{x:4,y:2}};
-  const raw=withFrames({...source,phase:'bidding',settlement:undefined,initial_inspections:{p1:[first],p2:[second]},public_hints:[]});
+  const items=[{...first,name:'First',price:123},{...second,name:'Second',price:456}];
+  const raw=withFrames({...source,phase:'bidding',settlement:undefined,items,initial_inspections:{p1:[first],p2:[second]},public_hints:[]});
   const observed=normalizeView(raw,true);
-  assert.deepEqual(knownItems(observation(observed,0),'p1'),[first]);
-  assert.deepEqual(knownItems(observation(observed,0),'p2'),[second]);
-  assert.deepEqual(knownItems(observed),[]);
-  const firstHTML=renderContent(observed,emptyStats,{...ui,cursor:0,observer:true});
-  assert.ok(firstHTML.includes('data-item="private-first"')&&!firstHTML.includes('data-item="private-second"'));
-  assert.ok(firstHTML.includes('has-fog'));
-  assert.equal(itemInfo(observation(observed,0),{...ui,focusItem:'private-second',observer:true}),'');
-  const secondHTML=renderContent(observed,emptyStats,{...ui,cursor:0,observer:true,focusPlayer:'p2'});
-  assert.ok(secondHTML.includes('data-item="private-second"')&&!secondHTML.includes('data-item="private-first"'));
+  for(const cursor of [null,0,1,4]){
+    const view=observation(observed,cursor),state={...ui,cursor,observer:true,focusPlayer:null};
+    assert.deepEqual(knownItems(view),items);
+    const html=renderContent(observed,emptyStats,state);
+    assert.ok(html.includes('data-item="private-first"')&&html.includes('data-item="private-second"'));
+    assert.ok(!html.includes('has-fog')&&!html.includes('canvas-seal')&&!html.includes('vision-label'));
+    const info=itemInfo(view,{...state,focusItem:'private-second'});
+    assert.ok(info.includes('456')&&info.includes(t('observerWatch')));
+    for(const [focusPlayer,known,hidden] of [['p1',first,second],['p2',second,first]]){
+      assert.deepEqual(knownItems(view,focusPlayer),[known]);
+      const selected={...state,focusPlayer};
+      const html=renderContent(observed,emptyStats,selected);
+      assert.ok(html.includes(`data-item="${known.id}"`)&&!html.includes(`data-item="${hidden.id}"`));
+      assert.ok(html.includes('has-fog')&&html.includes('vision-label'));
+      assert.ok(!itemInfo(view,{...selected,focusItem:known.id}).includes(String(items.find(item=>item.id===known.id).price)));
+      assert.equal(itemInfo(view,{...selected,focusItem:hidden.id}),'');
+    }
+  }
   const expired=normalizeView(observed,false);
   assert.deepEqual(knownItems(observation(expired,0),'p1'),[]);
   const publicHTML=renderContent(expired,emptyStats,{...ui,cursor:0,observer:false});
   assert.ok(!publicHTML.includes('private-first')&&!publicHTML.includes('private-second'));
+  assert.ok(publicHTML.includes('has-fog')&&publicHTML.includes('canvas-seal'));
+  assert.equal(expired.items,undefined);
+  assert.ok(expired.frames.every(frame=>frame.items===undefined));
   const settled=renderContent(source,emptyStats,{...ui,cursor:null,observer:true});
   assert.ok(!settled.includes('has-fog')&&settled.includes('data-item="hidden-item"'));
 });
@@ -344,7 +357,7 @@ test('skill reveals accumulate only learned attributes in the selected player vi
   const shape={round:1,item_id:'scanned',top_left:{x:1,y:0},bottom_right:{x:3,y:2}};
   const price={round:2,item_id:'scanned',price:700};
   const priced={round:2,item_id:'largest',price:1500,top_left:{x:4,y:0},bottom_right:{x:8,y:4}};
-  const raw={...source,settlement:undefined,public_hints:[],initial_inspections:{p1:[inspected],p2:[]},item_reveals:{p1:[shape,price,priced],p2:[]},frames:[]};
+  const raw={...source,settlement:undefined,items:source.settlement.items,public_hints:[],initial_inspections:{p1:[inspected],p2:[]},item_reveals:{p1:[shape,price,priced],p2:[]},frames:[]};
   raw.frames=[{...raw,item_reveals:{p1:[],p2:[]}},{...raw,item_reveals:{p1:[shape],p2:[]}}];
   const observed=normalizeView(raw,true);
   assert.deepEqual(knownItems(observation(observed,0),'p1'),[inspected]);

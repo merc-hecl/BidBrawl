@@ -3,7 +3,7 @@ export function normalizeView(raw,observer=false) {
   return {room_id:raw.room_id, room_name:raw.room_name, version:raw.version, phase:raw.phase, round:raw.round,
     activities:observer?(raw.activities||[]):[],player_costs:observer?raw.player_costs:undefined,context:raw.context,intelligence:observer?raw.intelligence:undefined,rules:raw.rules, players:raw.players || [], public_hints:raw.public_hints || [], history:raw.history || [],
     decisions:observer?(raw.decisions || []):[], initial_inspections:observer?raw.initial_inspections:undefined,
-    item_reveals:observer?raw.item_reveals:undefined,
+    item_reveals:observer?raw.item_reveals:undefined,items:observer?raw.items:undefined,
     settlement:raw.settlement,can_manage:observer&&raw.can_manage===true,frames:(raw.frames||[]).map(frame=>normalizeView(frame,observer))};
 }
 export function observation(source,cursor) {
@@ -12,6 +12,7 @@ export function observation(source,cursor) {
 }
 export function knownItems(view,playerID=null) {
   if (view.settlement) return view.settlement.items;
+  if (!playerID && view.items) return view.items;
   const known = new Map();
   for(const item of view.initial_inspections?.[playerID] || [])known.set(item.id,{id:item.id,quality:item.quality,top_left:item.top_left,bottom_right:item.bottom_right});
   for(const reveal of view.item_reveals?.[playerID] || []) {

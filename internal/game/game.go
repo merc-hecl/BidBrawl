@@ -180,6 +180,7 @@ type View struct {
 	Settlement         *Settlement                 `json:"settlement,omitempty"`
 	InitialInspections map[string][]InspectionItem `json:"initial_inspections,omitempty"`
 	ItemReveals        map[string][]ItemReveal     `json:"item_reveals,omitempty"`
+	Items              []Item                      `json:"items,omitempty"`
 }
 type PlayerCosts struct {
 	CardCost   int64 `json:"card_cost"`
@@ -719,6 +720,7 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 	v.Rules.InitialInspectionCount = InitialInspectionCount
 
 	if observer {
+		v.Items = g.items
 		v.PlayerCosts = map[string]PlayerCosts{}
 		v.Intelligence = map[string][]Hint{}
 		v.Decisions = g.observerDecisions()

@@ -95,8 +95,34 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 	purchaseJoinCards(t, s, b, `{"cards":[]}`)
 	checkedRequest(t, s, "POST", "/api/join?room=table", b, `{"cards":[]}`, 201)
 	checkedRequest(t, s, "POST", "/api/start?room=table", s.HostToken, "", 200)
+	var contents []game.Item
+	for _, route := range []string{"/api/observer/state?room=table", "/api/observer/replay?room=table&frame=0"} {
+		var opening game.View
+		json.Unmarshal(checkedRequest(t, s, "GET", route, observer, "", 200), &opening)
+		if len(opening.Items) == 0 || opening.Settlement != nil || opening.Self != nil {
+			t.Fatal("observer cannot inspect the complete box before settlement")
+		}
+		if contents != nil && !reflect.DeepEqual(contents, opening.Items) {
+			t.Fatal("observer state and opening replay have different contents")
+		}
+		contents = opening.Items
+	}
 	checkedRequest(t, s, "POST", "/api/card?room=table", a, `{"round":1,"card":"item_count","reason":"secret first decision"}`, 200)
 	for round := 1; round <= 5; round++ {
+		for _, route := range []string{"/api/state?room=table", "/api/replay?room=table"} {
+			for _, token := range []string{"", a, b, s.HostToken} {
+				var public struct {
+					game.View
+					Frames []game.View `json:"frames"`
+				}
+				json.Unmarshal(checkedRequest(t, s, "GET", route, token, "", 200), &public)
+				for _, frame := range append(public.Frames, public.View) {
+					if len(frame.Items) != 0 || frame.Settlement != nil {
+						t.Fatal("complete box leaked before settlement through public/player route")
+					}
+				}
+			}
+		}
 		for _, token := range []string{a, b} {
 			checkedRequest(t, s, "POST", "/api/bid?room=table", token, fmt.Sprintf(`{"round":%d,"amount":100,"reason":"secret round %d"}`, round, round), 200)
 		}
@@ -109,6 +135,13 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 	json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table", observer, "", 200), &full)
 	if _, exists := full["self"]; exists || len(full["decisions"].([]any)) != 11 || len(full["frames"].([]any)) != 6 {
 		t.Fatal("wrong observer projection")
+	}
+	for cursor := 0; cursor <= 5; cursor++ {
+		var frame game.View
+		json.Unmarshal(checkedRequest(t, s, "GET", fmt.Sprintf("/api/observer/replay?room=table&frame=%d", cursor), observer, "", 200), &frame)
+		if !reflect.DeepEqual(contents, frame.Items) || cursor == 5 && !reflect.DeepEqual(contents, frame.Settlement.Items) {
+			t.Fatal("observer replay lost complete contents or diverged from settlement")
+		}
 	}
 	var fourth game.View
 	json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table&frame=4", observer, "", 200), &fourth)

@@ -6,7 +6,7 @@ Use `-cards CARD_ID,CARD_ID` when joining to carry up to five different cards. O
 
 `self.deck` lists carried cards, `self.used` lists consumed cards and `self.card_used_this_round` shows whether you have used a card this round. Run `bidbrawl cards -room ROOM_ID` for card names and descriptions. Results remain in `self.hints`.
 
-Every single-item skill reveals its target's shape and position, plus only the quality or price learned by the skill. Cumulative item knowledge is in `self.item_reveals`; raw results remain in `self.hints`. The authorized human observer uses the same player vision: Largest Item Price uncovers its target and displays the price without adding quality. Count effects do not clear spatial fog. Discoveries persist in later rounds, and replay frames exclude future skill information.
+Every single-item skill reveals its target's shape and position, plus only the quality or price learned by the skill. Cumulative item knowledge is in `self.item_reveals`; raw results remain in `self.hints`. Largest Item Price uncovers its target and displays the price without adding quality. Count effects do not reveal item positions. Discoveries persist in later rounds. Authorized human observers see every item from the start by default. Selecting a player switches to that player's known items; clearing the selection restores the full box. Replay frames still exclude future rounds of player skill records.
 
 ## Clues and coordinates
 

@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -95,7 +96,7 @@ func TestObserverReasonsAreAuthenticatedReadOnlyAndDurable(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "accounts.db")
 	s := persistentServer(t, path)
 	a, credential := accountSession(t, s, "A")
-	b, _ := accountSession(t, s, "B")
+	b, otherCredential := accountSession(t, s, "B")
 	purchaseJoinCards(t, s, a, `{"cards":["item_count"]}`)
 	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["item_count"]}`, 201)
 	purchaseJoinCards(t, s, b, `{"cards":[]}`)
@@ -138,6 +139,18 @@ func TestObserverReasonsAreAuthenticatedReadOnlyAndDurable(t *testing.T) {
 	if len(observed.InitialInspections) != 2 {
 		t.Fatal("human observer is missing initial inspections")
 	}
+	if len(observed.Items) == 0 {
+		t.Fatal("human observer is missing complete box contents")
+	}
+	_ = s.Close()
+	s = persistentServer(t, path)
+	var restored game.View
+	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/state", s.ObserverToken, "", 200), &restored)
+	if !reflect.DeepEqual(observed.Items, restored.Items) || restored.Settlement != nil {
+		t.Fatal("restart changed observer contents before settlement")
+	}
+	a = loginAgain(t, s, credential)
+	b = loginAgain(t, s, otherCredential)
 	for _, path := range []string{"/api/state?room=table", "/api/replay?room=table"} {
 		public := checkedRequest(t, s, "GET", path, a, "", 200)
 		if bytes.Contains(public, []byte(`"initial_inspections"`)) {
