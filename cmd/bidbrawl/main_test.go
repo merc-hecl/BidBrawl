@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"sync"
 	"testing"
@@ -254,6 +255,20 @@ func TestCLIChosenCardTargetIsSentAndStoredPrivately(t *testing.T) {
 	hint := self["hints"].([]any)[0].(map[string]any)["data"].(map[string]any)
 	if hint["target"] != "legendary" || self["card_cost"] != float64(5000) {
 		t.Fatal("target or cost lost")
+	}
+	full := cli(t, "state", "-room", room, "-token", a)
+	brief := cli(t, "state", "-room", room, "-token", a, "-compact")
+	fullBytes, _ := json.Marshal(full)
+	briefBytes, _ := json.Marshal(brief)
+	if len(briefBytes)*3 >= len(fullBytes) {
+		t.Fatal("compact output retained the repeated catalog/config bulk", len(fullBytes), len(briefBytes))
+	}
+	compactObservation(full)
+	if !reflect.DeepEqual(full, brief) {
+		t.Fatal("compact output changed decision state or intel")
+	}
+	if err := run(context.Background(), []string{"cards", "-compact"}); err == nil {
+		t.Fatal("irrelevant compact flag silently ignored")
 	}
 	for _, token := range []string{"", b} {
 		other := cli(t, "state", "-room", room, "-token", token)

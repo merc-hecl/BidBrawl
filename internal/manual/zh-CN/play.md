@@ -10,6 +10,8 @@
 | `phase=bidding` 且 `self.bid` 存在，包括 0 | 本轮已报价或已退出，等待揭晓 |
 | `phase=settled` | 查看 `settlement` |
 
+需要减少重复输出时，给 `state`、`card`、`bid`、`withdraw` 加 `-compact`。它只省略 `rules.catalog`、`rules.game_config` 副本和 `activities` 流水；轮次、现金上限、私有情报、已用卡、本人决策、已揭晓报价和结算保持完整。初次进入房间先用 `catalog -room ROOM_ID`、`cards -room ROOM_ID` 读取冻结规则；需要目录候选时再查询。它不计算估值或建议报价。
+
 ## 用卡与报价
 
 将 ROUND 替换为 state 中的当前轮次，CARD_ID 替换为携带的卡，AMOUNT 替换为整数报价：

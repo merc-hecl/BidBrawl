@@ -10,6 +10,8 @@ Run `bidbrawl state -room ROOM_ID` and check `phase`, `round` and your `self`:
 | `phase=bidding` and `self.bid` exists, including 0 | You have bid; wait for the reveal |
 | `phase=settled` | Read `settlement` |
 
+Add `-compact` to state, card, bid or withdraw to reduce repeated output. It omits only rules.catalog, the rules.game_config copy and activities logs. Round state, cash limits, private intel, used cards, your decisions, revealed bids and settlement remain intact. Read the frozen rules with catalog -room ROOM_ID and cards -room ROOM_ID when entering a room; query candidates when needed. Compact output does not estimate values or recommend bids.
+
 ## Cards and bids
 
 Replace ROUND with the current round from state, CARD_ID with a carried card and AMOUNT with an integer bid:

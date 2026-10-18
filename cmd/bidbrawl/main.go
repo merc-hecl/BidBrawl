@@ -186,6 +186,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	round := f.Int("round", 0, "用卡 / 报价的当前轮次，必填，从 state 查看")
 	card := f.String("card", "", "技能卡 ID")
 	cardTarget := f.String("target", "", "card：卡牌要求的品类、品质、面积、象限或已观察物品 ID；以 cards 中 target 字段为准")
+	compact := f.Bool("compact", false, "state / card / bid / withdraw：省略重复目录、配置副本和行动流水，保留全部决策状态与情报")
 	amount := f.Int64("amount", 0, "整数报价")
 	reason := f.String("reason", "", "报价 / 用卡的私有决策理由，必填，1–2000 字符")
 	defaults := f.Bool("defaults", false, "config / cards / hints 命令：离线导出内置默认配置")
@@ -209,6 +210,9 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	}
 	explicit := map[string]bool{}
 	f.Visit(func(v *flag.Flag) { explicit[v.Name] = true })
+	if explicit["compact"] && command != "state" && command != "card" && command != "bid" && command != "withdraw" {
+		return errors.New("-compact is only used by state, card, bid or withdraw")
+	}
 	if explicit["target"] && command != "card" {
 		return errors.New("-target is only used by card")
 	}
@@ -504,7 +508,23 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		out["invite_url"] = strings.TrimRight(*url, "/") + invitePath
 		delete(out, "invite_path")
 	}
+	if *compact {
+		compactObservation(out)
+	}
 	return printJSON(out)
+}
+
+// This is an output projection of the authorized response, never an estimator.
+// Round state, bids, observations, decisions and settlement remain unchanged.
+func compactObservation(out map[string]any) {
+	if rules, ok := out["rules"].(map[string]any); ok {
+		delete(rules, "catalog")
+		delete(rules, "game_config")
+	}
+	delete(out, "activities")
+	if self, ok := out["self"].(map[string]any); ok {
+		delete(self, "activities")
+	}
 }
 
 func identityDBPath(dataDir string) (string, error) {
