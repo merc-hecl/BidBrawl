@@ -1,0 +1,19 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BidBrawl</title><link rel="stylesheet" href="desktop.css"></head><body>
+<main><h1 id="title"></h1><form>
+<label><span data-zh="监听地址" data-en="Listen address"></span><input name="listen" required placeholder="127.0.0.1:8787" autocomplete="off"></label>
+<label><span data-zh="数据目录" data-en="Data directory"></span><div class="directory"><input name="data_dir" autocomplete="off"><button type="button" id="choose" data-zh="选择…" data-en="Choose…"></button></div></label>
+<details><summary data-zh="配置文件" data-en="Configuration files"></summary>
+<label><span data-zh="游戏" data-en="Game"></span><input name="game_config" autocomplete="off"></label>
+<label><span data-zh="物品" data-en="Items"></span><input name="items_config" autocomplete="off"></label>
+<label><span data-zh="技能卡" data-en="Skill cards"></span><input name="cards_config" autocomplete="off"></label>
+<label><span data-zh="线索" data-en="Hints"></span><input name="hints_config" autocomplete="off"></label>
+</details><p id="error" role="alert"></p><button type="submit" data-zh="保存并重启" data-en="Save and restart"></button>
+</form></main><script type="module">
+const zh=navigator.language.startsWith('zh');document.querySelector('#title').textContent=zh?'宿主设置':'Host settings';
+for(const node of document.querySelectorAll('[data-zh]'))node.textContent=node.dataset[zh?'zh':'en'];
+const form=document.querySelector('form'),error=document.querySelector('#error');
+try{const options=await window.mygo.call('Desktop.Settings');for(const input of form.querySelectorAll('input'))input.value=options[input.name]||'';}catch(e){error.textContent=e.message||String(e);}
+document.querySelector('#choose').onclick=async()=>{try{const path=await window.mygo.call('Desktop.ChooseDirectory');if(path)form.elements.data_dir.value=path;}catch(e){error.textContent=e.message||String(e);}};
+form.onsubmit=async event=>{event.preventDefault();error.textContent='';const button=form.querySelector('[type=submit]');button.disabled=true;try{await window.mygo.call('Desktop.Save',Object.fromEntries(new FormData(form)));}catch(e){error.textContent=e.message||String(e);}finally{button.disabled=false;}};
+</script></body></html>

@@ -25,6 +25,12 @@ import (
 //go:embed web/*
 var assets embed.FS
 
+// AppIcon is the shared desktop and WebUI identity.
+func AppIcon() []byte {
+	data, _ := assets.ReadFile("web/brand-avatar.png")
+	return data
+}
+
 type account struct {
 	CardStock map[string][]int64 `json:"cards"`
 	Warehouse []storedItem       `json:"warehouse"`

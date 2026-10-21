@@ -7,12 +7,9 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"net"
-	"net/http"
 	neturl "net/url"
 	"os"
 	"os/signal"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -20,8 +17,8 @@ import (
 	"bidbrawl/internal/client"
 	"bidbrawl/internal/game"
 	"bidbrawl/internal/hints"
+	"bidbrawl/internal/host"
 	"bidbrawl/internal/manual"
-	"bidbrawl/internal/server"
 )
 
 func main() {
@@ -65,102 +62,23 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	}
 	f := flag.NewFlagSet(command, flag.ContinueOnError)
 	if command == "host" {
-		listen := f.String("listen", "127.0.0.1:8787", "listen address; use 0.0.0.0:8787 for LAN access")
-		configPath := f.String("cards-config", "", "skill-card JSON configuration path; uses built-in defaults if omitted")
-		itemsConfigPath := f.String("items-config", "", "物品目录 JSON 路径，省略使用内置目录")
-		gameConfigPath := f.String("game-config", "", "game JSON configuration path: box and item dimensions, quality prices and weights, initial assets; uses built-in defaults if omitted")
-		hintsPath := f.String("hints-config", "", "public-hint JSON configuration path; uses built-in local-fact hints if omitted")
-		dataDir := f.String("data-dir", os.Getenv("BIDBRAWL_DATA_DIR"), "account, room and game data directory; defaults to BidBrawl in the user configuration directory")
-		webUI := f.Bool("webui", false, "enable WebUI and open a browser automatically; defaults to API/SSE only")
-		if e := parseFlags(f, args[1:]); e != nil {
-			return e
+		var options host.Options
+		options.Flags(f)
+		f.BoolVar(&options.WebUI, "webui", false, "enable WebUI and open a browser automatically; defaults to API/SSE only")
+		if err := parseFlags(f, args[1:]); err != nil {
+			return err
 		}
-		cfg := cards.Default()
-		if *configPath != "" {
-			loaded, err := cards.Load(*configPath)
-			if err != nil {
-				return err
-			}
-			cfg = loaded
+		if f.NArg() != 0 {
+			return fmt.Errorf("unexpected host argument: %s", f.Arg(0))
 		}
-		geometry := game.DefaultConfig()
-		if *gameConfigPath != "" {
-			loaded, err := game.LoadConfig(*gameConfigPath)
-			if err != nil {
-				return err
-			}
-			geometry = loaded
-		}
-		hintConfig := hints.Default()
-		if *hintsPath != "" {
-			loaded, err := hints.Load(*hintsPath)
-			if err != nil {
-				return err
-			}
-			hintConfig = loaded
-		}
-		databasePath, e := identityDBPath(*dataDir)
-		if e != nil {
-			return e
-		}
-		if *itemsConfigPath != "" {
-			items, err := game.LoadCatalog(*itemsConfigPath)
-			if err != nil {
-				return err
-			}
-			geometry.Catalog = items
-			if err := geometry.Validate(); err != nil {
-				return err
-			}
-		}
-		s, e := server.OpenWithHints(geometry, cfg, hintConfig, databasePath)
-		if e != nil {
-			return e
-		}
-		defer s.Close()
-		if *webUI {
-			s.EnableWebUI()
-		}
-		ln, e := net.Listen("tcp", *listen)
-		if e != nil {
-			return e
-		}
-		address := browserAddress(ln.Addr())
-		fmt.Printf("HTTP: %s\n", address)
-		fmt.Printf("Host token: %s\n", s.HostToken)
-		if databasePath != "" {
-			fmt.Printf("Identity database: %s\n", databasePath)
-		}
-		h := &http.Server{Handler: s, ReadHeaderTimeout: 5 * time.Second, ReadTimeout: 15 * time.Second, WriteTimeout: 15 * time.Second, IdleTimeout: 60 * time.Second}
-		if *webUI {
-			launchURL := observerLaunchURL(address, "", s.NewObserverLaunchCode())
-			go func() {
-				if err := launchBrowser(launchURL); err != nil {
-					fmt.Fprintln(os.Stderr, "Could not open WebUI automatically; retry with bidbrawl ui -url <host-address> -token <host-token>:", err)
+		return host.Run(ctx, options, func(service *host.Service) {
+			fmt.Printf("HTTP: %s\nHost token: %s\nIdentity database: %s\n", service.Address, service.HostToken(), service.DatabasePath)
+			if options.WebUI {
+				if err := launchBrowser(service.LaunchURL()); err != nil {
+					fmt.Fprintln(os.Stderr, "Could not open WebUI automatically; retry with bidbrawl ui:", err)
 				}
-			}()
-		}
-		hostCtx, hostCancel := context.WithCancel(ctx)
-		defer hostCancel()
-		stopped := make(chan error, 1)
-		go func() {
-			<-hostCtx.Done()
-			s.CloseEvents()
-			shutdown, cancel := context.WithTimeout(context.Background(), 3*time.Second)
-			defer cancel()
-			err := h.Shutdown(shutdown)
-			if err != nil {
-				_ = h.Close()
 			}
-			stopped <- err
-		}()
-		e = h.Serve(ln)
-		hostCancel()
-		shutdownErr := <-stopped // Drain handlers before closing the identity store.
-		if errors.Is(e, http.ErrServerClosed) {
-			return shutdownErr
-		}
-		return errors.Join(e, shutdownErr)
+		})
 	}
 	defaultURL := os.Getenv("BIDBRAWL_URL")
 	if defaultURL == "" {
@@ -527,13 +445,4 @@ func compactObservation(out map[string]any) {
 	}
 }
 
-func identityDBPath(dataDir string) (string, error) {
-	if dataDir == "" {
-		base, err := os.UserConfigDir()
-		if err != nil {
-			return "", fmt.Errorf("find identity directory: %w", err)
-		}
-		dataDir = filepath.Join(base, "BidBrawl")
-	}
-	return filepath.Abs(filepath.Join(dataDir, "accounts.db"))
-}
+func identityDBPath(dataDir string) (string, error) { return host.DatabasePath(dataDir) }

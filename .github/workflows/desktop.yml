@@ -1,0 +1,31 @@
+name: Desktop packages
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            platform: windows/amd64
+          - os: ubuntu-24.04
+            platform: linux/amd64
+          - os: macos-latest
+            platform: darwin/arm64
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - run: go test ./...
+      - run: go run ./cmd/build-desktop -platform ${{ matrix.platform }}
+      - uses: actions/upload-artifact@v7
+        with:
+          name: BidBrawl-${{ runner.os }}
+          path: build/desktop/

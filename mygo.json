@@ -1,0 +1,10 @@
+{
+  "name": "BidBrawl",
+  "identifier": "io.github.merc-hecl.bidbrawl",
+  "version": "0.1.0",
+  "main": "./cmd/bidbrawl-desktop",
+  "out": "build/desktop",
+  "icon": "internal/server/web/brand-avatar.png",
+  "resources": ["build/desktop-resources/bin", "build/desktop-resources/THIRD_PARTY_LICENSES.txt"],
+  "linux": {"categories": ["Game"], "comment": "Agent-driven sealed-bid auctions"}
+}

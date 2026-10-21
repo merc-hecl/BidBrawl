@@ -4,7 +4,30 @@
 
 玩家通过 CLI 参与，从 [游戏 skill](skills/bidbrawl/SKILL.md) 开始，或执行 `bidbrawl handbook` 阅读[游玩手册](internal/manual/HANDBOOK.md)。本 README 提供宿主启动、管理与开发说明。玩法参考 [Steam《竞拍之王》](https://store.steampowered.com/app/4128580/_/?l=schinese) 的品类；代码与界面独立实现，不使用其素材。
 
-## 启动宿主
+## 桌面客户端
+
+桌面版使用 MyGo，内置完整 WebUI 和 Go 宿主。打开 BidBrawl 即可建房、邀请、开局、观战、复盘和查看统计；无需终端或输入 Token。CLI 与桌面版使用相同的游戏服务和数据库，参赛 Agent 仍使用自己的身份登录，桌面权限不会注入玩家命令。
+
+- Windows：运行 `BidBrawl Setup … .exe`，按当前用户安装桌面程序、快捷方式和 `bidbrawl` 命令。安装后重开终端应用；卸载只删除程序及安装包添加的命令注册，保留账号、凭据和对局。
+- macOS：使用 `.pkg` 同时安装 `/Applications/BidBrawl.app` 与 `/usr/local/bin/bidbrawl`；单独拖入 `.app` 或使用 DMG 只安装桌面程序。分发到其他 Mac 前需要开发者签名和公证。
+- Linux：使用 `.deb` 安装桌面程序、依赖和 `/usr/bin/bidbrawl`。桌面依赖 GTK 3、WebKitGTK 4.1；托盘使用 AppIndicator。
+
+默认监听 `127.0.0.1:8787`，不自动建房。桌面菜单可重新连接、打开数据目录及修改宿主设置（监听地址、数据目录和自定义配置文件）；保存设置会确认后重启宿主。Windows / Linux 按 Alt 或 F10 打开桌面菜单。局域网连接可在设置中改为 `0.0.0.0:8787`；其他电脑上的 CLI 仍需指定可达的 `-url`。
+
+有托盘时关闭主窗口会收进托盘，宿主继续运行；重复启动恢复已有窗口。选择“停止宿主并退出”后，程序结束 SSE、等待请求完成并关闭数据库。没有托盘的桌面环境下，关闭最后一个窗口会询问是否停止宿主。桌面设置保存在用户配置目录的 `BidBrawl/desktop.json`；`BIDBRAWL_DESKTOP_CONFIG` 可指定设置文件。运行程序不会安装命令或修改 shell 配置。Windows WebUI 依赖 WebView2 Runtime，Windows 10 如未安装需先安装该运行时。
+
+从源码构建（Go 1.27.2+；不需要 Node.js、Bun 或前端编译）：
+
+```text
+go run ./cmd/build-desktop
+go run ./cmd/build-desktop -platform windows/amd64,linux/amd64,darwin/arm64
+```
+
+成品位于 `build/desktop/<系统>-<架构>/`。构建器使用固定的 MyGo v0.6.2，分别构建桌面程序和 CLI；Windows 首次打包由 MyGo 下载并校验 NSIS。macOS 的 DMG、签名、公证和包含 CLI 的 PKG 需要在 macOS 构建；其他平台可交叉编译 `.app`。当前未配置在线更新源，使用安装包更新；更新或卸载前先从托盘停止桌面宿主。
+
+仅调试桌面窗口可以运行 `go run ./cmd/bidbrawl-desktop`，支持与宿主相同的 `-listen`、`-data-dir` 和配置文件参数。
+
+## 启动无界面宿主
 
 需要 Go 1.27.2 或更新版本（旧版 Go 在启用默认 `GOTOOLCHAIN=auto` 时会自动下载所需工具链）：
 

@@ -1,5 +1,6 @@
 # Build and test artifacts
 /bin/
+/build/
 /bidbrawl
 *.exe
 *.test
