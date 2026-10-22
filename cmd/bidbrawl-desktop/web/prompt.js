@@ -1,0 +1,34 @@
+copy => new Promise(resolve => {
+  const zh = (document.documentElement.lang || window.mygo?.locale || navigator.language).startsWith('zh');
+  const dialog = document.createElement('dialog');
+  dialog.className = 'desktop-prompt';
+  dialog.setAttribute('aria-labelledby', 'desktop-prompt-title');
+  const heading = document.createElement('div');
+  heading.className = 'dialog-head';
+  const title = document.createElement('h2');
+  title.id = 'desktop-prompt-title';
+  title.textContent = copy[zh ? 0 : 1];
+  const close = document.createElement('button');
+  close.className = 'dialog-close';
+  close.textContent = '×';
+  close.setAttribute('aria-label', zh ? '关闭' : 'Close');
+  heading.append(title, close);
+  const actions = document.createElement('div');
+  actions.className = 'delete-room-actions';
+  const cancel = document.createElement('button');
+  cancel.className = 'paper-button';
+  cancel.textContent = zh ? '取消' : 'Cancel';
+  cancel.autofocus = true;
+  const accept = document.createElement('button');
+  accept.className = 'primary';
+  accept.textContent = copy[zh ? 2 : 3];
+  actions.append(cancel, accept);
+  dialog.append(heading, actions);
+  let accepted = false;
+  close.onclick = cancel.onclick = () => dialog.close();
+  accept.onclick = () => { accepted = true; dialog.close(); };
+  dialog.addEventListener('close', () => { dialog.remove(); resolve(accepted); }, {once: true});
+  document.body.append(dialog);
+  dialog.showModal();
+  cancel.focus();
+})

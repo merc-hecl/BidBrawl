@@ -17,6 +17,7 @@ export function setLocale(value, persist = true) {
   if (typeof document !== 'undefined') {
     document.documentElement.lang = locale;
     document.title = t('title');
+    window.mygo?.call('Desktop.SetLocale', locale).catch(() => {});
     if (persist) {
       try { localStorage.setItem('bidbrawl.locale', locale); } catch { /* Optional preference. */ }
       const url = new URL(location.href);

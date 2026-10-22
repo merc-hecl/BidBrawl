@@ -55,6 +55,7 @@ func main() {
 
 func run() error {
 	mygo.App.SetName("BidBrawl")
+	mygo.App.SetLanguages("zh-CN", "en")
 	base, err := os.UserConfigDir()
 	if err != nil {
 		return err
@@ -100,6 +101,7 @@ func run() error {
 			return
 		}
 		e.PreventDefault()
+		d.show()
 		if !d.quitting.CompareAndSwap(false, true) {
 			return
 		}
@@ -108,10 +110,8 @@ func run() error {
 			d.op.Lock()
 			defer d.op.Unlock()
 			if d.service != nil {
-				answer, err := mygo.Dialog.Message(mygo.MessageOptions{Parent: d.window, Type: mygo.MessageQuestion,
-					Title: "BidBrawl", Message: text("停止宿主并退出？", "Stop the host and quit?"),
-					Buttons: []string{text("取消", "Cancel"), text("停止并退出", "Stop and quit")}, CancelButton: 0, DefaultButton: 0})
-				if err != nil || answer.Button != 1 {
+				accepted, err := confirmOnPage(d.window, "停止宿主并退出？", "Stop the host and quit?", "停止并退出", "Stop and quit")
+				if err != nil || !accepted {
 					return
 				}
 			}
@@ -171,6 +171,9 @@ func run() error {
 				return
 			}
 			e.PreventDefault()
+			if d.quitting.Load() {
+				return
+			}
 			if tray != nil {
 				d.window.Hide()
 			} else {
@@ -293,13 +296,11 @@ func (d *Desktop) Save(ctx context.Context, options host.Options) error {
 	d.op.Lock()
 	defer d.op.Unlock()
 	if d.service != nil {
-		answer, err := mygo.Dialog.Message(mygo.MessageOptions{Parent: mygo.CallerWindow(ctx), Type: mygo.MessageQuestion,
-			Message: text("保存设置并重启宿主？", "Save settings and restart the host?"),
-			Buttons: []string{text("取消", "Cancel"), text("重启", "Restart")}, DefaultButton: 0, CancelButton: 0})
+		accepted, err := confirmOnPage(mygo.CallerWindow(ctx), "保存设置并重启宿主？", "Save settings and restart the host?", "重启", "Restart")
 		if err != nil {
 			return err
 		}
-		if answer.Button != 1 {
+		if !accepted {
 			return errors.New(text("已取消", "Cancelled"))
 		}
 	}
@@ -337,6 +338,11 @@ func (d *Desktop) Save(ctx context.Context, options host.Options) error {
 
 func (d *Desktop) Quit()         { mygo.App.Quit() }
 func (d *Desktop) OpenSettings() { mygo.RunOnMain(d.openSettings) }
+func (d *Desktop) SetLocale(locale string) {
+	if locale == "zh-CN" || locale == "en" {
+		mygo.App.SetLocale(locale)
+	}
+}
 func (d *Desktop) openDataDirectory() {
 	d.op.Lock()
 	path, err := host.DatabasePath(d.options.DataDir)

@@ -279,6 +279,11 @@ func licenses() error {
 			return fmt.Errorf("license missing for %s", module.Path)
 		}
 	}
+	license, err := os.ReadFile("internal/server/web/icons/octicons-LICENSE")
+	if err != nil {
+		return err
+	}
+	fmt.Fprintf(&output, "GitHub Octicons\n%s\n\n", license)
 	if err = os.MkdirAll("build/desktop-resources", 0755); err != nil {
 		return err
 	}

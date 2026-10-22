@@ -10,7 +10,8 @@
 <label><span data-zh="线索" data-en="Hints"></span><input name="hints_config" autocomplete="off"></label>
 </details><p id="error" role="alert"></p><button type="submit" data-zh="保存并重启" data-en="Save and restart"></button>
 </form></main><script type="module">
-const zh=navigator.language.startsWith('zh');document.querySelector('#title').textContent=zh?'宿主设置':'Host settings';
+const locale=window.mygo?.locale||navigator.language;document.documentElement.lang=locale;
+const zh=locale.startsWith('zh');document.querySelector('#title').textContent=zh?'宿主设置':'Host settings';
 for(const node of document.querySelectorAll('[data-zh]'))node.textContent=node.dataset[zh?'zh':'en'];
 const form=document.querySelector('form'),error=document.querySelector('#error');
 try{const options=await window.mygo.call('Desktop.Settings');for(const input of form.querySelectorAll('input'))input.value=options[input.name]||'';}catch(e){error.textContent=e.message||String(e);}
