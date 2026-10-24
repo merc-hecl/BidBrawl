@@ -7,22 +7,18 @@ import (
 
 // Fact contains only approved public fields, never whole-box prices or bands.
 type Fact struct {
-	Category     string   `json:"category,omitempty"`
-	Region       string   `json:"region,omitempty"`
-	AverageArea  *float64 `json:"average_area,omitempty"`
-	Type         string   `json:"type"`
-	ItemID       string   `json:"item_id,omitempty"`
-	Quality      string   `json:"quality,omitempty"`
-	Count        *int     `json:"count,omitempty"`
-	AveragePrice *float64 `json:"average_price,omitempty"`
-	Price        *int64   `json:"price,omitempty"`
-	TopLeft      *Point   `json:"top_left,omitempty"`
-	BottomRight  *Point   `json:"bottom_right,omitempty"`
-	Present      *bool    `json:"present,omitempty"`
-	Area         *int     `json:"area,omitempty"`
+	Category    string   `json:"category,omitempty"`
+	Region      string   `json:"region,omitempty"`
+	AverageArea *float64 `json:"average_area,omitempty"`
+	Type        string   `json:"type"`
+	ItemID      string   `json:"item_id,omitempty"`
+	Quality     string   `json:"quality,omitempty"`
+	Count       *int     `json:"count,omitempty"`
+	TopLeft     *Point   `json:"top_left,omitempty"`
+	BottomRight *Point   `json:"bottom_right,omitempty"`
+	Present     *bool    `json:"present,omitempty"`
+	Area        *int     `json:"area,omitempty"`
 }
-
-func (f Fact) IsPrice() bool { return f.Type == "quality_average" || f.Type == "random_quality_price" }
 
 func (f Fact) Validate() error {
 	fields := 0
@@ -62,18 +58,6 @@ func (f Fact) Validate() error {
 			return errors.New("invalid hint count")
 		}
 	}
-	if f.AveragePrice != nil {
-		fields++
-		if math.IsNaN(*f.AveragePrice) || math.IsInf(*f.AveragePrice, 0) || *f.AveragePrice <= 0 {
-			return errors.New("invalid hint average")
-		}
-	}
-	if f.Price != nil {
-		fields++
-		if *f.Price <= 0 {
-			return errors.New("invalid hint price")
-		}
-	}
 	if f.TopLeft != nil {
 		fields++
 	}
@@ -107,12 +91,8 @@ func (f Fact) Validate() error {
 		valid = fields == 2 && f.Quality != "" && f.Area != nil
 	case "quality_count":
 		valid = fields == 2 && f.Quality != "" && f.Count != nil
-	case "quality_average":
-		valid = fields == 2 && f.Quality != "" && f.AveragePrice != nil
 	case "random_quality":
 		valid = fields == 2 && f.ItemID != "" && f.Quality != ""
-	case "random_quality_price":
-		valid = fields == 3 && f.ItemID != "" && f.Quality != "" && f.Price != nil
 	case "random_shape":
 		valid = fields == 3 && f.ItemID != "" && f.TopLeft != nil && f.BottomRight != nil
 		if valid {

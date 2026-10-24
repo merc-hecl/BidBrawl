@@ -36,15 +36,15 @@ func TestObserverVisionUpdatesImmediatelyAndReplayExcludesFutureSkills(t *testin
 	s := testTable(g)
 	a, _ := accountSession(t, s, "A")
 	b, _ := accountSession(t, s, "B")
-	purchaseJoinCards(t, s, a, `{"cards":["random_shape","largest_price","item_count"]}`)
-	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["random_shape","largest_price","item_count"]}`, 201)
+	purchaseJoinCards(t, s, a, `{"cards":["random_shape","largest_quality","item_count"]}`)
+	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["random_shape","largest_quality","item_count"]}`, 201)
 	purchaseJoinCards(t, s, b, `{"cards":[]}`)
 	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":[]}`, 201)
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
 	var own game.View
 	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state", a, "", 200), &own)
 	id := own.Self.ID
-	for round, card := range []string{"random_shape", "largest_price", "item_count"} {
+	for round, card := range []string{"random_shape", "largest_quality", "item_count"} {
 		round++
 		body, _ := json.Marshal(map[string]any{"round": round, "card": card, "reason": "inspect current knowledge"})
 		checkedRequest(t, s, "POST", "/api/card", a, string(body), 200)
@@ -68,8 +68,8 @@ func TestObserverVisionUpdatesImmediatelyAndReplayExcludesFutureSkills(t *testin
 		}
 		if round > 1 {
 			price := latest.ItemReveals[id][1]
-			if price.Price == nil || price.TopLeft == nil || price.BottomRight == nil || price.Quality != "" {
-				t.Fatal("price skill failed to locate target or disclosed quality")
+			if price.Price != nil || price.TopLeft == nil || price.BottomRight == nil || price.Quality == "" {
+				t.Fatal("quality skill failed to locate target or disclosed price")
 			}
 		}
 		for _, path := range []string{"/api/state", "/api/replay?room=table"} {

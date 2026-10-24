@@ -58,7 +58,7 @@ func TestConfigurationValidation(t *testing.T) {
 		func(c *Config) { c.Cards[0].MinRound = -1 },
 		func(c *Config) { c.Cards[0].Price = -1 },
 		func(c *Config) { c.Cards[0].Price = 1_000_000_001 },
-		func(c *Config) { c.DefaultDeck = []string{"largest_price", "largest_price"} },
+		func(c *Config) { c.DefaultDeck = []string{"largest_quality", "largest_quality"} },
 	} {
 		cfg := Default()
 		mutate(&cfg)
@@ -75,8 +75,8 @@ func TestTargetDefinitionsRejectConflictsAndResolveExplicitChoices(t *testing.T)
 	}{
 		{"category", "antiques", Effect{Type: "count"}},
 		{"quality", "legendary", Effect{Type: "count"}},
-		{"area", "6", Effect{Type: "average", Measure: "price"}},
-		{"region", "southeast", Effect{Type: "value"}},
+		{"area", "6", Effect{Type: "average", Measure: "area"}},
+		{"region", "southeast", Effect{Type: "area"}},
 	} {
 		d := Definition{ID: "target", Name: "Target", Description: "Target test", Price: 1, Target: tc.kind, Effect: tc.effect}
 		c := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{d}}
@@ -129,5 +129,41 @@ func TestDefaultAndCloneIsolation(t *testing.T) {
 	first.Cards[0].ID = "changed"
 	if Default().Cards[0].ID == "changed" {
 		t.Fatal("default configuration shares state between calls")
+	}
+}
+
+func TestExactInformationRequiresPaidSingleObservedItem(t *testing.T) {
+	for _, effect := range []Effect{
+		{Type: "value"}, {Type: "value", Category: "art"},
+		{Type: "average", Measure: "price"},
+		{Type: "average", Measure: "price", SampleSize: 1},
+		{Type: "average", Measure: "price", SampleSize: 6, Quality: "rare"},
+	} {
+		cfg := Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{{ID: "custom", Name: "Custom", Description: "Custom", Price: 100000, Effect: effect}}}
+		if cfg.Validate() == nil {
+			t.Fatalf("price aggregate accepted: %+v", effect)
+		}
+	}
+	for _, field := range []string{"price", "identity"} {
+		valid := Definition{ID: "custom", Name: "Custom", Description: "Custom", Price: MinimumAppraisalPrice, MinRound: 2, Target: "item", Effect: Effect{Type: "reveal", Selector: "random", Fields: []string{field}}}
+		config := func(d Definition) Config {
+			return Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []Definition{d}}
+		}
+		if err := config(valid).Validate(); err != nil {
+			t.Fatal(err)
+		}
+		for _, mutate := range []func(*Definition){
+			func(d *Definition) { d.Price-- },
+			func(d *Definition) { d.MinRound = 1 },
+			func(d *Definition) { d.Target = "" },
+			func(d *Definition) { d.Target = "category" },
+			func(d *Definition) { d.Effect.Count = 2 },
+		} {
+			d := valid
+			mutate(&d)
+			if config(d).Validate() == nil {
+				t.Fatalf("unrestricted %s reveal accepted: %+v", field, d)
+			}
+		}
 	}
 }

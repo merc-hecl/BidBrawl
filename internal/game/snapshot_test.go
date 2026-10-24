@@ -13,7 +13,7 @@ func TestSnapshotPreservesPrivateStateAndSettlement(t *testing.T) {
 	}
 	tokens := []string{}
 	for _, name := range []string{"Atlas", "Echo"} {
-		_, token, err := g.Join(name, []string{"largest_price", "random_shape"})
+		_, token, err := g.Join(name, []string{"largest_quality", "random_shape"})
 		if err != nil {
 			t.Fatal(err)
 		}

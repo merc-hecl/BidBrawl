@@ -14,10 +14,9 @@ test('new intelligence keeps scope, units, unlock rounds and bid conditions visi
  try{for(const locale of ['zh-CN','en']){
   setLocale(locale,false);
   const card=id=>renderHandbook(rules,{...newHandbookState('cards'),entry:id,detail:true});
-  assert.ok(card('four_cell_average').includes(t('book.areaScope',{count:4})));
   assert.ok(card('precious_count').includes(t('epic'))&&card('precious_count').includes(t('legendary')));
   assert.ok(card('legendary_average_area').includes(t('book.result.average_area')));
-  assert.ok(card('audit').includes(t('book.availableRound',{round:5})));
+  assert.ok(card('focused_appraisal').includes(t('book.availableRound',{round:2})));
   for(const id of ['momentum','contrarian']){
    const condition=specialties.find(s=>s.id===id).steps[1].condition;
    const html=renderHandbook(rules,{...newHandbookState('specialties'),entry:id});
@@ -33,7 +32,7 @@ test('new intelligence keeps scope, units, unlock rounds and bid conditions visi
 test('chosen-target cards describe the requested scope instead of a whole-crate result',()=>{
  try{for(const locale of ['zh-CN','en']){
   setLocale(locale,false);
-  for(const id of ['category_shapes','category_value','target_quality_count','area_average','region_census','region_value','category_identities','focused_appraisal']){
+  for(const id of ['category_shapes','target_quality_count','region_census','focused_appraisal']){
    const def=cardConfig.cards.find(c=>c.id===id);
    const html=renderHandbook(rules,{...newHandbookState('cards'),entry:id,detail:true});
    assert.ok(html.includes(t('book.targetScope.'+def.target)),id);
@@ -89,29 +88,29 @@ test('catalog filters and pagination retain server prices without revealing eggs
 test('public reference preserves custom text, aliases and translations without displaying private payloads',()=>{
   setLocale('en',false);
   try{
-    const custom={...rules,catalog:[{...rules.catalog[0],id:'custom',name:'<Custom name>',translations:{en:'<Translated item>'}}],cards:[{...rules.cards[0],name:'<Custom card>',description:'<Custom explanation>'}],public_hint_definitions:[{id:'my_alias',builtin:'quality_average'},{id:'external',command:['private-executable'],builtin:''}],self:{bid:123456789,reason:'PRIVATE_REASON'},intelligence:{p1:'PRIVATE_INTEL'}};
+    const custom={...rules,catalog:[{...rules.catalog[0],id:'custom',name:'<Custom name>',translations:{en:'<Translated item>'}}],cards:[{...rules.cards[0],name:'<Custom card>',description:'<Custom explanation>'}],public_hint_definitions:[{id:'my_alias',builtin:'quality_count'},{id:'external',command:['private-executable'],builtin:''}],self:{bid:123456789,reason:'PRIVATE_REASON'},intelligence:{p1:'PRIVATE_INTEL'}};
     const item=renderHandbook(custom,newHandbookState());
     assert.ok(item.includes('&lt;Translated item&gt;')&&!item.includes('<Translated item>'));
     assert.equal(itemName({name:'Original host name'}),'Original host name');
     const card=renderHandbook(custom,newHandbookState('cards'));
     assert.ok(card.includes('&lt;Custom card&gt;')&&card.includes('&lt;Custom explanation&gt;'));
-  const canonicalSearch=renderHandbook(rules,{...newHandbookState('cards'),search:'终极审计'});
-  assert.ok(canonicalSearch.includes('book-entry:audit'));
+  const canonicalSearch=renderHandbook(rules,{...newHandbookState('cards'),search:'品质普查'});
+  assert.ok(canonicalSearch.includes('book-entry:quality_counts'));
     const hints=renderHandbook(custom,{...newHandbookState('hints'),entry:'external'});
-    assert.ok(hints.includes('book-entry:my_alias')&&hints.includes(t('book.hint.quality_average.title')));
+    assert.ok(hints.includes('book-entry:my_alias')&&hints.includes(t('book.hint.quality_count.title')));
     for(const html of [item,card,hints])assert.doesNotMatch(html,/PRIVATE_REASON|PRIVATE_INTEL|123456789|private-executable|\{\}/);
   }finally{setLocale('zh-CN',false);}
 });
 
-test('specialty summaries distinguish sampled averages, remembered samples and complete revelations',()=>{
+test('specialty summaries distinguish area statistics, remembered samples and non-price revelations',()=>{
   const sampled=specialties.find(s=>s.id==='category').steps[1];
-  assert.equal(effectText(sampled.effect,sampled),t('book.effect.sampleAverage',{count:3}));
+  assert.equal(effectText(sampled.effect,sampled),t('book.effect.averageArea'));
   const earlyAppraisal=specialties.find(s=>s.id==='appraisal').steps[0];
-  assert.equal(effectText(earlyAppraisal.effect,earlyAppraisal),t('book.effect.sampleAverage',{count:3}));
+  assert.ok(effectText(earlyAppraisal.effect,earlyAppraisal).includes(t('book.field.quality')));
   const full=specialties.find(s=>s.id==='electronics').steps[2];
-  assert.ok(effectText(full.effect,full).includes(t('book.field.identity')));
+  assert.ok(effectText(full.effect,full).includes(t('book.field.category')));
   const html=renderHandbook(rules,{...newHandbookState('specialties'),entry:'small'});
   assert.ok(html.includes(t('book.remember'))&&html.includes(t('book.fromSample')));
-  const filtered=renderHandbook(rules,{...newHandbookState('cards'),filter:'aggregate',search:'终极审计'});
-  assert.ok(filtered.includes('book-entry:audit')&&!filtered.includes('book-entry:largest_price'));
+  const filtered=renderHandbook(rules,{...newHandbookState('cards'),filter:'aggregate',search:'品质普查'});
+  assert.ok(filtered.includes('book-entry:quality_counts')&&!filtered.includes('book-entry:focused_appraisal'));
 });

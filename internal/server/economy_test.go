@@ -19,7 +19,7 @@ func TestInventoryPurchaseConsumptionSettlementAndRestart(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["item_count"],"specialty":"category","category":"household"}`, 201)
 	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":["random_quality"],"specialty":"late"}`, 201)
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
-	checkedRequest(t, s, "POST", "/api/buy", a, `{"card":"audit","quantity":1}`, 409)
+	checkedRequest(t, s, "POST", "/api/buy", a, `{"card":"quality_counts","quantity":1}`, 409)
 	checkedRequest(t, s, "POST", "/api/loadout?room=table", a, `{"cards":[],"specialty":"late"}`, 409)
 	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"item_count","round":1,"reason":"count before estimating"}`, 200)
 	checkedRequest(t, s, "POST", "/api/card", b, `{"card":"random_quality","round":1,"reason":"inspect before bidding"}`, 200)
@@ -91,16 +91,16 @@ func TestLockedCardKeepsPurchasedStockAndRoundAllowanceAcrossRestart(t *testing.
 	s := persistentServer(t, path)
 	a, credential := accountSession(t, s, "Buyer")
 	b, otherCredential := accountSession(t, s, "Other")
-	checkedRequest(t, s, "POST", "/api/buy", a, `{"card":"audit","quantity":1}`, 200)
+	checkedRequest(t, s, "POST", "/api/buy", a, `{"card":"quality_counts","quantity":1}`, 200)
 	checkedRequest(t, s, "POST", "/api/buy", a, `{"card":"random_shape","quantity":1}`, 200)
-	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["audit","random_shape"]}`, 201)
+	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["quality_counts","random_shape"]}`, 201)
 	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":[]}`, 201)
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
 	before := checkedRequest(t, s, "GET", "/api/state", a, "", 200)
 	cash := s.sessions[a].Assets
-	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"audit","round":1,"reason":"verify the earliest usable round"}`, 409)
+	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"quality_counts","round":1,"reason":"verify the earliest usable round"}`, 409)
 	after := checkedRequest(t, s, "GET", "/api/state", a, "", 200)
-	if !sameGameProjection(before, after) || len(s.sessions[a].CardStock["audit"]) != 1 || s.sessions[a].Assets != cash {
+	if !sameGameProjection(before, after) || len(s.sessions[a].CardStock["quality_counts"]) != 1 || s.sessions[a].Assets != cash {
 		t.Fatal("locked card changed stock, costs or game")
 	}
 	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"random_shape","round":1,"reason":"use an unlocked card after rejection"}`, 200)
@@ -113,10 +113,10 @@ func TestLockedCardKeepsPurchasedStockAndRoundAllowanceAcrossRestart(t *testing.
 			checkedRequest(t, s, "POST", "/api/bid", token, string(body), 200)
 		}
 	}
-	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"audit","round":5,"reason":"value the final round"}`, 200)
+	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"quality_counts","round":5,"reason":"value the final round"}`, 200)
 	var own game.View
 	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state", a, "", 200), &own)
-	if len(s.sessions[a].CardStock["audit"]) != 0 || own.Self.CardCost != 35200 || s.sessions[a].Assets != cash {
+	if len(s.sessions[a].CardStock["quality_counts"]) != 0 || own.Self.CardCost != 12200 || s.sessions[a].Assets != cash {
 		t.Fatal("unlocked card stock or recorded cost incorrect")
 	}
 	for _, token := range []string{"", b} {
@@ -147,7 +147,7 @@ func TestUnsoldAwardsNothingAndReliefChecksAllWealth(t *testing.T) {
 		t.Fatal("unsold gave inventory")
 	}
 	s.sessions[a].Assets = 0
-	s.sessions[a].CardStock["audit"] = []int64{35000}
+	s.sessions[a].CardStock["quality_counts"] = []int64{12000}
 	checkedRequest(t, s, "POST", "/api/relief", a, "", 409)
 	s.sessions[a].CardStock = map[string][]int64{}
 	checkedRequest(t, s, "POST", "/api/relief", a, "", 200)

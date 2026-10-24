@@ -429,12 +429,11 @@ func (g *Game) planHints(items []Item) ([]Hint, error) {
 		if isEasterEgg(i) {
 			continue
 		}
-		request.Items = append(request.Items, hints.Item{ID: i.ID, Category: i.Category, Quality: i.Quality, Price: i.Price,
+		request.Items = append(request.Items, hints.Item{ID: i.ID, Category: i.Category, Quality: i.Quality,
 			TopLeft: hints.Point{X: i.TopLeft.X, Y: i.TopLeft.Y}, BottomRight: hints.Point{X: i.BottomRight.X, Y: i.BottomRight.Y}})
 	}
 	available := append([]hints.Plugin{}, g.hintConfig.Plugins...)
 	result := []Hint{}
-	priceUsed := false
 	for _, round := range []int{1, 3} {
 		var clue hints.Clue
 		var plugin hints.Plugin
@@ -445,9 +444,6 @@ func (g *Game) planHints(items []Item) ([]Hint, error) {
 			index := hints.Random(len(available))
 			plugin = available[index]
 			available = append(available[:index], available[index+1:]...)
-			if priceUsed && (plugin.Builtin == "quality_average" || plugin.Builtin == "random_quality_price") {
-				continue
-			}
 			request.Round = round
 			var err error
 			clue, err = plugin.Generate(context.Background(), request)
@@ -456,12 +452,6 @@ func (g *Game) planHints(items []Item) ([]Hint, error) {
 			}
 			if err != nil {
 				return nil, err
-			}
-			if clue.Fact != nil && clue.Fact.IsPrice() {
-				if priceUsed {
-					continue
-				}
-				priceUsed = true
 			}
 			break
 		}
@@ -549,6 +539,9 @@ func (g *Game) UseCard(token string, round int, card, target, reason string) err
 			}
 			if definition.Target == "item" && g.knownItemFields(p)[target] == nil {
 				return errors.New("target must be an item you have already observed")
+			}
+			if paid, ok := p.cardPrices[card]; ok && effect.RevealsPrice() && paid < cards.MinimumAppraisalPrice {
+				return fmt.Errorf("exact appraisal requires a card purchased for at least %d coins", cards.MinimumAppraisalPrice)
 			}
 			break
 		}

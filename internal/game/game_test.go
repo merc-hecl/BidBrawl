@@ -26,7 +26,7 @@ func fixture(t *testing.T, n int) (*Game, []string) {
 	}
 	tokens := []string{}
 	for i := 0; i < n; i++ {
-		_, token, e := g.Join(string(rune('A'+i)), []string{"largest_price", "random_shape", "item_count", "quality_counts", "random_quality"})
+		_, token, e := g.Join(string(rune('A'+i)), []string{"largest_quality", "random_shape", "item_count", "quality_counts", "random_quality"})
 		if e != nil {
 			t.Fatal(e)
 		}
@@ -54,7 +54,7 @@ func TestLobbyValidation(t *testing.T) {
 	if e := g.Start(); e == nil {
 		t.Fatal("started empty game")
 	}
-	for _, deck := range [][]string{{"bad"}, {"item_count", "item_count"}, {"largest_price", "random_shape", "item_count", "quality_counts", "random_quality", "largest_quality"}} {
+	for _, deck := range [][]string{{"bad"}, {"item_count", "item_count"}, {"largest_quality", "random_shape", "item_count", "quality_counts", "random_quality", "largest_quality"}} {
 		if _, _, e := g.Join("A", deck); e == nil {
 			t.Fatal("invalid deck accepted")
 		}
@@ -85,7 +85,7 @@ func TestLobbyValidation(t *testing.T) {
 func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	g, ts := fixture(t, 2)
 	before, _ := g.Observe("")
-	if e := g.UseCard(ts[0], 1, "largest_price", "", "protocol test"); e != nil {
+	if e := g.UseCard(ts[0], 1, "largest_quality", "", "protocol test"); e != nil {
 		t.Fatal(e)
 	}
 	after, _ := g.Observe("")
@@ -99,7 +99,7 @@ func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	if e := g.UseCard(ts[0], 1, "item_count", "", "protocol test"); e == nil {
 		t.Fatal("two cards in round accepted")
 	}
-	if e := g.UseCard(ts[1], 1, "largest_quality", "", "protocol test"); e == nil {
+	if e := g.UseCard(ts[1], 1, "bulk_shapes", "", "protocol test"); e == nil {
 		t.Fatal("non-deck card accepted")
 	}
 	if e := g.Submit(ts[0], 1, 98765, "protocol test"); e != nil {
@@ -138,7 +138,7 @@ func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	if e := g.Submit(ts[0], 1, 1, "protocol test"); e == nil {
 		t.Fatal("stale round accepted")
 	}
-	if e := g.UseCard(ts[0], 2, "largest_price", "", "protocol test"); e == nil {
+	if e := g.UseCard(ts[0], 2, "largest_quality", "", "protocol test"); e == nil {
 		t.Fatal("card reused")
 	}
 	if e := g.Submit(ts[0], 2, 1, "protocol test"); e != nil {

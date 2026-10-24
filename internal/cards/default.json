@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "default_deck": [
-    "largest_price",
+    "largest_quality",
     "random_shape",
     "item_count",
     "quality_counts"
@@ -19,19 +19,6 @@
         ]
       },
       "price": 800
-    },
-    {
-      "id": "largest_price",
-      "name": "巨物估价",
-      "description": "揭示面积最大物品的轮廓、位置和真实价格，不揭示品质。",
-      "effect": {
-        "type": "reveal",
-        "selector": "largest",
-        "fields": [
-          "price"
-        ]
-      },
-      "price": 3500
     },
     {
       "id": "random_shape",
@@ -80,23 +67,6 @@
       "min_round": 3
     },
     {
-      "id": "sample_four",
-      "name": "抽样全检",
-      "description": "第2轮起完整鉴定四件仍有未知属性的物品。",
-      "price": 6000,
-      "effect": {
-        "type": "reveal",
-        "selector": "random",
-        "fields": [
-          "quality",
-          "price",
-          "identity"
-        ],
-        "count": 4
-      },
-      "min_round": 2
-    },
-    {
       "id": "category_counts",
       "name": "品类清点",
       "description": "显示各品类件数。",
@@ -114,40 +84,6 @@
       "effect": {
         "type": "area",
         "quality": "legendary"
-      }
-    },
-    {
-      "id": "legendary_value",
-      "name": "珍品估价",
-      "description": "第4轮起显示传说物品合计价格。",
-      "price": 18000,
-      "effect": {
-        "type": "value",
-        "quality": "legendary"
-      },
-      "min_round": 4
-    },
-    {
-      "id": "audit",
-      "name": "终极审计",
-      "description": "第5轮显示所有常规物品的准确总价，不含彩蛋。",
-      "price": 35000,
-      "effect": {
-        "type": "value"
-      },
-      "min_round": 5
-    },
-    {
-      "id": "highest_price",
-      "name": "至宝估价",
-      "description": "揭示最高品质目标的轮廓与价格；同品质取最大面积，再并列按 ID。",
-      "price": 4500,
-      "effect": {
-        "type": "reveal",
-        "selector": "highest",
-        "fields": [
-          "price"
-        ]
       }
     },
     {
@@ -213,78 +149,6 @@
       }
     },
     {
-      "id": "rare_average",
-      "name": "稀有均价",
-      "description": "显示稀有物品的实际均价，不提供件数；不存在时返回空值。",
-      "price": 2400,
-      "effect": {
-        "type": "average",
-        "measure": "price",
-        "quality": "rare"
-      }
-    },
-    {
-      "id": "four_cell_average",
-      "name": "四格均价",
-      "description": "显示占地恰好四格的物品均价，不提供件数；不存在时返回空值。",
-      "price": 2200,
-      "effect": {
-        "type": "average",
-        "measure": "price",
-        "area": 4
-      }
-    },
-    {
-      "id": "sample_average",
-      "name": "抽样估值",
-      "description": "随机抽取最多六件常规物品，显示样本均价和样本数；不是整仓均价。",
-      "price": 1800,
-      "effect": {
-        "type": "average",
-        "measure": "price",
-        "sample_size": 6
-      }
-    },
-    {
-      "id": "antique_identity",
-      "name": "古器辨识",
-      "description": "定位并辨识最多四件身份未知的古董，不额外揭示品质或价格。",
-      "price": 2000,
-      "effect": {
-        "type": "reveal",
-        "selector": "random",
-        "category": "antiques",
-        "fields": [
-          "identity"
-        ],
-        "count": 4
-      }
-    },
-    {
-      "id": "electronics_value",
-      "name": "数码盘估",
-      "description": "第3轮起显示数码电子品类总价，不定位目标。",
-      "price": 5500,
-      "effect": {
-        "type": "value",
-        "category": "electronics"
-      },
-      "min_round": 3
-    },
-    {
-      "id": "common_value",
-      "name": "基础盘估",
-      "description": "显示普通与优良物品的合计价格，不拆分两档。",
-      "price": 3500,
-      "effect": {
-        "type": "value",
-        "qualities": [
-          "common",
-          "uncommon"
-        ]
-      }
-    },
-    {
       "id": "category_shapes",
       "name": "定向测绘",
       "description": "选择一个常规品类，补看其中最多六件未知轮廓。",
@@ -300,17 +164,6 @@
       }
     },
     {
-      "id": "category_value",
-      "name": "品类估价",
-      "description": "第3轮起选择一个常规品类，查其准确总价，不定位目标。",
-      "price": 6000,
-      "target": "category",
-      "effect": {
-        "type": "value"
-      },
-      "min_round": 3
-    },
-    {
       "id": "target_quality_count",
       "name": "定档清点",
       "description": "选择一种常规品质，只给该档件数，包含零。",
@@ -318,17 +171,6 @@
       "target": "quality",
       "effect": {
         "type": "count"
-      }
-    },
-    {
-      "id": "area_average",
-      "name": "按格估价",
-      "description": "选择恰好占用的格数，查该面积物品均价；空组返回null，不给总体件数。",
-      "price": 3000,
-      "target": "area",
-      "effect": {
-        "type": "average",
-        "measure": "price"
       }
     },
     {
@@ -344,38 +186,12 @@
       "min_round": 2
     },
     {
-      "id": "region_value",
-      "name": "分区盘估",
-      "description": "第4轮起选择一个象限，查该区常规物品总价；按物品左上角归区。",
-      "price": 9000,
-      "target": "region",
-      "effect": {
-        "type": "value"
-      },
-      "min_round": 4
-    },
-    {
-      "id": "category_identities",
-      "name": "品类辨识",
-      "description": "选择一个常规品类，定位并辨识其中最多四件未知身份物品。",
-      "price": 3000,
-      "target": "category",
-      "effect": {
-        "type": "reveal",
-        "selector": "random",
-        "fields": [
-          "identity"
-        ],
-        "count": 4
-      }
-    },
-    {
       "id": "focused_appraisal",
       "name": "定点鉴价",
       "description": "第2轮起选择一件本人已观察到的常规物品，完整鉴定其品质、价格与身份。未知ID不能作为目标。",
       "target": "item",
       "min_round": 2,
-      "price": 2500,
+      "price": 25000,
       "effect": {
         "type": "reveal",
         "selector": "random",

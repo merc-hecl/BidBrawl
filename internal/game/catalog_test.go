@@ -166,14 +166,14 @@ func TestScoutingEffectsExcludeEggs(t *testing.T) {
 	if counts["legendary"] != 1 || len(counts) != len(g.gameConfig.Qualities) {
 		t.Fatal("quality census exposed eggs", counts)
 	}
-	if got := g.cardEffect(cards.Effect{Type: "value", Quality: "legendary"})["total_value"]; got != int64(20000) {
-		t.Fatal("legendary card included egg value", got)
+	if got := g.cardEffect(cards.Effect{Type: "count", Quality: "legendary"})["count"]; got != 1 {
+		t.Fatal("legendary card counted an egg", got)
 	}
 	if got := g.cardEffect(cards.Effect{Type: "count", Quality: "easter_egg"})["count"]; got != 0 {
 		t.Fatal("egg filter exposed eggs", got)
 	}
-	if got := g.cardEffect(cards.Effect{Type: "value"})["total_value"]; got != int64(20000) {
-		t.Fatal("aggregate value exposed egg value", got)
+	if got := g.cardEffect(cards.Effect{Type: "count"})["count"]; got != 1 {
+		t.Fatal("aggregate count exposed an egg", got)
 	}
 	bad := DefaultConfig()
 	for n := range bad.Catalog {

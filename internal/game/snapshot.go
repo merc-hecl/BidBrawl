@@ -63,7 +63,7 @@ type playerSnapshot struct {
 func (g *Game) Snapshot() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := gameSnapshot{SchemaVersion: 9, LoadoutChanges: g.loadoutChanges, Warehouse: g.warehouse, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
+	s := gameSnapshot{SchemaVersion: 10, LoadoutChanges: g.loadoutChanges, Warehouse: g.warehouse, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
 		Phase: g.phase, Round: g.round, Version: g.version, Players: []playerSnapshot{}, Items: g.items,
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
@@ -85,7 +85,7 @@ func Restore(data []byte) (*Game, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return nil, errors.New("expected exactly one game snapshot")
 	}
-	if s.SchemaVersion != 9 {
+	if s.SchemaVersion != 10 {
 		return nil, errors.New("unsupported game snapshot schema")
 	}
 	g, err := NewWithHints(s.PlayerCount, s.Config, s.Cards, s.HintConfig)
@@ -245,7 +245,6 @@ func (s gameSnapshot) validate() error {
 	if len(s.PlannedHints) != 2 {
 		return errors.New("invalid planned hint count")
 	}
-	priceHints := 0
 	for i, h := range s.PlannedHints {
 		if h.Round != 1+2*i || h.Source != "public" || h.Data == nil || !contains(s.HintConfig.IDs(), h.Kind) || i == 1 && h.Kind == s.PlannedHints[0].Kind {
 			return errors.New("invalid public hint")
@@ -254,12 +253,9 @@ func (s gameSnapshot) validate() error {
 		if err != nil {
 			return err
 		}
-		clue, err := hints.ParseClue(bytes.NewReader(data))
+		_, err = hints.ParseClue(bytes.NewReader(data))
 		if err != nil {
 			return err
-		}
-		if clue.Fact != nil && clue.Fact.IsPrice() {
-			priceHints++
 		}
 		if i < hintCount {
 			planned, _ := json.Marshal(h)
@@ -268,9 +264,6 @@ func (s gameSnapshot) validate() error {
 				return errors.New("public hint differs from planned hint")
 			}
 		}
-	}
-	if priceHints > 1 {
-		return errors.New("too many public price clues")
 	}
 	historyCount := s.Round - 1
 	if s.Phase == "settled" {

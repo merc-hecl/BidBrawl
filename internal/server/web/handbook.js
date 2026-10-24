@@ -23,8 +23,7 @@ const hasSearch=(text,query)=>String(text).toLocaleLowerCase(getLocale()).includ
 
 export function effectText(effect,step={}){
   if(step.mode==='presence')return t('book.effect.presence');
-  if(step.mode==='average')return t(step.sample_size?'book.effect.sampleAverage':'book.effect.average',{count:step.sample_size});
-  if(effect.type==='average')return t(effect.measure==='area'?'book.effect.averageArea':effect.sample_size?'book.effect.sampleAverage':'book.effect.average',{count:effect.sample_size});
+  if(effect.type==='average')return t(effect.sample_size?'book.effect.sampleAverageArea':'book.effect.averageArea',{count:effect.sample_size});
   if(effect.type==='reveal'){
     const target=step.all?t('book.target.all'):t('book.target.'+(effect.selector||'random'),{count:effect.count||1});
     const fields=[t('book.field.shape'),...(effect.fields||[]).filter(f=>f!=='shape').map(f=>t('book.field.'+f))];
@@ -45,7 +44,7 @@ function scope(effect,rules,specialty,step={}){
   return parts.length?parts.join(' · '):t('wholeCrate');
 }
 const cardGroup=card=>card.effect.type==='reveal'?'individual':'aggregate';
-const resultKey=effect=>effect.type==='average'?(effect.sample_size?'sample_average':'average_'+effect.measure):effect.group_by?effect.group_by+'_count':effect.type;
+const resultKey=effect=>effect.type==='average'?(effect.sample_size?'sample_average_area':'average_area'):effect.group_by?effect.group_by+'_count':effect.type;
 function cardSummary(card,rules){
   const effect=card.effect;
   const chosenScope=card.target?t('book.targetScope.'+card.target):'';
@@ -79,7 +78,7 @@ function cards(rules,book){
   if(selected){const c=localizeCard(selected),fields=c.effect.type==='reveal'?['shape',...(c.effect.fields||[]).filter(f=>f!=='shape')].map(f=>t('book.field.'+f)):[...(c.target?[]:[scope(c.effect,rules)]),t('book.result.'+resultKey(c.effect))];right=detail(`<span class="eyebrow">${tr('book.cardDetails')}</span><h2 tabindex="-1">${esc(c.name)}</h2><div class="handbook-amount"><strong>${money(c.price)}</strong><small>${tr('book.cardPriceCaption')}</small></div><p class="handbook-description">${esc(c.description)}</p><div class="handbook-pills">${c.target?pill(tr('book.targetScope.'+c.target)):''}${fields.map(f=>pill(esc(f))).join('')}${c.min_round>1?pill(tr('book.availableRound',{round:c.min_round})):''}</div>`,selected.id);}
   return {controls,body:left+right,selected:!!selected};
 }
-const builtinHints=new Set(['random_shape','random_quality','quality_count','quality_average','random_quality_price','quality_presence','quality_largest_area','category_count','category_quality_count','region_quality_count','quality_total_area','quality_average_area']);
+const builtinHints=new Set(['random_shape','random_quality','quality_count','quality_presence','quality_largest_area','category_count','category_quality_count','region_quality_count','quality_total_area','quality_average_area']);
 function hints(rules,book){
   const all=rules.public_hint_definitions||[];
   const flow=book.filter==='flow';
@@ -91,7 +90,7 @@ function hints(rules,book){
   let right='';
   if(selected){
     const base='book.'+(flow?'event.':'hint.')+selected.kind;
-    right=detail(`<div class="handbook-detail-head"><h2 tabindex="-1">${esc(title(selected))}</h2>${pill(tr('book.example'))}</div><div class="handbook-example"><p>${tr(base+'.example',{fee:money(rules.ticket_fee??0)})}</p></div>${flow?'':`<dl>${fact('book.when',tr('book.hintWhen'))}${selected.kind==='quality_average'?fact('book.eligibleCount',tr('book.halfCrate')):''}</dl>`}`,selected.id);
+    right=detail(`<div class="handbook-detail-head"><h2 tabindex="-1">${esc(title(selected))}</h2>${pill(tr('book.example'))}</div><div class="handbook-example"><p>${tr(base+'.example',{fee:money(rules.ticket_fee??0)})}</p></div>${flow?'':`<dl>${fact('book.when',tr('book.hintWhen'))}</dl>`}`,selected.id);
   }
   return {controls,body:left+right,selected:!!selected};
 }

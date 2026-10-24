@@ -102,8 +102,8 @@ func TestSSELifecyclePrivacyReconnectAndShutdown(t *testing.T) {
 	// Stream must survive the ordinary response timeout.
 	time.Sleep(150 * time.Millisecond)
 	for _, token := range []string{a, b} {
-		purchaseJoinCards(t, s, token, `{"cards":["largest_price"]}`)
-		checkedRequest(t, s, "POST", "/api/join", token, `{"cards":["largest_price"]}`, 201)
+		purchaseJoinCards(t, s, token, `{"cards":["largest_quality"]}`)
+		checkedRequest(t, s, "POST", "/api/join", token, `{"cards":["largest_quality"]}`, 201)
 		e := nextEvent(t, events, "state_changed")
 		if !e.Rooms || e.RoomID != "table" {
 			t.Fatal("missing lobby invalidation")
@@ -111,7 +111,7 @@ func TestSSELifecyclePrivacyReconnectAndShutdown(t *testing.T) {
 	}
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
 	nextEvent(t, events, "started")
-	checkedRequest(t, s, "POST", "/api/card", a, `{"reason":"protocol test","round":1,"card":"largest_price"}`, 200)
+	checkedRequest(t, s, "POST", "/api/card", a, `{"reason":"protocol test","round":1,"card":"largest_quality"}`, 200)
 	checkedRequest(t, s, "POST", "/api/bid", a, `{"reason":"protocol test","round":1,"amount":98765}`, 200)
 	e := nextEvent(t, events, "state_changed") // No card event may precede this.
 	if e.Rooms || e.Results {

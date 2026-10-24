@@ -25,7 +25,6 @@ export function knownItems(view,playerID=null) {
     if (!f?.item_id)continue;
     if(f.type==='random_shape')known.set(f.item_id,{...known.get(f.item_id),id:f.item_id,top_left:f.top_left,bottom_right:f.bottom_right});
     if(f.type==='random_quality')known.set(f.item_id,{...known.get(f.item_id),id:f.item_id,quality:f.quality});
-    if(f.type==='random_quality_price')known.set(f.item_id,{...known.get(f.item_id),id:f.item_id,quality:f.quality,price:f.price});
   }
   return [...known.values()].filter(item=>item.top_left&&item.bottom_right);
 }

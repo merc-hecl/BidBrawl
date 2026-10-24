@@ -271,42 +271,36 @@ func TestScoutingResultsAreUnaffectedByEggs(t *testing.T) {
 	}
 }
 
-func TestAverageIntelDoesNotGiveFreeTotalAndSampleAverageIsDistinct(t *testing.T) {
+// Free intelligence must not disclose price statistics or catalog identities,
+// even when the candidate population contains just one item.
+func TestSpecialtiesDoNotRevealPriceOrIdentity(t *testing.T) {
 	g, _ := New(2)
-	g.items = []Item{{ID: "a", Category: "household", Quality: "epic", Price: 100}, {ID: "b", Category: "household", Quality: "epic", Price: 100}, {ID: "c", Category: "household", Quality: "epic", Price: 100}, {ID: "d", Category: "household", Quality: "epic", Price: 1000}}
-	p := &player{specialty: "appraisal"}
-	g.round = 2
-	g.giveIntelligence(p)
-	d := p.signals[0].Data
-	if _, ok := d["count"]; ok {
-		t.Fatal("average exposed total candidate count")
-	}
-	if (d["average_price"] != float64(100) && d["average_price"] != float64(400)) || d["sample_count"] != 3 || d["sample_limit"] != 3 {
-		t.Fatal("early appraisal gave full population average or incorrect sample", d)
-	}
-	g.round = 4
-	g.giveIntelligence(p)
-	if p.signals[1].Data["total_value"] != int64(1300) {
-		t.Fatal("late appraisal no longer confirms the scoped total")
-	}
-	p = &player{specialty: "category"}
-	g.round = 3
-	g.giveIntelligence(p)
-	d = p.signals[0].Data
-	if d["sample_count"] != 3 || d["sample_limit"] != 3 || d["average_price"] == float64(325) {
-		t.Fatal("sample average silently returned full population average")
-	}
-	g.round = 5
-	g.giveIntelligence(p)
-	if p.signals[1].Data["total_value"] != int64(1300) {
-		t.Fatal("later full value changed")
-	}
-	g.items = nil
-	g.round = 2
-	p = &player{specialty: "appraisal"}
-	g.giveIntelligence(p)
-	if p.signals[0].Data["average_price"] != nil {
-		t.Fatal("empty average invented a value")
+	for _, spec := range g.gameConfig.Specialties {
+		for _, empty := range []bool{false, true} {
+			p := &player{specialty: spec.ID, id: "a"}
+			g.items = nil
+			if !empty {
+				category := "household"
+				if len(spec.Categories) > 0 {
+					category = spec.Categories[0]
+				}
+				g.items = []Item{{ID: "one", Category: category, Quality: "legendary", Price: 54321, Name: "SECRET_NAME", TemplateID: "SECRET_TEMPLATE", BottomRight: Point{1, 1}}}
+			}
+			for g.round = 1; g.round <= Rounds; g.round++ {
+				bids := []Bid{{"a", 100}, {"b", 90}}
+				if spec.ID == "contrarian" {
+					bids = []Bid{{"a", 90}, {"b", 100}}
+				}
+				g.history = []RoundResult{{Round: g.round - 1, Bids: bids}}
+				g.giveIntelligence(p)
+			}
+			data, _ := json.Marshal(p.signals)
+			for _, forbidden := range []string{`"price"`, `"average_price"`, `"total_value"`, `"template_id"`, "SECRET_NAME", "SECRET_TEMPLATE"} {
+				if bytes.Contains(data, []byte(forbidden)) {
+					t.Fatalf("%s leaked %s: %s", spec.ID, forbidden, data)
+				}
+			}
+		}
 	}
 }
 
@@ -399,6 +393,10 @@ func TestSpecialtyConditionsIgnoreTiesZeroAndMissingHistory(t *testing.T) {
 
 func TestSpecialtyConfigRejectsInvalidTriggersAndSamples(t *testing.T) {
 	for _, step := range []SpecialtyStep{
+		{Round: 2, Effect: cards.Effect{Type: "value"}},
+		{Round: 2, Effect: cards.Effect{Type: "average", Measure: "price", SampleSize: 3}},
+		{Round: 2, Effect: cards.Effect{Type: "reveal", Selector: "random", Fields: []string{"identity"}}},
+		{Round: 2, Effect: cards.Effect{Type: "reveal", Selector: "random", Fields: []string{"price"}}},
 		{Round: 1, Condition: "previous_unique_highest", Effect: cards.Effect{Type: "count"}},
 		{Round: 2, Condition: "current_highest", Effect: cards.Effect{Type: "count"}},
 		{Round: 2, FromSample: "missing", Effect: cards.Effect{Type: "count"}},
@@ -416,10 +414,10 @@ func TestSpecialtyConfigRejectsInvalidTriggersAndSamples(t *testing.T) {
 	}
 }
 
-func TestSpecialtyAverageAndPresenceHonorEffectFilters(t *testing.T) {
+func TestSpecialtyAreaAndPresenceHonorEffectFilters(t *testing.T) {
 	g, _ := New(2)
 	g.gameConfig.Specialties = []Specialty{{ID: "filtered", Name: "Filtered", Categories: []string{"household"}, Steps: []SpecialtyStep{
-		{Round: 1, Mode: "average", Effect: cards.Effect{Type: "value", Quality: "rare", Area: 4}},
+		{Round: 1, Effect: cards.Effect{Type: "average", Measure: "area", Quality: "rare", Area: 4}},
 		{Round: 2, Mode: "presence", Effect: cards.Effect{Type: "count", Quality: "legendary"}},
 	}}}
 	if err := g.gameConfig.Validate(); err != nil {
@@ -429,7 +427,7 @@ func TestSpecialtyAverageAndPresenceHonorEffectFilters(t *testing.T) {
 	p := &player{specialty: "filtered"}
 	g.round = 1
 	g.giveIntelligence(p)
-	if p.signals[0].Data["average_price"] != float64(100) {
+	if p.signals[0].Data["average_area"] != float64(4) {
 		t.Fatal("average discarded effect filters", p.signals[0])
 	}
 	g.round = 2

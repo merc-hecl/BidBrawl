@@ -11,7 +11,6 @@ import (
 
 func TestHintPlanNeverCombinesPriceCluesAndHandlesTinyBoxes(t *testing.T) {
 	c := hints.Default()
-	c.Plugins = append(c.Plugins, hints.Plugin{ID: "average_alias", Builtin: "quality_average"}, hints.Plugin{ID: "price_alias", Builtin: "random_quality_price"})
 	g, err := NewWithHints(2, DefaultConfig(), cards.Default(), c)
 	if err != nil {
 		t.Fatal(err)
@@ -27,7 +26,6 @@ func TestHintPlanNeverCombinesPriceCluesAndHandlesTinyBoxes(t *testing.T) {
 			if err != nil || len(plan) != 2 {
 				t.Fatal("tiny box cannot start", err)
 			}
-			prices := 0
 			for _, h := range plan {
 				b, _ := json.Marshal(h.Data)
 				c, err := hints.ParseClue(bytes.NewReader(b))
@@ -37,12 +35,9 @@ func TestHintPlanNeverCombinesPriceCluesAndHandlesTinyBoxes(t *testing.T) {
 				if c.Fact.Quality == "easter_egg" || c.Fact.ItemID == "egg" {
 					t.Fatal("public clue exposed egg", c)
 				}
-				if c.Fact.IsPrice() {
-					prices++
+				if bytes.Contains(b, []byte(`"price"`)) || bytes.Contains(b, []byte(`"average_price"`)) {
+					t.Fatal("public price disclosure", string(b))
 				}
-			}
-			if prices > 1 || len(scoutableItems(items)) <= 1 && prices != 0 {
-				t.Fatal("whole value could be reconstructed from price clues")
 			}
 		}
 	}

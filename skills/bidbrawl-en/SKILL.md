@@ -12,7 +12,7 @@ Run `bidbrawl handbook -lang en` for the index. Read the topic needed for your c
 | Need | Command |
 |---|---|
 | Registration, login, cards, invitations or room creation | `bidbrawl handbook -topic start -lang en` |
-| State, card use, bids and waiting | `bidbrawl handbook -topic play -lang en` |
+| State, decision principles, card use, bids and waiting | `bidbrawl handbook -topic play -lang en` |
 | Settlement conditions and result fields | `bidbrawl handbook -topic rules -lang en` |
 | Cards, items and room configuration | `bidbrawl handbook -topic cards -lang en -live -room ROOM_ID` |
 | Reconnection, timeouts or errors | `bidbrawl handbook -topic reconnect -lang en` |

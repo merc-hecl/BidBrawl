@@ -147,6 +147,11 @@ func TestObserverItemRevealsPreserveOnlyLearnedFields(t *testing.T) {
 			cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []cards.Definition{
 				{ID: "scan", Name: "Scan", Description: "Test reveal", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: fields}},
 			}}
+			if cfg.Cards[0].Effect.RevealsPrice() {
+				cfg.Cards[0].Price = cards.MinimumAppraisalPrice
+				cfg.Cards[0].MinRound = 2
+				cfg.Cards[0].Target = "item"
+			}
 			g, err := NewWithCards(2, cfg)
 			if err != nil {
 				t.Fatal(err)
@@ -156,8 +161,17 @@ func TestObserverItemRevealsPreserveOnlyLearnedFields(t *testing.T) {
 			if err := g.Start(); err != nil {
 				t.Fatal(err)
 			}
+			for _, tok := range []string{token, otherToken} {
+				if err := g.Submit(tok, 1, 100, "keep open for appraisal"); err != nil {
+					t.Fatal(err)
+				}
+			}
+			target := ""
+			if cfg.Cards[0].Target == "item" {
+				target = g.find(token).inspection[0].ID
+			}
 			public, _ := g.Observe("")
-			if err := g.UseCard(token, 1, "scan", "", "inspect the largest item"); err != nil {
+			if err := g.UseCard(token, 2, "scan", target, "inspect the largest item"); err != nil {
 				t.Fatal(err)
 			}
 			data, err := g.ObserveObserver()
@@ -173,7 +187,7 @@ func TestObserverItemRevealsPreserveOnlyLearnedFields(t *testing.T) {
 			}
 			reveal := observed.ItemReveals[id][0]
 			hint := view(t, g, token).Self.Hints[0].Data
-			if reveal.ItemID != hint["item_id"] || reveal.Round != 1 ||
+			if reveal.ItemID != hint["item_id"] || reveal.Round != 2 ||
 				(reveal.Quality != "") != contains(fields, "quality") ||
 				(reveal.Price != nil) != contains(fields, "price") ||
 				reveal.TopLeft == nil || reveal.BottomRight == nil {

@@ -28,7 +28,6 @@ type SpecialtyStep struct {
 	All        bool         `json:"all,omitempty"`
 	Remember   string       `json:"remember,omitempty"`
 	FromSample string       `json:"from_sample,omitempty"`
-	SampleSize int          `json:"sample_size,omitempty"`
 }
 
 //go:embed specialties.json
@@ -97,8 +96,8 @@ func validateSpecialties(v []Specialty) error {
 			if step.All && step.Effect.Type != "reveal" {
 				return errors.New("all is only used by reveal")
 			}
-			if step.Mode == "average" && step.Effect.Type != "value" {
-				return errors.New("average mode requires a value effect")
+			if step.Effect.RevealsPrice() {
+				return errors.New("specialties cannot reveal prices or identities")
 			}
 			if step.Mode == "presence" && (step.Effect.Type != "count" || step.Effect.GroupBy != "") {
 				return errors.New("presence mode requires an ungrouped count effect")
@@ -125,11 +124,8 @@ func validateSpecialties(v []Specialty) error {
 			if step.Condition != "" && step.Round == 1 {
 				return errors.New("previous-round condition cannot trigger in round 1")
 			}
-			if step.Round < 1 || step.Round > 5 || !slices.Contains([]string{"", "average", "presence"}, step.Mode) {
+			if step.Round < 1 || step.Round > 5 || !slices.Contains([]string{"", "presence"}, step.Mode) {
 				return errors.New("invalid specialty step")
-			}
-			if step.SampleSize < 0 || step.SampleSize > 4096 || step.SampleSize > 0 && step.Mode != "average" {
-				return errors.New("sample_size requires an average step and must be 1–4096")
 			}
 			cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{}, Cards: []cards.Definition{{ID: "effect_check", Name: "effect", Description: "effect", Price: 1, Effect: step.Effect}}}
 			if err := cfg.Validate(); err != nil {
@@ -197,11 +193,7 @@ func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any
 			}
 			var sum int64
 			for _, i := range sample {
-				if e.Measure == "area" {
-					sum += int64(i.area())
-				} else {
-					sum += i.Price
-				}
+				sum += int64(i.area())
 			}
 			var average any
 			if len(sample) > 0 {
@@ -244,16 +236,11 @@ func (g *Game) effectOn(e cards.Effect, p *player, source []Item) map[string]any
 				value++
 			case "area":
 				value += int64(i.area())
-			case "value":
-				value += i.Price
 			}
 		}
 		key := "count"
 		if e.Type == "area" {
 			key = "area"
-		}
-		if e.Type == "value" {
-			key = "total_value"
 		}
 		if e.Type == "count" {
 			return map[string]any{"count": int(value)}
@@ -391,9 +378,6 @@ func (g *Game) knownItemFields(p *player) map[string]map[string]bool {
 		if _, ok := d["quality"]; ok {
 			known[id]["quality"] = true
 		}
-		if _, ok := d["price"]; ok {
-			known[id]["price"] = true
-		}
 		if _, ok := d["top_left"]; ok {
 			known[id]["shape"] = true
 		}
@@ -460,9 +444,6 @@ func (g *Game) giveIntelligence(p *player) {
 		e := step.Effect
 		if step.All {
 			e.Count = len(pool)
-		}
-		if step.Mode == "average" {
-			e.Type, e.Measure, e.SampleSize = "average", "price", step.SampleSize
 		}
 		d := g.effectOn(e, p, pool)
 		if step.Mode == "presence" {
@@ -543,15 +524,6 @@ func (g *Game) addSignal(p *player, title string, d map[string]any) {
 	p.signals = append(p.signals, Hint{Round: g.round, Kind: p.specialty, Source: "specialty", Data: d})
 }
 func signalMessage(d map[string]any) string {
-	if v, ok := d["average_price"]; ok {
-		if v == nil {
-			return "该范围内没有藏品，均价无结果。"
-		}
-		if count, ok := d["sample_count"]; ok {
-			return fmt.Sprintf("抽样 %v 件的均价：%v 金币，并非全部藏品均价。", count, v)
-		}
-		return fmt.Sprintf("该范围藏品均价：%v 金币。", v)
-	}
 	if v, ok := d["average_area"]; ok {
 		if v == nil {
 			return "该范围内没有藏品，平均占格无结果。"
@@ -566,9 +538,6 @@ func signalMessage(d map[string]any) string {
 	}
 	if v, ok := d["counts"]; ok {
 		return fmt.Sprintf("该范围藏品分组数量：%v。", v)
-	}
-	if v, ok := d["total_value"]; ok {
-		return fmt.Sprintf("该范围藏品总价值：%v 金币。", v)
 	}
 	if list, ok := d["items"].([]map[string]any); ok {
 		return fmt.Sprintf("本轮补充 %d 件藏品的私有信息，请查看结构化结果与已知物品。", len(list))

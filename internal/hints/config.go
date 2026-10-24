@@ -81,7 +81,6 @@ func (c Config) Validate() error {
 		return errors.New("hints require schema_version=1 and 2–64 plugins")
 	}
 	seen := map[string]bool{}
-	nonPrice := 0
 	for _, p := range c.Plugins {
 		if !validID.MatchString(p.ID) || seen[p.ID] {
 			return fmt.Errorf("invalid or duplicate hint plugin: %q", p.ID)
@@ -100,15 +99,9 @@ func (c Config) Validate() error {
 				return fmt.Errorf("hint %s has invalid command argument", p.ID)
 			}
 		}
-		if p.Builtin != "quality_average" && p.Builtin != "random_quality_price" {
-			nonPrice++
-		}
 		if len(p.Command) > 32 {
 			return errors.New("hint command accepts at most 32 arguments")
 		}
-	}
-	if nonPrice == 0 {
-		return errors.New("hints require at least one non-price plugin")
 	}
 	return nil
 }

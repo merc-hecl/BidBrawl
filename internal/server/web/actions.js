@@ -24,10 +24,8 @@ export function intelligenceTitle(hint,view){
 export function intelligenceSummary(data,view){
  if(!data)return '';
  if(data.items)return t('intelSample',{count:data.items.length});
- if(data.average_price!==undefined)return t(data.sample_count!==undefined?'intelSampleAverage':'intelAverage',{count:data.sample_count,value:data.average_price===null?t('noCandidates'):money(data.average_price)});
- if(data.average_area!==undefined)return t('intelAverageArea',{value:data.average_area===null?t('noCandidates'):money(data.average_area,2)});
+ if(data.average_area!==undefined)return t(data.sample_count!==undefined?'intelSampleAverageArea':'intelAverageArea',{count:data.sample_count,value:data.average_area===null?t('noCandidates'):money(data.average_area,2)});
  if(data.present!==undefined)return t(data.present?'intelPresent':'intelAbsent');
- if(data.total_value!==undefined)return t('intelValue',{value:money(data.total_value)});
  if(data.counts)return Object.entries(data.counts).map(([key,value])=>`${localizeName('category',view.rules.categories?.find(c=>c.id===key))||(catalogs[getLocale()][key]?t(key):t('unknownSelection'))} ${money(value)}`).join(' · ');
  if(data.area!==undefined)return t('intelArea',{count:data.area});
  if(data.count!==undefined)return t('intelCount',{count:data.count});

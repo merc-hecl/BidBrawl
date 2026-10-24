@@ -10,7 +10,7 @@ var ErrNotApplicable = errors.New("hint does not apply to this box")
 
 var builtins = map[string]bool{
 	"random_shape": true, "random_quality": true,
-	"quality_count": true, "quality_average": true, "random_quality_price": true,
+	"quality_count":    true,
 	"quality_presence": true, "quality_largest_area": true,
 	"category_count": true, "category_quality_count": true, "region_quality_count": true,
 	"quality_total_area": true, "quality_average_area": true,
@@ -33,11 +33,8 @@ func builtin(kind string, r Request) (Clue, error) {
 		groups[item.Quality] = append(groups[item.Quality], item)
 	}
 	qualities := []string{}
-	for quality, items := range groups {
-		// A price average must not describe a majority or the whole box.
-		if kind != "quality_average" || len(items)*2 <= len(r.Items) {
-			qualities = append(qualities, quality)
-		}
+	for quality := range groups {
+		qualities = append(qualities, quality)
 	}
 	sort.Strings(qualities)
 	if kind == "quality_count" && len(qualities) == 0 {
@@ -71,8 +68,8 @@ func builtin(kind string, r Request) (Clue, error) {
 		} else {
 			zh, en = fmt.Sprintf("箱内没有%s品质的物品。", name[0]), fmt.Sprintf("The box contains no items of %s quality.", name[1])
 		}
-	case "quality_count", "quality_average", "random_quality_price", "quality_largest_area":
-		if len(qualities) == 0 || kind == "random_quality_price" && len(r.Items) < 2 {
+	case "quality_count", "quality_largest_area":
+		if len(qualities) == 0 {
 			return Clue{}, ErrNotApplicable
 		}
 		q := qualities[Random(len(qualities))]
@@ -94,20 +91,6 @@ func builtin(kind string, r Request) (Clue, error) {
 			fact.Count = &count
 			zhTitle, enTitle = "指定品质数量", "Count for one quality"
 			zh, en = fmt.Sprintf("箱内%s品质的物品共有 %d 件。", name[0], count), fmt.Sprintf("The box contains %d %s-quality items.", count, name[1])
-		case "quality_average":
-			var sum int64
-			for _, item := range items {
-				sum += item.Price
-			}
-			average := float64(sum) / float64(len(items))
-			fact.AveragePrice = &average
-			zhTitle, enTitle = "指定品质均价", "Average for one quality"
-			zh, en = fmt.Sprintf("箱内%s品质物品的实际均价为 %.2f 金币。", name[0], average), fmt.Sprintf("The actual average price of %s-quality items in this box is %.2f coins.", name[1], average)
-		case "random_quality_price":
-			item := items[Random(len(items))]
-			fact.ItemID, fact.Price = item.ID, &item.Price
-			zhTitle, enTitle = "指定品质单件价格", "One item's price within a quality"
-			zh, en = fmt.Sprintf("随机抽中的%s品质物品 %s，实际价格为 %d 金币。", name[0], item.ID, item.Price), fmt.Sprintf("Randomly selected %s-quality item %s has an actual price of %d coins.", name[1], item.ID, item.Price)
 		}
 	default:
 		return Clue{}, fmt.Errorf("unknown hint builtin: %s", kind)

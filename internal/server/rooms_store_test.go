@@ -40,8 +40,8 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	_ = json.Unmarshal(created, &roomInfo)
 	id := roomInfo["room_id"].(string)
 	suffix := "?room=" + id
-	purchaseJoinCards(t, s, a, `{"cards":["largest_price","item_count"]}`)
-	checkedRequest(t, s, "POST", "/api/join"+suffix, a, `{"cards":["largest_price","item_count"]}`, 201)
+	purchaseJoinCards(t, s, a, `{"cards":["largest_quality","item_count"]}`)
+	checkedRequest(t, s, "POST", "/api/join"+suffix, a, `{"cards":["largest_quality","item_count"]}`, 201)
 	initial := checkedRequest(t, s, "GET", "/api/state"+suffix, a, "", 200)
 	var lobbyView game.View
 	if err := json.Unmarshal(initial, &lobbyView); err != nil {
@@ -61,7 +61,7 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/join"+suffix, b, `{"cards":[]}`, 201)
 	checkedRequest(t, s, "POST", "/api/start"+suffix, b, "", 403)
 	checkedRequest(t, s, "POST", "/api/start"+suffix, a, "", 200)
-	checkedRequest(t, s, "POST", "/api/card"+suffix, a, `{"reason":"protocol test","round":1,"card":"largest_price"}`, 200)
+	checkedRequest(t, s, "POST", "/api/card"+suffix, a, `{"reason":"protocol test","round":1,"card":"largest_quality"}`, 200)
 	private := checkedRequest(t, s, "POST", "/api/bid"+suffix, a, `{"reason":"protocol test","round":1,"amount":77777}`, 200)
 	public := checkedRequest(t, s, "GET", "/api/state"+suffix, "", "", 200)
 	var avatarView game.View
@@ -88,7 +88,7 @@ func TestRoomsRestorePrivateBidsReplayAndCrossRestartResults(t *testing.T) {
 		}
 	}
 	checkedRequest(t, s, "POST", "/api/bid"+suffix, a, `{"reason":"protocol test","round":1,"amount":1}`, 409)
-	checkedRequest(t, s, "POST", "/api/card"+suffix, a, `{"reason":"protocol test","round":1,"card":"largest_price"}`, 409)
+	checkedRequest(t, s, "POST", "/api/card"+suffix, a, `{"reason":"protocol test","round":1,"card":"largest_quality"}`, 409)
 	checkedRequest(t, s, "POST", "/api/bid"+suffix, b, `{"reason":"protocol test","round":1,"amount":60000}`, 200)
 	for round := 2; round <= game.Rounds; round++ {
 		for _, token := range []string{a, b} {

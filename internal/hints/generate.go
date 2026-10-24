@@ -24,12 +24,11 @@ type Item struct {
 	ID          string `json:"id"`
 	Category    string `json:"category,omitempty"`
 	Quality     string `json:"quality"`
-	Price       int64  `json:"price"`
 	TopLeft     Point  `json:"top_left"`
 	BottomRight Point  `json:"bottom_right"`
 }
 
-// Request deliberately excludes players, bids, skills and credentials.
+// Request excludes prices, identities, players, bids, skills and credentials.
 type Request struct {
 	Categories      map[string]string `json:"categories,omitempty"`
 	ProtocolVersion int               `json:"protocol_version"`

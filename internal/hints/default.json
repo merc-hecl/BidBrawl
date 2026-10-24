@@ -14,14 +14,6 @@
       "builtin": "quality_count"
     },
     {
-      "id": "quality_average",
-      "builtin": "quality_average"
-    },
-    {
-      "id": "random_quality_price",
-      "builtin": "random_quality_price"
-    },
-    {
       "id": "quality_presence",
       "builtin": "quality_presence"
     },

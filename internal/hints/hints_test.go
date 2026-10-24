@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -38,11 +37,11 @@ func TestConfigRejectsAmbiguousOrInvalidPlugins(t *testing.T) {
 
 func TestBuiltinFactsAreAccurateAndLimited(t *testing.T) {
 	r := Request{ProtocolVersion: 1, Round: 1, BoxWidth: 5, BoxHeight: 1, Items: []Item{
-		{ID: "a", Quality: "common", Price: 20, TopLeft: Point{0, 0}, BottomRight: Point{1, 1}},
-		{ID: "b", Quality: "common", Price: 100, TopLeft: Point{1, 0}, BottomRight: Point{2, 1}},
-		{ID: "c", Quality: "rare", Price: 600, TopLeft: Point{2, 0}, BottomRight: Point{3, 1}},
-		{ID: "d", Quality: "epic", Price: 1000, TopLeft: Point{3, 0}, BottomRight: Point{4, 1}},
-		{ID: "e", Quality: "common", Price: 50, TopLeft: Point{4, 0}, BottomRight: Point{5, 1}},
+		{ID: "a", Quality: "common", TopLeft: Point{0, 0}, BottomRight: Point{1, 1}},
+		{ID: "b", Quality: "common", TopLeft: Point{1, 0}, BottomRight: Point{2, 1}},
+		{ID: "c", Quality: "rare", TopLeft: Point{2, 0}, BottomRight: Point{3, 1}},
+		{ID: "d", Quality: "epic", TopLeft: Point{3, 0}, BottomRight: Point{4, 1}},
+		{ID: "e", Quality: "common", TopLeft: Point{4, 0}, BottomRight: Point{5, 1}},
 	}}
 	for n := range r.Items {
 		r.Items[n].Category = []string{"household", "art"}[n%2]
@@ -101,24 +100,13 @@ func TestBuiltinFactsAreAccurateAndLimited(t *testing.T) {
 				if *f.Count != len(group) {
 					t.Fatal("inaccurate count", f)
 				}
-			case "quality_average":
-				var sum int64
-				for _, item := range group {
-					sum += item.Price
-				}
-				if len(group)*2 > len(r.Items) || *f.AveragePrice != float64(sum)/float64(len(group)) {
-					t.Fatal("inaccurate or overly broad average", f)
-				}
-			case "random_shape", "random_quality", "random_quality_price":
+			case "random_shape", "random_quality":
 				found := false
 				for _, item := range r.Items {
 					if item.ID == f.ItemID {
 						found = true
 						if f.Quality != "" && f.Quality != item.Quality {
 							t.Fatal("inaccurate quality")
-						}
-						if f.Price != nil && *f.Price != item.Price {
-							t.Fatal("inaccurate item price")
 						}
 						if f.TopLeft != nil && (*f.TopLeft != item.TopLeft || *f.BottomRight != item.BottomRight) {
 							t.Fatal("inaccurate shape")
@@ -135,15 +123,15 @@ func TestBuiltinFactsAreAccurateAndLimited(t *testing.T) {
 	}
 }
 
-func TestBroadPricesAndInvalidFactsAreRejected(t *testing.T) {
-	r := Request{Items: []Item{{ID: "a", Quality: "common", Price: 60, BottomRight: Point{1, 1}}}}
+func TestPriceFactsAndInvalidFactsAreRejected(t *testing.T) {
+	r := Request{Items: []Item{{ID: "a", Quality: "common", BottomRight: Point{1, 1}}}}
 	for _, kind := range []string{"quality_average", "random_quality_price"} {
-		if _, err := builtin(kind, r); !errors.Is(err, ErrNotApplicable) {
+		if _, err := builtin(kind, r); err == nil {
 			t.Fatal("single item reveals whole value", kind, err)
 		}
 	}
-	r.Items = append(r.Items, Item{ID: "b", Quality: "common", Price: 90, BottomRight: Point{2, 1}})
-	if _, err := builtin("quality_average", r); !errors.Is(err, ErrNotApplicable) {
+	r.Items = append(r.Items, Item{ID: "b", Quality: "common", BottomRight: Point{2, 1}})
+	if _, err := builtin("quality_average", r); err == nil {
 		t.Fatal("whole-box average revealed")
 	}
 	if _, err := builtin("unknown", r); err == nil {
@@ -151,6 +139,8 @@ func TestBroadPricesAndInvalidFactsAreRejected(t *testing.T) {
 	}
 	for _, text := range []string{
 		`{"title":"x","message":"y","fact":{"type":"unknown"}}`,
+		`{"title":"x","message":"y","fact":{"type":"quality_average","quality":"rare","average_price":100}}`,
+		`{"title":"x","message":"y","fact":{"type":"random_quality_price","item_id":"one","quality":"rare","price":100}}`,
 		`{"title":"x","message":"y","fact":{"type":"quality_count","quality":"common","count":2,"price":100}}`,
 		`{"title":"x","message":"y","fact":{"type":"quality_presence","quality":"rare","present":true,"count":2}}`,
 		`{"title":"x","message":"y","fact":{"type":"quality_largest_area","quality":"rare","area":0}}`,
@@ -203,6 +193,18 @@ func TestHintProcess(t *testing.T) {
 	if len(req) != 5 || req["items"] == nil || req["protocol_version"] == nil {
 		os.Exit(3)
 	}
+
+	var items []map[string]json.RawMessage
+	if err := json.Unmarshal(req["items"], &items); err != nil {
+		os.Exit(5)
+	}
+	for _, item := range items {
+		for _, key := range []string{"price", "name", "template_id"} {
+			if item[key] != nil {
+				os.Exit(6)
+			}
+		}
+	}
 	switch mode {
 	case "slow":
 		time.Sleep(5 * time.Second)
@@ -222,7 +224,7 @@ func TestHintProcess(t *testing.T) {
 }
 
 func TestExecutableProtocolLimitsAndErrors(t *testing.T) {
-	r := Request{ProtocolVersion: 1, Round: 3, BoxWidth: 20, BoxHeight: 30, Items: []Item{{Quality: "common", Price: 60, BottomRight: Point{2, 2}}}}
+	r := Request{ProtocolVersion: 1, Round: 3, BoxWidth: 20, BoxHeight: 30, Items: []Item{{Quality: "common", BottomRight: Point{2, 2}}}}
 	for _, mode := range []string{"success", "failure", "oversize", "extra", "trailing", "slow"} {
 		t.Run(mode, func(t *testing.T) {
 			p := Plugin{ID: "custom", Command: []string{os.Args[0], "-test.run=^TestHintProcess$", "--", "hint-helper:" + mode}}

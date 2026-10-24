@@ -10,13 +10,13 @@ import (
 
 func TestCardRoundGateIsAtomicAndDurable(t *testing.T) {
 	g, _ := New(2)
-	_, a, _ := g.Join("A", []string{"audit", "random_shape"})
+	_, a, _ := g.Join("A", []string{"quality_counts", "random_shape"})
 	_, b, _ := g.Join("B", nil)
 	if err := g.Start(); err != nil {
 		t.Fatal(err)
 	}
 	before := mustSnapshot(t, g)
-	if err := g.UseCard(a, 1, "audit", "", "seek full value"); err == nil {
+	if err := g.UseCard(a, 1, "quality_counts", "", "seek full value"); err == nil {
 		t.Fatal("early audit accepted")
 	}
 	if !bytes.Equal(before, mustSnapshot(t, g)) {
@@ -34,19 +34,15 @@ func TestCardRoundGateIsAtomicAndDurable(t *testing.T) {
 	}
 	g, _ = Restore(mustSnapshot(t, g))
 	public, _ := g.Observe("")
-	if err := g.UseCard(a, 5, "audit", "", "value the final offer"); err != nil {
+	if err := g.UseCard(a, 5, "quality_counts", "", "value the final offer"); err != nil {
 		t.Fatal(err)
 	}
 	after, _ := g.Observe("")
 	if !bytes.Equal(public, after) || len(view(t, g, b).Self.Hints) != 0 {
 		t.Fatal("audit leaked to public or peer")
 	}
-	var expected int64
-	for _, i := range scoutableItems(g.items) {
-		expected += i.Price
-	}
 	v := view(t, g, a)
-	if v.Self.Hints[1].Data["total_value"] != float64(expected) || v.Self.CardCost != 35200 {
+	if v.Self.Hints[1].Data["counts"] == nil || v.Self.CardCost != 12200 {
 		t.Fatal("unlocked audit result or cost incorrect")
 	}
 	restored, err := Restore(mustSnapshot(t, g))
@@ -68,8 +64,8 @@ func TestFilteredMeansAndCombinedTiers(t *testing.T) {
 		{ID: "c", Category: "tools", Quality: "legendary", Price: 5000, BottomRight: Point{1, 1}},
 		{ID: "egg", Category: "easter_egg", Quality: "easter_egg", Price: 17500000, BottomRight: Point{1, 1}},
 	}
-	d := g.effect(cards.Effect{Type: "average", Measure: "price", Area: 4}, nil)
-	if d["average_price"] != float64(500) || len(d) != 1 {
+	d := g.effect(cards.Effect{Type: "average", Measure: "area", Area: 4}, nil)
+	if d["average_area"] != float64(4) || len(d) != 1 {
 		t.Fatal("area mean or count privacy incorrect", d)
 	}
 	d = g.effect(cards.Effect{Type: "average", Measure: "area", Qualities: []string{"epic", "legendary"}}, nil)
@@ -84,13 +80,13 @@ func TestFilteredMeansAndCombinedTiers(t *testing.T) {
 	if !reflect.DeepEqual(d["counts"], map[string]int{"common": 0, "epic": 1}) {
 		t.Fatal("group counts escaped filter", d)
 	}
-	d = g.effect(cards.Effect{Type: "average", Measure: "price", Category: "medical"}, nil)
-	if d["average_price"] != nil || len(d) != 1 {
+	d = g.effect(cards.Effect{Type: "average", Measure: "area", Category: "medical"}, nil)
+	if d["average_area"] != nil || len(d) != 1 {
 		t.Fatal("empty mean invented a price", d)
 	}
 	for range 20 {
-		d = g.effect(cards.Effect{Type: "average", Measure: "price", Area: 4, SampleSize: 1}, nil)
-		if (d["average_price"] != float64(100) && d["average_price"] != float64(900)) || d["sample_count"] != 1 || d["sample_limit"] != 1 {
+		d = g.effect(cards.Effect{Type: "average", Measure: "area", Area: 4, SampleSize: 1}, nil)
+		if d["average_area"] != float64(4) || d["sample_count"] != 1 || d["sample_limit"] != 1 {
 			t.Fatal("sample leaked population mean", d)
 		}
 	}
@@ -106,9 +102,8 @@ func TestFilteredMeansAndCombinedTiers(t *testing.T) {
 
 func TestChosenCardTargetIsPrivateAtomicAndSurvivesRestore(t *testing.T) {
 	for _, tc := range []struct{ card, target, key string }{
-		{"category_value", "art", "total_value"},
+		{"category_shapes", "art", "items"},
 		{"target_quality_count", "legendary", "count"},
-		{"area_average", "4", "average_price"},
 		{"region_census", "northwest", "counts"},
 	} {
 		t.Run(tc.card, func(t *testing.T) {
@@ -173,9 +168,9 @@ func TestRegionalEffectsUseTopLeftCornerAndExcludeEggs(t *testing.T) {
 		{ID: "se", Quality: "rare", Price: 400, TopLeft: Point{2, 2}, BottomRight: Point{5, 5}},
 		{ID: "egg", Category: "easter_egg", Quality: "easter_egg", Price: 17500000, TopLeft: Point{2, 2}, BottomRight: Point{3, 3}},
 	}
-	for region, want := range map[string]int64{"northwest": 100, "northeast": 200, "southwest": 300, "southeast": 400} {
-		d := g.effect(cards.Effect{Type: "value", Region: region}, nil)
-		if d["total_value"] != want {
+	for region, want := range map[string]int64{"northwest": 9, "northeast": 6, "southwest": 6, "southeast": 9} {
+		d := g.effect(cards.Effect{Type: "area", Region: region}, nil)
+		if d["area"] != want {
 			t.Fatal("region overlaps, misses dividing line or reveals egg", region, d)
 		}
 	}
@@ -226,11 +221,20 @@ func TestFocusedAppraisalRequiresPersonalObservationAndPersists(t *testing.T) {
 		}
 	}
 	target := p.inspection[0].ID
+	g.SetCardPrices(map[string]map[string]int64{p.id: {"focused_appraisal": cards.MinimumAppraisalPrice - 1}})
+	before = mustSnapshot(t, g)
+	if g.UseCard(a, 2, "focused_appraisal", target, "underpriced appraisal") == nil || !bytes.Equal(before, mustSnapshot(t, g)) {
+		t.Fatal("underpriced stock bypassed appraisal cost or changed state")
+	}
+	g.SetCardPrices(map[string]map[string]int64{p.id: {"focused_appraisal": cards.MinimumAppraisalPrice}})
 	public, _ := g.Observe("")
 	if err := g.UseCard(a, 2, "focused_appraisal", target, "appraise a known candidate"); err != nil {
 		t.Fatal(err)
 	}
 	v := view(t, g, a)
+	if v.Self.CardCost != cards.MinimumAppraisalPrice {
+		t.Fatal("appraisal cost not charged")
+	}
 	d := v.Self.Hints[0].Data
 	if d["item_id"] != target || d["target"] != target || d["price"] == nil || d["template_id"] == nil {
 		t.Fatal("chosen item was not fully appraised", d)
@@ -280,7 +284,7 @@ func TestUnknownExtremaAdvanceWithoutChangingFixedTargets(t *testing.T) {
 
 func TestConfiguredCardsAndSnapshot(t *testing.T) {
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit", "census"}, Cards: []cards.Definition{
-		{ID: "audit", Name: "组合全检", Description: "最大物品全部信息", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price", "shape"}}},
+		{ID: "audit", Name: "组合全检", Description: "最大物品品质与轮廓", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "shape"}}},
 		{ID: "census", Name: "清点", Description: "物品总数", Price: 1, Effect: cards.Effect{Type: "count"}},
 	}}
 	g, err := NewWithCards(2, cfg)
@@ -309,7 +313,7 @@ func TestConfiguredCardsAndSnapshot(t *testing.T) {
 		t.Fatal(err)
 	}
 	data := view(t, g, a).Self.Hints[0].Data
-	if data["item_id"] != "a" || data["quality"] != "rare" || data["price"] != float64(500) || len(data) != 5 {
+	if data["item_id"] != "a" || data["quality"] != "rare" || data["price"] != nil || len(data) != 4 {
 		t.Fatal("configured combined reveal or tie selection incorrect", data)
 	}
 	if !reflect.DeepEqual(before, view(t, g, "")) || len(view(t, g, b).Self.Hints) != 0 {

@@ -63,8 +63,8 @@ func TestAuthenticationAndPrivacy(t *testing.T) {
 	tokens := []string{}
 	for _, name := range []string{"A", "B"} {
 		token, _ := accountSession(t, s, name)
-		purchaseJoinCards(t, s, token, `{"cards":["largest_price"]}`)
-		code, b := request(t, s, "POST", "/api/join", token, `{"cards":["largest_price"]}`)
+		purchaseJoinCards(t, s, token, `{"cards":["largest_quality"]}`)
+		code, b := request(t, s, "POST", "/api/join", token, `{"cards":["largest_quality"]}`)
 		if code != 201 {
 			t.Fatal(code, string(b))
 		}
@@ -80,7 +80,7 @@ func TestAuthenticationAndPrivacy(t *testing.T) {
 		t.Fatal(code)
 	}
 	_, before := request(t, s, "GET", "/api/state", "", "")
-	code, b := request(t, s, "POST", "/api/card", tokens[0], `{"reason":"protocol test","round":1,"card":"largest_price"}`)
+	code, b := request(t, s, "POST", "/api/card", tokens[0], `{"reason":"protocol test","round":1,"card":"largest_quality"}`)
 	if code != 200 {
 		t.Fatal(code, string(b))
 	}

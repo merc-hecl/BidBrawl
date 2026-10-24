@@ -119,7 +119,7 @@ func TestConfiguredPricesWeightsBidsAndRestore(t *testing.T) {
 			if !reflect.DeepEqual(g.GameConfig(), cfg) {
 				t.Fatal("caller changed room configuration")
 			}
-			_, a, _ := g.Join("A", []string{"largest_price", "quality_counts"})
+			_, a, _ := g.Join("A", []string{"largest_quality", "quality_counts"})
 			_, b, _ := g.Join("B", nil)
 			if err = g.Start(); err != nil {
 				t.Fatal(err)
@@ -129,11 +129,11 @@ func TestConfiguredPricesWeightsBidsAndRestore(t *testing.T) {
 					t.Fatal("generator ignored configured prices/weights")
 				}
 			}
-			if err = g.UseCard(a, 1, "largest_price", "", "protocol fixture"); err != nil {
+			if err = g.UseCard(a, 1, "largest_quality", "", "protocol fixture"); err != nil {
 				t.Fatal(err)
 			}
-			if got := view(t, g, a).Self.Hints[0].Data["price"]; got != float64(1_234_567) {
-				t.Fatal("skill used stale prices", got)
+			if got := view(t, g, a).Self.Hints[0].Data["quality"]; got != chosen.ID {
+				t.Fatal("skill used stale quality", got)
 			}
 			if err = g.Submit(a, 1, cfg.InitialAssets+1, "protocol fixture"); err == nil {
 				t.Fatal("custom bid cap ignored")

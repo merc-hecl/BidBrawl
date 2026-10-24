@@ -11,6 +11,7 @@ test('area averages preserve units, precision and an empty result in both langua
  for(const locale of ['zh-CN','en']){
   setLocale(locale,false);
   assert.equal(intelligenceSummary({average_area:2.5},{rules:{}}),t('intelAverageArea',{value:'2.5'}));
+  assert.equal(intelligenceSummary({average_area:2.5,sample_count:3},{rules:{}}),t('intelSampleAverageArea',{count:3,value:'2.5'}));
   assert.equal(intelligenceSummary({average_area:null},{rules:{}}),t('intelAverageArea',{value:t('noCandidates')}));
  }
  setLocale('zh-CN',false);
@@ -18,23 +19,25 @@ test('area averages preserve units, precision and an empty result in both langua
 
 test('card call details show combined quality and exact-area scopes',async()=>{
  const cards=JSON.parse(await readFile(new URL('../cards/default.json',import.meta.url),'utf8')).cards;
+ cards.push({id:'four_cell_count',name:'Count',effect:{type:'count',area:4}});
  const view={rules:{cards,categories:[]}};
  try{for(const locale of ['zh-CN','en']){
   setLocale(locale,false);
   const detail=id=>actionDetail({action:'card',status:'success',round:1,params:{card:id},result:{data:{}},source:'server'},view);
-  assert.ok(detail('four_cell_average').includes(t('book.areaScope',{count:4})));
+  assert.ok(detail('four_cell_count').includes(t('book.areaScope',{count:4})));
   assert.ok(detail('precious_count').includes(t('epic')+' + '+t('legendary')));
  }}finally{setLocale('zh-CN',false);}
 });
 
 test('card call details show the private chosen target safely',async()=>{
  const cards=JSON.parse(await readFile(new URL('../cards/default.json',import.meta.url),'utf8')).cards;
+ cards.push({id:'area_count',name:'Count',target:'area',effect:{type:'count'}});
  const view={rules:{cards,categories:[{id:'art',name:'书画艺术'}]}};
  try{for(const locale of ['zh-CN','en']){
   setLocale(locale,false);
   const detail=(card,target)=>actionDetail({action:'card',status:'success',round:3,params:{card,target},result:{data:{count:0}},source:'server'},view);
   assert.ok(detail('region_census','southeast').includes(t('book.region.southeast')));
-  assert.ok(detail('area_average','6').includes(t('book.areaScope',{count:6})));
+  assert.ok(detail('area_count','6').includes(t('book.areaScope',{count:6})));
   assert.ok(detail('target_quality_count','legendary').includes(t('legendary')));
   assert.ok(detail('focused_appraisal','observed-id').includes(t('chosenItem',{id:'observed-id'})));
  }}finally{setLocale('zh-CN',false);}
@@ -168,14 +171,14 @@ test('statistics and agent profile work without a selected room and never filter
 });
 source.rules.cards=JSON.parse(await readFile(new URL('../cards/default.json',import.meta.url),'utf8')).cards;
 
-test('approved public facts reveal shapes and merge same-item quality and price',()=>{
+test('approved public facts merge quality while ignoring removed price facts',()=>{
   const view={...source,settlement:undefined,public_hints:[
     {round:1,data:{fact:{type:'random_shape',item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}}}},
-    {round:3,data:{fact:{type:'random_quality_price',item_id:'known',quality:'rare',price:456}}},
+    {round:3,data:{fact:{type:'random_quality',item_id:'known',quality:'rare'}}},
     {round:3,data:{fact:{type:'quality_count',quality:'common',count:5}}},
     {round:3,data:{fact:{type:'random_quality_price',item_id:'unlocated',quality:'epic',price:999}}},
   ]};
-  assert.deepEqual(knownItems(view),[{id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1},quality:'rare',price:456}]);
+  assert.deepEqual(knownItems(view),[{id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1},quality:'rare'}]);
 });
 
 test('custom clue text is escaped, localized and cannot reveal item geometry',()=>{

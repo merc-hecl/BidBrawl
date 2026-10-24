@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"regexp"
+	"slices"
 	"strconv"
 	"strings"
 	"unicode"
@@ -34,6 +35,14 @@ type Effect struct {
 	Region      string   `json:"region,omitempty"`
 	ItemID      string   `json:"item_id,omitempty"`
 	UnknownOnly bool     `json:"unknown_only,omitempty"`
+}
+
+// MinimumAppraisalPrice is the minimum cost of an exact single-item appraisal.
+const MinimumAppraisalPrice int64 = 25000
+
+// RevealsPrice includes identity because the public catalog lists exact prices.
+func (e Effect) RevealsPrice() bool {
+	return slices.Contains(e.Fields, "price") || slices.Contains(e.Fields, "identity")
 }
 
 type Definition struct {
@@ -150,6 +159,9 @@ func (c Config) Validate() error {
 		if !validText(card.Name, 80) || !validText(card.Description, 1000) {
 			return fmt.Errorf("card %s: name and description must be nonempty text (max 80 / 1000 characters)", card.ID)
 		}
+		if card.Effect.RevealsPrice() && (card.Target != "item" || card.Price < MinimumAppraisalPrice || card.MinRound < 2) {
+			return fmt.Errorf("card %s: exact price or identity requires an observed item target, min_round >= 2 and price >= %d", card.ID, MinimumAppraisalPrice)
+		}
 		if err := card.Effect.validate(); err != nil {
 			return fmt.Errorf("card %s: %w", card.ID, err)
 		}
@@ -200,13 +212,13 @@ func (e Effect) validate() error {
 		if e.Selector != "" || len(e.Fields) != 0 || (e.GroupBy != "" && e.GroupBy != "quality" && e.GroupBy != "category") {
 			return errors.New("count accepts only optional group_by=quality/category")
 		}
-	case "value", "area":
+	case "area":
 		if e.Selector != "" || len(e.Fields) != 0 || e.GroupBy != "" {
-			return errors.New("value/area only accept filters")
+			return errors.New("area only accepts filters")
 		}
 	case "average":
-		if e.Selector != "" || len(e.Fields) != 0 || e.GroupBy != "" || (e.Measure != "price" && e.Measure != "area") {
-			return errors.New("average requires measure=price/area and only accepts filters and sample_size")
+		if e.Selector != "" || len(e.Fields) != 0 || e.GroupBy != "" || e.Measure != "area" {
+			return errors.New("average requires measure=area and only accepts filters and sample_size")
 		}
 	default:
 		return fmt.Errorf("unknown effect type: %q", e.Type)

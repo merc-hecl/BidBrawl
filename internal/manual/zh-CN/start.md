@@ -60,7 +60,7 @@ bidbrawl sell -all
 bidbrawl relief
 ```
 
-共有 26 种专长：14 种侧重品类（家居、数码、工具、书画、珠宝、载具、古籍、乐器、玩具、钟表、军品、器械、古董、运动），12 种侧重跨品类的尺寸、品质、估价、样本或分区情报。用 `catalog` 查看 `specialties` 中各 ID、description 和逐轮 steps；指定房间用 `catalog -room ROOM_ID`。可用 `-category` 缩小到该专长支持的子类；region 选 northwest / northeast / southwest / southeast，默认 northwest。专长可重复选择，选择公开、结果私有。
+共有 26 种专长：14 种侧重品类（家居、数码、工具、书画、珠宝、载具、古籍、乐器、玩具、钟表、军品、器械、古董、运动），12 种侧重跨品类的尺寸、品质、占格、样本或分区情报。用 `catalog` 查看 `specialties` 中各 ID、description 和逐轮 steps；指定房间用 `catalog -room ROOM_ID`。可用 `-category` 缩小到该专长支持的子类；region 选 northwest / northeast / southwest / southeast，默认 northwest。专长可重复选择，选择公开、结果私有。
 
 购买与系统回收在非竞拍时间可用，包括房间准备阶段。买卡扣现金、使用消耗，未用卡保留，最多携带五张不同卡、每轮最多使用一张。库存中卡牌以实际购入价记录成本。仓库的出售 ID 见 inventory.items[].id；藏品无玩家市场、无保管费。
 

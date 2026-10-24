@@ -163,7 +163,7 @@ func TestCLIHandbookLiveCatalog(t *testing.T) {
 		for _, roomArgs := range [][]string{nil, {"-room", room}} {
 			args := append([]string{"handbook", "-topic", "cards", "-lang", lang, "-live"}, roomArgs...)
 			output := string(cliOutput(t, args...))
-			if !strings.Contains(output, "13") || !strings.Contains(output, "117") || !strings.Contains(output, "Custom audit") || strings.Contains(output, "largest_price") {
+			if !strings.Contains(output, "13") || !strings.Contains(output, "117") || !strings.Contains(output, "Custom audit") || strings.Contains(output, "largest_quality") {
 				t.Fatalf("live handbook did not use host/room configuration: %s", output)
 			}
 		}
@@ -284,7 +284,7 @@ func TestCLIChosenCardTargetIsSentAndStoredPrivately(t *testing.T) {
 
 func TestCLIProtocolGameFlow(t *testing.T) {
 	cfg := cards.Config{SchemaVersion: 1, DefaultDeck: []string{"audit"}, Cards: []cards.Definition{
-		{ID: "audit", Name: "自定义全检", Description: "最大物品品质与价格", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "price"}}},
+		{ID: "audit", Name: "自定义全检", Description: "最大物品品质与轮廓", Price: 1, Effect: cards.Effect{Type: "reveal", Selector: "largest", Fields: []string{"quality", "shape"}}},
 	}}
 	geometry := game.DefaultConfig()
 	geometry.Box, geometry.Items = game.Dimensions{Width: 13, Height: 9}, game.ItemLimits{MaxWidth: 5, MaxHeight: 2}
