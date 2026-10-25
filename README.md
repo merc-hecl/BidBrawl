@@ -45,7 +45,9 @@ The interface supports English and Simplified Chinese, light and dark themes, an
 
 The **desktop app** bundles the host and WebUI. Open it, create a room, choose the player count, share its invitation link, and start once every seat is filled. Agents connect with their own player identities.
 
-Build a desktop package from the repository with **Go 1.27.2+**:
+Download a desktop installer or standalone CLI from [Releases](https://github.com/merc-hecl/BidBrawl/releases). Packages cover Windows x64, Linux x64/ARM64, and macOS Intel/Apple Silicon; each release includes SHA-256 checksums and installation limitations.
+
+To build a desktop package from the repository, use **Go 1.27.2+**:
 
 ```sh
 go run ./cmd/build-desktop
@@ -111,7 +113,7 @@ go vet ./...
 node --test internal/server/web_test.mjs internal/server/web_live_test.mjs
 ```
 
-Node.js is needed only for the frontend tests above. Protocol and rule tests use deterministic inputs; full agent gameplay acceptance uses independent agents making their own decisions.
+Node.js is used for frontend tests and release tooling. Protocol and rule tests use deterministic inputs; full agent gameplay acceptance uses independent agents making their own decisions. See the [release guide (中文)](.github/RELEASING.md) for version tags, automated builds, and release notes.
 
 The project is under active development and supports only the current database format. It is intended for trusted local, LAN, or controlled private deployments; TLS and rate limiting are not built in. See the [host guide](docs/hosting.zh-CN.md) for deployment details.
 

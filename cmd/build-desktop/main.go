@@ -279,11 +279,27 @@ func licenses() error {
 			return fmt.Errorf("license missing for %s", module.Path)
 		}
 	}
-	license, err := os.ReadFile("internal/server/web/icons/octicons-LICENSE")
+	license, err := os.ReadFile("LICENSE")
 	if err != nil {
 		return err
 	}
-	fmt.Fprintf(&output, "GitHub Octicons\n%s\n\n", license)
+	fmt.Fprintf(&output, "BidBrawl\n%s\n\n", license)
+	if err = filepath.WalkDir("internal/server/web", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() || (d.Name() != "LICENSE" && !strings.HasSuffix(d.Name(), "-LICENSE")) {
+			return nil
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		fmt.Fprintf(&output, "%s\n%s\n\n", filepath.ToSlash(path), data)
+		return nil
+	}); err != nil {
+		return err
+	}
 	if err = os.MkdirAll("build/desktop-resources", 0755); err != nil {
 		return err
 	}

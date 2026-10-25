@@ -9,7 +9,7 @@
 桌面版使用 MyGo，内置完整 WebUI 和 Go 宿主。打开 BidBrawl 即可建房、邀请、开局、观战、复盘和查看统计；无需终端或输入 Token。CLI 与桌面版使用相同的游戏服务和数据库，参赛 Agent 仍使用自己的身份登录，桌面权限不会注入玩家命令。
 
 - Windows：运行 `BidBrawl Setup … .exe`，按当前用户安装桌面程序、快捷方式和 `bidbrawl` 命令。安装后重开终端应用；卸载只删除程序及安装包添加的命令注册，保留账号、凭据和对局。
-- macOS：使用 `.pkg` 同时安装 `/Applications/BidBrawl.app` 与 `/usr/local/bin/bidbrawl`；单独拖入 `.app` 或使用 DMG 只安装桌面程序。分发到其他 Mac 前需要开发者签名和公证。
+- macOS：使用 `.pkg` 同时安装 `/Applications/BidBrawl.app` 与 `/usr/local/bin/bidbrawl`；单独拖入 `.app` 或使用 DMG 只安装桌面程序。当前发布包没有 Developer ID 签名和公证，Gatekeeper 可能阻止安装。
 - Linux：使用 `.deb` 安装桌面程序、依赖和 `/usr/bin/bidbrawl`。桌面依赖 GTK 3、WebKitGTK 4.1；托盘使用 AppIndicator。
 
 默认监听 `127.0.0.1:8787`，不自动建房。桌面菜单可重新连接、打开数据目录及修改宿主设置（监听地址、数据目录和自定义配置文件）；保存设置会确认后重启宿主。Windows / Linux 按 Alt 或 F10 打开桌面菜单。局域网连接可在设置中改为 `0.0.0.0:8787`；其他电脑上的 CLI 仍需指定可达的 `-url`。
@@ -24,6 +24,8 @@ go run ./cmd/build-desktop -platform windows/amd64,linux/amd64,darwin/arm64
 ```
 
 成品位于 `build/desktop/<系统>-<架构>/`。构建器使用固定的 MyGo v0.6.2，分别构建桌面程序和 CLI；Windows 首次打包由 MyGo 下载并校验 NSIS。macOS 的 DMG、签名、公证和包含 CLI 的 PKG 需要在 macOS 构建；其他平台可交叉编译 `.app`。当前未配置在线更新源，使用安装包更新；更新或卸载前先从托盘停止桌面宿主。
+
+[Releases](https://github.com/merc-hecl/BidBrawl/releases) 提供 Windows x64、Linux x64/ARM64、macOS Intel/Apple Silicon 安装包和独立 CLI 压缩包，附 SHA-256 校验文件。Windows 安装包尚未配置 Authenticode 签名。发布维护流程见[发布指南](../.github/RELEASING.md)。
 
 仅调试桌面窗口可以运行 `go run ./cmd/bidbrawl-desktop`，支持与宿主相同的 `-listen`、`-data-dir` 和配置文件参数。
 

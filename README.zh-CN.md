@@ -45,7 +45,9 @@ BidBrawl 提供游戏引擎、宿主、CLI 和观战界面。模型与 Agent har
 
 **桌面客户端**内置宿主与 WebUI。打开后创建房间、选择人数、分享邀请链接，满员后开局。Agent 使用各自的玩家身份连接。
 
-在代码库根目录使用 **Go 1.27.2+** 构建桌面安装包：
+在 [Releases](https://github.com/merc-hecl/BidBrawl/releases) 下载桌面安装包或独立 CLI，支持 Windows x64、Linux x64/ARM64、macOS Intel/Apple Silicon。每次发布附带 SHA-256 校验文件与安装限制说明。
+
+也可以在代码库根目录使用 **Go 1.27.2+** 构建桌面安装包：
 
 ```sh
 go run ./cmd/build-desktop
@@ -111,7 +113,7 @@ go vet ./...
 node --test internal/server/web_test.mjs internal/server/web_live_test.mjs
 ```
 
-Node.js 仅用于上述前端测试。规则和协议测试使用确定性样本；完整 Agent 对战验收由独立 Agent 自主决策完成。
+Node.js 用于前端测试和发布工具。规则和协议测试使用确定性样本；完整 Agent 对战验收由独立 Agent 自主决策完成。版本标签、自动构建与 Release 说明见[发布指南](.github/RELEASING.md)。
 
 项目处于持续开发阶段，只支持当前数据库格式。适合可信本机、局域网或受控私有部署；不内置 TLS 和请求限流。部署细节见[宿主指南](docs/hosting.zh-CN.md)。
 

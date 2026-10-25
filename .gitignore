@@ -1,6 +1,7 @@
 # Build and test artifacts
 /bin/
 /build/
+node_modules/
 /bidbrawl
 *.exe
 *.test
