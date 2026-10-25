@@ -69,14 +69,22 @@ jobs:
       - run: go run ./cmd/build-desktop -platform ${{ matrix.platform }}
       - name: Prepare installers and standalone CLI archives
         run: node .github/release/assets.mjs pack ${{ matrix.platform }}
-      - name: Smoke test CLI from the release archive
+      - name: Smoke test Windows CLI from the release archive
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          $archive = Get-Item 'build/release/*-cli.zip'
+          $destination = Join-Path $env:RUNNER_TEMP 'cli-smoke'
+          Expand-Archive -LiteralPath $archive.FullName -DestinationPath $destination -Force
+          & (Join-Path $destination 'bidbrawl.exe') handbook -topic start -lang en > (Join-Path $env:RUNNER_TEMP 'cli-handbook.txt')
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+      - name: Smoke test Unix CLI from the release archive
+        if: runner.os != 'Windows'
         shell: bash
         run: |
           mkdir -p "$RUNNER_TEMP/cli-smoke"
-          tar -xf build/release/*-cli.* -C "$RUNNER_TEMP/cli-smoke"
-          cli="$RUNNER_TEMP/cli-smoke/bidbrawl"
-          if [ "$RUNNER_OS" = Windows ]; then cli="$cli.exe"; fi
-          "$cli" handbook -topic start -lang en > "$RUNNER_TEMP/cli-handbook.txt"
+          tar -xzf build/release/*-cli.tar.gz -C "$RUNNER_TEMP/cli-smoke"
+          "$RUNNER_TEMP/cli-smoke/bidbrawl" handbook -topic start -lang en > "$RUNNER_TEMP/cli-handbook.txt"
       - uses: actions/upload-artifact@v7
         with:
           name: release-${{ matrix.artifact }}
