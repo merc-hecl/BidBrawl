@@ -96,6 +96,7 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/join?room=table", b, `{"cards":[]}`, 201)
 	checkedRequest(t, s, "POST", "/api/start?room=table", s.HostToken, "", 200)
 	var contents []game.Item
+	var total int64
 	for _, route := range []string{"/api/observer/state?room=table", "/api/observer/replay?room=table&frame=0"} {
 		var opening game.View
 		json.Unmarshal(checkedRequest(t, s, "GET", route, observer, "", 200), &opening)
@@ -106,6 +107,13 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 			t.Fatal("observer state and opening replay have different contents")
 		}
 		contents = opening.Items
+		total = 0
+		for _, item := range contents {
+			total += item.Price
+		}
+		if opening.TotalValue == nil || *opening.TotalValue != total {
+			t.Fatal("observer total does not match complete crate contents")
+		}
 	}
 	checkedRequest(t, s, "POST", "/api/card?room=table", a, `{"round":1,"card":"item_count","reason":"secret first decision"}`, 200)
 	for round := 1; round <= 5; round++ {
@@ -117,7 +125,7 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 				}
 				json.Unmarshal(checkedRequest(t, s, "GET", route, token, "", 200), &public)
 				for _, frame := range append(public.Frames, public.View) {
-					if len(frame.Items) != 0 || frame.Settlement != nil {
+					if len(frame.Items) != 0 || frame.Settlement != nil || frame.TotalValue != nil {
 						t.Fatal("complete box leaked before settlement through public/player route")
 					}
 				}
@@ -141,6 +149,9 @@ func TestHeadlessObserverStatisticsAndReplay(t *testing.T) {
 		json.Unmarshal(checkedRequest(t, s, "GET", fmt.Sprintf("/api/observer/replay?room=table&frame=%d", cursor), observer, "", 200), &frame)
 		if !reflect.DeepEqual(contents, frame.Items) || cursor == 5 && !reflect.DeepEqual(contents, frame.Settlement.Items) {
 			t.Fatal("observer replay lost complete contents or diverged from settlement")
+		}
+		if frame.TotalValue == nil || *frame.TotalValue != total || frame.Settlement != nil && frame.Settlement.Total != total {
+			t.Fatal("observer replay total differs from crate or settlement")
 		}
 	}
 	var fourth game.View

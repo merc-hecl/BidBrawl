@@ -368,12 +368,13 @@ test('observer sees the full box in all frames, selected players keep their visi
   const first={id:'private-first',quality:'rare',top_left:{x:0,y:0},bottom_right:{x:2,y:2}};
   const second={id:'private-second',quality:'epic',top_left:{x:2,y:0},bottom_right:{x:4,y:2}};
   const items=[{...first,name:'First',price:123},{...second,name:'Second',price:456}];
-  const raw=withFrames({...source,phase:'bidding',settlement:undefined,items,initial_inspections:{p1:[first],p2:[second]},public_hints:[]});
+  const raw=withFrames({...source,phase:'bidding',settlement:undefined,items,total_value:579,initial_inspections:{p1:[first],p2:[second]},public_hints:[]});
   const observed=normalizeView(raw,true);
   for(const cursor of [null,0,1,4]){
     const view=observation(observed,cursor),state={...ui,cursor,observer:true,focusPlayer:null};
     assert.deepEqual(knownItems(view),items);
     const html=renderContent(observed,emptyStats,state);
+    assert.ok(html.includes('class="crate-value"')&&html.includes('<strong>579</strong>'));
     assert.ok(html.includes('data-item="private-first"')&&html.includes('data-item="private-second"'));
     assert.ok(!html.includes('has-fog')&&!html.includes('canvas-seal')&&!html.includes('vision-label'));
     const info=itemInfo(view,{...state,focusItem:'private-second'});
@@ -382,6 +383,7 @@ test('observer sees the full box in all frames, selected players keep their visi
       assert.deepEqual(knownItems(view,focusPlayer),[known]);
       const selected={...state,focusPlayer};
       const html=renderContent(observed,emptyStats,selected);
+      assert.ok(!html.includes('class="crate-value"'));
       assert.ok(html.includes(`data-item="${known.id}"`)&&!html.includes(`data-item="${hidden.id}"`));
       assert.ok(html.includes('has-fog')&&html.includes('vision-label'));
       assert.ok(!itemInfo(view,{...selected,focusItem:known.id}).includes(String(items.find(item=>item.id===known.id).price)));
@@ -394,6 +396,9 @@ test('observer sees the full box in all frames, selected players keep their visi
   assert.ok(!publicHTML.includes('private-first')&&!publicHTML.includes('private-second'));
   assert.ok(publicHTML.includes('has-fog')&&publicHTML.includes('canvas-seal'));
   assert.equal(expired.items,undefined);
+  assert.equal(expired.total_value,undefined);
+  assert.ok(!publicHTML.includes('class="crate-value"'));
+  assert.ok(expired.frames.every(frame=>frame.total_value===undefined));
   assert.ok(expired.frames.every(frame=>frame.items===undefined));
   const settled=renderContent(source,emptyStats,{...ui,cursor:null,observer:true});
   assert.ok(!settled.includes('has-fog')&&settled.includes('data-item="hidden-item"'));

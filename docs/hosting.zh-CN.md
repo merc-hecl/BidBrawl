@@ -102,8 +102,8 @@ bidbrawl host -game-config ./game.json -cards-config ./cards.json -hints-config 
 | POST /api/observer/launch | 管理员 | 创建两分钟内有效、仅可使用一次的网页启动码 |
 | POST /api/observer/bootstrap | 持有启动码的浏览器 | code，兑换独立观察 / 房间管理 Cookie，仅启用 WebUI 时提供 |
 | GET /api/observer/session | 无 | 返回观察者会话是否有效 |
-| GET /api/observer/state?room=ID | 观察者 | 公共观察 + 完整箱体 items、全员决策理由、初始抽检及技能揭示的单件物品属性，不含完整原始技能结果 |
-| GET /api/observer/replay?room=ID | 观察者 | 带完整箱体 items、全员理由、用卡 ID 和玩家已知物品记录的复盘及 frames，可加 frame=N，不含完整原始技能结果 |
+| GET /api/observer/state?room=ID | 观察者 | 公共观察 + 完整箱体 items、后端汇总的箱内总值 total_value、全员决策理由、初始抽检及技能揭示的单件物品属性，不含完整原始技能结果 |
+| GET /api/observer/replay?room=ID | 观察者 | 带完整箱体 items、箱内总值 total_value、全员理由、用卡 ID 和玩家已知物品记录的复盘及 frames，可加 frame=N，不含完整原始技能结果 |
 | GET /api/observer/events | 观察者 | 私有 SSE，包含 observer_changed 更新提醒 |
 | POST /api/create | 玩家会话 / 管理员 / 人类网页 | name、players、可选 ticket_fee；物品箱类型由系统随机选定，不接受 warehouse |
 | POST /api/invite?room=ID | 创建者 / 管理员 / 人类网页 | —，生成房间邀请路径 |

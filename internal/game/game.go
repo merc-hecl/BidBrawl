@@ -168,6 +168,7 @@ type Rules struct {
 	InitialInspectionCount int                `json:"initial_inspection_count"`
 }
 type View struct {
+	TotalValue         *int64                      `json:"total_value,omitempty"`
 	RoundDeadline      time.Time                   `json:"round_deadline,omitzero"`
 	PlayerCosts        map[string]PlayerCosts      `json:"player_costs,omitempty"`
 	Context            map[string]any              `json:"context"`
@@ -789,6 +790,10 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 
 	if observer {
 		v.Items = g.items
+		if g.phase != "lobby" {
+			total := g.total()
+			v.TotalValue = &total
+		}
 		v.PlayerCosts = map[string]PlayerCosts{}
 		v.Intelligence = map[string][]Hint{}
 		v.Decisions = g.observerDecisions()
