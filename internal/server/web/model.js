@@ -1,6 +1,6 @@
 // Private observations only survive while the human observer session is active.
 export function normalizeView(raw,observer=false) {
-  return {room_id:raw.room_id, room_name:raw.room_name, version:raw.version, phase:raw.phase, round:raw.round,
+  return {room_id:raw.room_id, room_name:raw.room_name, version:raw.version, phase:raw.phase, round:raw.round,round_deadline:raw.round_deadline,
     activities:observer?(raw.activities||[]):[],player_costs:observer?raw.player_costs:undefined,context:raw.context,intelligence:observer?raw.intelligence:undefined,rules:raw.rules, players:raw.players || [], public_hints:raw.public_hints || [], history:raw.history || [],
     decisions:observer?(raw.decisions || []):[], initial_inspections:observer?raw.initial_inspections:undefined,
     item_reveals:observer?raw.item_reveals:undefined,items:observer?raw.items:undefined,

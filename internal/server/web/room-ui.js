@@ -5,6 +5,7 @@ import {avatar,avatars} from './avatars.js';
 import {activityList,playerActivities,intelligenceSummary,intelligenceTitle} from './actions.js';
 
 const tr=(key,values)=>esc(t(key,values));
+export const bidText=(player,round,amount)=>player.withdraw_round>0&&player.withdraw_round<=round?t('withdrawn'):money(amount);
 const selectedRound=(view,ui)=>ui.cursor===0?0:ui.cursor!==null&&ui.cursor<=view.history.length?ui.cursor:view.round;
 const itemQuality=item=>item.category==='easter_egg'?t('easterEgg'):item.quality?t(item.quality):t('unrevealed');
 
@@ -23,19 +24,19 @@ function playerInfo(source,view,ui){
  const published=view.history.find(h=>h.round===round)?.bids.find(b=>b.player_id===p.id),bid=ui.observer&&current?{amount:current.params.amount}:published;
  const costs=view.player_costs?.[p.id],tab=ui.observer?(ui.activityTab||'actions'):'bids';
  const identity=`<header class="inspector-identity">${avatar(p.avatar,{winner:view.settlement?.winner_id===p.id,context:'peek'})}<div><h2>${esc(p.name)}</h2><p>${esc(localizeName('specialty',specialty))} · ${tr(ui.observer?'authorizedObserver':'publicVision')}${p.withdrawn?' · '+tr('withdrawn'):''}</p></div></header>`;
- const metrics=`<div class="player-action-metrics"><div><span>${tr(ui.observer?'currentOffer':'lastPublicOffer')}</span><strong>${bid?bid.amount===0?tr('withdrawn'):money(bid.amount):'—'}</strong></div>${ui.observer?`<div><span>${tr('cardCost')}</span><strong>${money(costs?.card_cost||0)}</strong></div><div><span>${tr('ticketFee')}</span><strong>${money(costs?.ticket_cost||0)}</strong></div>`:''}</div>`;
+ const metrics=`<div class="player-action-metrics"><div><span>${tr(ui.observer?'currentOffer':'lastPublicOffer')}</span><strong>${bid?esc(bidText(p,round,bid.amount)):'—'}</strong></div>${ui.observer?`<div><span>${tr('cardCost')}</span><strong>${money(costs?.card_cost||0)}</strong></div><div><span>${tr('ticketFee')}</span><strong>${money(costs?.ticket_cost||0)}</strong></div>`:''}</div>`;
  const tabs=ui.observer?`<nav class="player-record-tabs">${['actions','intel','bids'].map(key=>button(tr('playerTab_'+key),'activity-tab:'+key,tab===key?'selected':'',`aria-pressed="${tab===key}"`)).join('')}</nav>`:'';
  let body;
  if(tab==='actions')body=activityList(view,{...ui,actionRound:ui.actionRound??round});
  else if(tab==='intel')body=`<div class="private-intel-records">${(view.intelligence?.[p.id]||[]).map(h=>`<article class="peek-thought"><span>${tr('round',{round:h.round})} · ${tr(h.source==='specialty'?'specialtyIntel':'privateSkills')}</span><strong>${esc(intelligenceTitle(h,view))}</strong><p>${esc(intelligenceSummary(h.data,view))}</p></article>`).join('')||`<p class="peek-empty">${tr('noHints')}</p>`}</div>`;
- else body=`<div class="player-bid-records">${view.history.map(h=>`<div><span>${tr('round',{round:h.round})}</span><strong>${h.bids.find(b=>b.player_id===p.id)?.amount===0?tr('withdrawn'):money(h.bids.find(b=>b.player_id===p.id)?.amount||0)}</strong></div>`).join('')}${view.phase==='bidding'?`<div><span>${tr('round',{round:view.round})}</span><small>${tr('bidNotRevealed')}</small></div>`:''}${!ui.observer?`<div class="activity-restricted">${icon('lock')}<strong>${tr('activityRestrictedTitle')}</strong></div>`:''}</div>`;
+ else body=`<div class="player-bid-records">${view.history.map(h=>`<div><span>${tr('round',{round:h.round})}</span><strong>${esc(bidText(p,h.round,h.bids.find(b=>b.player_id===p.id)?.amount||0))}</strong></div>`).join('')}${view.phase==='bidding'?`<div><span>${tr('round',{round:view.round})}</span><small>${tr('bidNotRevealed')}</small></div>`:''}${!ui.observer?`<div class="activity-restricted">${icon('lock')}<strong>${tr('activityRestrictedTitle')}</strong></div>`:''}</div>`;
  return `<div class="player-action-summary">${identity}${metrics}${tabs}</div><div class="player-tab-content" data-region="player-tab:${tab}">${body}</div>`;
 }
 function seat(player,i,view,ui){
   const winner=view.settlement?.winner_id===player.id;
   const bid=view.history.find(h=>h.round===selectedRound(view,ui))?.bids.find(b=>b.player_id===player.id);
   const label=winner?'crateWinner':player.withdrawn?'withdrawn':['lobby','opening'].includes(view.phase)?'seated':player.submitted?'submitted':'waitingBid';
-  return '<div class="world-seat '+(winner?'seat-winner ':'')+(ui.focusPlayer===player.id?'is-focused':'')+'" data-region="seat:'+esc(player.id)+'">'+button(avatar(player.avatar,{winner})+'<strong>'+esc(player.name)+'</strong><span class="seat-status">'+(bid?bid.amount===0?tr('withdrawn'):money(bid.amount):tr(label))+'</span>','focus-agent:'+player.id,'world-avatar-button','aria-label="'+tr('viewPlayer',{name:player.name})+'" aria-expanded="'+(ui.focusPlayer===player.id)+'" aria-controls="room-inspector"')+'</div>';
+  return '<div class="world-seat '+(winner?'seat-winner ':'')+(ui.focusPlayer===player.id?'is-focused':'')+'" data-region="seat:'+esc(player.id)+'">'+button(avatar(player.avatar,{winner})+'<strong>'+esc(player.name)+'</strong><span class="seat-status">'+(bid?esc(bidText(player,selectedRound(view,ui),bid.amount)):tr(label))+'</span>','focus-agent:'+player.id,'world-avatar-button','aria-label="'+tr('viewPlayer',{name:player.name})+'" aria-expanded="'+(ui.focusPlayer===player.id)+'" aria-controls="room-inspector"')+'</div>';
 }
 export function crate(view,ui){
   const w=view.rules.box_width,h=view.rules.box_height,player=ui.observer?view.players.find(p=>p.id===ui.focusPlayer):null,items=knownItems(view,player?.id);

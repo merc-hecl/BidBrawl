@@ -111,49 +111,55 @@ func roomFailure(w http.ResponseWriter, err error) {
 // see uncommitted bids/settlements. Account assets and settlement commit together;
 // failed writes leave both the live room and account unchanged.
 func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) error) bool {
-	if !s.roomExists(w, rm) {
+	code, err := s.commitRoom(rm, change)
+	if err != nil {
+		if code == 500 {
+			roomFailure(w, err)
+		} else {
+			fail(w, code, err)
+		}
 		return false
 	}
+	return true
+}
+
+// Caller holds s.mu. HTTP actions and deadline expiry share the same transaction.
+func (s *Server) commitRoom(rm *room, change func(*room) error) (int, error) {
+	if s.rooms[rm.id] != rm {
+		return 404, errors.New("room not found")
+	}
 	if !rm.archivedAt.IsZero() {
-		fail(w, 409, errors.New("restore the archived room before acting"))
-		return false
+		return 409, errors.New("restore the archived room before acting")
 	}
 	before, err := publicView(rm.game)
 	if err != nil {
-		roomFailure(w, err)
-		return false
+		return 500, err
 	}
 	beforeObserver, err := rm.game.ObserveObserver()
 	if err != nil {
-		roomFailure(w, err)
-		return false
+		return 500, err
 	}
 	snapshot, err := rm.game.Snapshot()
 	if err != nil {
-		roomFailure(w, err)
-		return false
+		return 500, err
 	}
 	g, err := game.Restore(snapshot)
 	if err != nil {
-		roomFailure(w, err)
-		return false
+		return 500, err
 	}
 	copy := *rm
 	copy.game, copy.members, copy.seatAccounts = g, maps.Clone(rm.members), maps.Clone(rm.seatAccounts)
 	next := &copy
 	if err := change(next); err != nil {
-		fail(w, 409, err)
-		return false
+		return 409, err
 	}
 	public, err := next.game.Observe("")
 	if err != nil {
-		roomFailure(w, err)
-		return false
+		return 500, err
 	}
 	var view game.View
 	if err = json.Unmarshal(public, &view); err != nil {
-		roomFailure(w, err)
-		return false
+		return 500, err
 	}
 	if view.Phase == "settled" && next.settledAt.IsZero() {
 		next.settledAt = time.Now().UTC()
@@ -163,8 +169,7 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 		for _, aid := range next.seatAccounts {
 			a := cloneAccount(s.accountsByID[aid])
 			if a.Assets < view.Rules.TicketFee {
-				fail(w, 409, errors.New("insufficient cash for ticket"))
-				return false
+				return 409, errors.New("insufficient cash for ticket")
 			}
 			a.Assets -= view.Rules.TicketFee
 			updated[aid] = a
@@ -174,8 +179,7 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 	for seat, now := range afterEconomy {
 		prior := beforeEconomy[seat]
 		if len(now.Used) < len(prior.Used) {
-			roomFailure(w, errors.New("card history shrank"))
-			return false
+			return 500, errors.New("card history shrank")
 		}
 		for _, id := range now.Used[len(prior.Used):] {
 			aid := next.seatAccounts[seat]
@@ -184,8 +188,7 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 				a = cloneAccount(s.accountsByID[aid])
 			}
 			if len(a.CardStock[id]) == 0 {
-				fail(w, 409, errors.New("card stock exhausted"))
-				return false
+				return 409, errors.New("card stock exhausted")
 			}
 			a.CardStock[id] = a.CardStock[id][1:]
 			updated[aid] = a
@@ -198,8 +201,7 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 			a = cloneAccount(s.accountsByID[aid])
 		}
 		if a.Assets < view.Settlement.Paid {
-			fail(w, 409, errors.New("insufficient settlement cash"))
-			return false
+			return 409, errors.New("insufficient settlement cash")
 		}
 		a.Assets -= view.Settlement.Paid
 		for _, item := range view.Settlement.Items {
@@ -213,8 +215,7 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 	}
 	if s.store != nil {
 		if err := s.store.saveRoom(next, accounts...); err != nil {
-			roomFailure(w, err)
-			return false
+			return 500, err
 		}
 	}
 	*rm = *next
@@ -237,5 +238,6 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 		}
 		publishTo(s.observerSubscribers, roomEvent{Kind: kind, RoomID: rm.id, Version: current.Version, Rooms: len(view.Players) != len(before.Players) || view.Phase != before.Phase, Results: view.Phase == "settled" && before.Phase != "settled"})
 	}
-	return true
+	s.scheduleDeadline(rm, view)
+	return 200, nil
 }

@@ -54,6 +54,7 @@ type room struct {
 	archivedAt      time.Time
 }
 type Server struct {
+	deadlineTimers      map[string]*time.Timer
 	HostToken           string
 	ObserverToken       string
 	UIToken             string
@@ -94,6 +95,7 @@ func New(geometry game.Config, cfg cards.Config) *Server {
 func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Config) *Server {
 	s := &Server{HostToken: secret(), UIToken: secret(), accounts: map[string]*account{}, accountsByID: map[string]*account{}, credentials: map[[32]byte]*account{}, credentialHashes: map[string][32]byte{}, sessions: map[string]*account{}, rooms: map[string]*room{}, cardConfig: cfg, gameConfig: geometry.Clone(), hintConfig: hintConfig.Clone()}
 	s.subscribers = make(map[chan roomEvent]struct{})
+	s.deadlineTimers = make(map[string]*time.Timer)
 	s.deletedResults = make(map[string]roomResult)
 	s.ObserverToken = secret()
 	s.observerSubscribers = make(map[chan roomEvent]struct{})
@@ -599,7 +601,7 @@ func (s *Server) bid(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if v.Amount == nil {
-		fail(w, 400, errors.New("amount is required; use 0 explicitly for a zero bid"))
+		fail(w, 400, errors.New("amount is required; use withdraw to exit"))
 		return
 	}
 	if err := game.ValidateReason(v.Reason); err != nil {

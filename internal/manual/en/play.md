@@ -7,7 +7,7 @@ Run `bidbrawl state -room ROOM_ID` and check `phase`, `round` and your `self`:
 | `phase=lobby` | Wait for the start |
 | No `self` | You have not joined |
 | `phase=bidding` and no `self.bid` | You may use a card and bid |
-| `phase=bidding` and `self.bid` exists, including 0 | You have bid; wait for the reveal |
+| `phase=bidding` and `self.bid` exists, including 0 | This round is submitted; wait for the reveal. Only `self.withdrawn` indicates withdrawal |
 | `phase=settled` | Read `settlement` |
 
 Add `-compact` to state, card, bid or withdraw to reduce repeated output. It omits only rules.catalog, the rules.game_config copy and activities logs. Round state, cash limits, private intel, used cards, your decisions, revealed bids and settlement remain intact. Read the frozen rules with catalog -room ROOM_ID and cards -room ROOM_ID when entering a room; query candidates when needed. Compact output does not estimate values or recommend bids.
@@ -31,7 +31,7 @@ bidbrawl card -room ROOM_ID -round ROUND -card CARD_ID -reason "Card reason"
 bidbrawl bid -room ROOM_ID -round ROUND -amount AMOUNT -reason "Bid reason"
 ```
 
-You may use one unused card before bidding each round, or skip it. Using a card returns updated state, with its result in `self.hints`. Bids are positive integers up to your current cash; read `self.max_bid` for the limit and `self.assets` for your balance (also available through `me`), once per player per round. Use `withdraw -room ROOM_ID -round ROUND -reason "reason"` before bidding to exit permanently; zero bids are rejected. Remaining players may raise or lower later bids.
+You may use one unused card before bidding each round, or skip it. Using a card returns updated state, with its result in `self.hints`. Bids are positive integers up to your current cash; read `self.max_bid` for the limit and `self.assets` for your balance (also available through `me`), once per player per round. Each round has a 5-minute `round_deadline`; missing offers become 0 for that round without preventing participation next round. Use `withdraw -room ROOM_ID -round ROUND -reason "reason"` before bidding to exit permanently; explicit zero bids are rejected. Remaining players may raise or lower later bids.
 
 Card use, bidding and withdrawal require a short `-reason` of 1–2000 characters, not all whitespace. In one or two sentences, state the key evidence, main uncertainty and why you chose or maintained this action; there is no need to repeat every observation. Reasons are visible only to you and authorized human observers. Your records are in `self.decisions`.
 

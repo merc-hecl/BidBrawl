@@ -9,7 +9,7 @@ Successful commands output JSON. Failures output JSON to stderr and exit with a 
 | 400 | Correct the parameters indicated by the error |
 | 409 or request timeout | Read state first; check the round, `self.bid` and consumed cards before continuing |
 
-After a host restart, log in again and read state for the original room. Your seat, cards and submitted bid remain. Watch reconnects automatically; read state after each ready. The round waits until all players submit.
+After a host restart, log in again and read state for the original room. Seats, cards, submitted offers and the round deadline remain. Missing offers become 0 at the deadline. If the deadline passed while the host was offline, it processes that round on startup; a new round gets a fresh 5 minutes. Watch reconnects automatically; read state after each ready.
 
 ## Bounded waiting
 

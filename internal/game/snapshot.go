@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"time"
 	"unicode/utf8"
 
 	"bidbrawl/internal/cards"
@@ -18,6 +19,7 @@ import (
 // randomness, pending bids, private hints and seat tokens so a restart cannot
 // reroll a box, repeat a skill or change an already settled tie.
 type gameSnapshot struct {
+	RoundDeadline  time.Time        `json:"round_deadline"`
 	LoadoutChanges int              `json:"loadout_changes"`
 	Warehouse      string           `json:"warehouse"`
 	SchemaVersion  int              `json:"schema_version"`
@@ -63,7 +65,7 @@ type playerSnapshot struct {
 func (g *Game) Snapshot() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := gameSnapshot{SchemaVersion: 10, LoadoutChanges: g.loadoutChanges, Warehouse: g.warehouse, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
+	s := gameSnapshot{SchemaVersion: 11, RoundDeadline: g.roundDeadline, LoadoutChanges: g.loadoutChanges, Warehouse: g.warehouse, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
 		Phase: g.phase, Round: g.round, Version: g.version, Players: []playerSnapshot{}, Items: g.items,
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
@@ -85,7 +87,7 @@ func Restore(data []byte) (*Game, error) {
 	if err := d.Decode(&extra); err != io.EOF {
 		return nil, errors.New("expected exactly one game snapshot")
 	}
-	if s.SchemaVersion != 10 {
+	if s.SchemaVersion != 11 {
 		return nil, errors.New("unsupported game snapshot schema")
 	}
 	g, err := NewWithHints(s.PlayerCount, s.Config, s.Cards, s.HintConfig)
@@ -98,6 +100,7 @@ func Restore(data []byte) (*Game, error) {
 	g.warehouse = s.Warehouse
 	g.loadoutChanges = s.LoadoutChanges
 	g.phase, g.round, g.version = s.Phase, s.Round, s.Version
+	g.roundDeadline = s.RoundDeadline
 	g.items, g.hints, g.history = s.Items, s.Hints, s.History
 	g.plannedHints = s.PlannedHints
 	g.decisions, g.settlement = s.Decisions, s.Settlement
@@ -113,6 +116,9 @@ func validSecret(value string, length int) bool {
 }
 
 func (s gameSnapshot) validate() error {
+	if (s.Phase == "bidding") == s.RoundDeadline.IsZero() {
+		return errors.New("invalid round deadline")
+	}
 	if !ValidWarehouse(s.Warehouse) || len(s.Players) > s.PlayerCount || s.Version < 1 {
 		return errors.New("invalid player count or version")
 	}
@@ -133,7 +139,7 @@ func (s gameSnapshot) validate() error {
 				return 0
 			}
 			return s.Config.TicketFee
-		}() || p.Withdrawn != (p.WithdrawRound > 0) || p.WithdrawRound > s.Round || p.Assets < 0 || !validSelection(s.Config.Specialties, p.Specialty, p.Category) || p.CardCost < 0 {
+		}() || p.Withdrawn != (p.WithdrawRound > 0) || p.WithdrawRound < 0 || p.WithdrawRound > s.Round || p.Assets < 0 || !validSelection(s.Config.Specialties, p.Specialty, p.Category) || p.CardCost < 0 {
 			return errors.New("invalid player assets")
 		}
 		count := 0
@@ -214,7 +220,7 @@ func (s gameSnapshot) validate() error {
 			return errors.New("invalid card allowance")
 		}
 		if p.Bid != nil {
-			if *p.Bid < 0 || *p.Bid > p.Assets || *p.Bid == 0 && !p.Withdrawn {
+			if *p.Bid < 0 || *p.Bid > p.Assets || s.Phase == "bidding" && *p.Bid == 0 && !p.Withdrawn {
 				return errors.New("invalid pending bid")
 			}
 			pending++
@@ -277,7 +283,7 @@ func (s gameSnapshot) validate() error {
 			return errors.New("incomplete published round")
 		}
 		for j, bid := range r.Bids {
-			if bid.PlayerID != s.Players[j].ID || bid.Amount < 0 || bid.Amount > s.Players[j].Assets || bid.Amount == 0 && (s.Players[j].WithdrawRound == 0 || s.Players[j].WithdrawRound > r.Round) {
+			if bid.PlayerID != s.Players[j].ID || bid.Amount < 0 || bid.Amount > s.Players[j].Assets || s.Players[j].WithdrawRound > 0 && s.Players[j].WithdrawRound <= r.Round && bid.Amount != 0 {
 				return errors.New("invalid published bid")
 			}
 		}
@@ -355,7 +361,7 @@ func (s gameSnapshot) validate() error {
 
 func (s gameSnapshot) validateDecisions() error {
 	expected := map[string]bool{}
-	for _, p := range s.Players {
+	for i, p := range s.Players {
 		for _, h := range p.Hints {
 			expected[fmt.Sprintf("%d:%s:card", h.Round, p.ID)] = true
 		}
@@ -363,6 +369,8 @@ func (s gameSnapshot) validateDecisions() error {
 			action := "bid"
 			if p.WithdrawRound == r.Round {
 				action = "withdraw"
+			} else if r.Bids[i].Amount == 0 && (p.WithdrawRound == 0 || p.WithdrawRound > r.Round) {
+				action = "timeout"
 			}
 			expected[fmt.Sprintf("%d:%s:%s", r.Round, p.ID, action)] = true
 		}
@@ -370,6 +378,8 @@ func (s gameSnapshot) validateDecisions() error {
 			action := "bid"
 			if p.WithdrawRound == s.Round {
 				action = "withdraw"
+			} else if *p.Bid == 0 && !p.Withdrawn {
+				action = "timeout"
 			}
 			expected[fmt.Sprintf("%d:%s:%s", s.Round, p.ID, action)] = true
 		}
@@ -382,6 +392,11 @@ func (s gameSnapshot) validateDecisions() error {
 			return errors.New("invalid decision history")
 		}
 		lastRound, seen[key] = d.Round, true
+	}
+	for _, p := range s.Players {
+		if p.WithdrawRound > 0 && !seen[fmt.Sprintf("%d:%s:withdraw", p.WithdrawRound, p.ID)] {
+			return errors.New("withdrawal requires an explicit player decision")
+		}
 	}
 	if len(seen) != len(expected) {
 		return errors.New("missing decision reason")

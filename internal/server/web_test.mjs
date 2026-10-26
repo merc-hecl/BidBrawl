@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
 import {catalogs,t,setLocale,localizeCard,localizeName} from './web/i18n.js';
 import {normalizeView,observation,knownItems} from './web/model.js';
-import {renderContent,roomDirectory,dialogContent} from './web/render.js';
+import {renderContent,roomDirectory,dialogContent,status} from './web/render.js';
 import {itemInfo,crate} from './web/room-ui.js';
 import {actionDetail,actionRows,activityTabs,intelligenceSummary} from './web/actions.js';
 
@@ -146,6 +146,27 @@ const ui={room:'r',page:'room',cursor:2,sort:'profit',quality:'all',search:'',fo
 let source={room_id:'r',room_name:'<Room>',phase:'settled',round:5,rules:{initial_inspection_count:3,rounds:5,box_width:20,box_height:30,player_count:2},players:[{id:'p1',name:'<Atlas>',avatar:5,submitted:true},{id:'p2',name:'Echo',avatar:1,submitted:true}],history:Array.from({length:5},(_,i)=>({round:i+1,bids:[{player_id:'p1',amount:100+i},{player_id:'p2',amount:200+i}]})),public_hints:[{round:1,kind:'random_shape',data:{title:'随机物品轮廓',message:'物品 known 占 1 × 1 格。',fact:{type:'random_shape',item_id:'known',top_left:{x:0,y:0},bottom_right:{x:1,y:1}},translations:{en:{title:'Random item shape',message:'Item known occupies 1 × 1 cells.'}}}},{round:3,kind:'quality_count',data:{title:'指定品质数量',message:'箱内稀有品质物品共有 2 件。',fact:{type:'quality_count',quality:'rare',count:2}}}],settlement:{winner_id:'p2',paid:204,total_value:300,profit:96,tied_players:['p2'],items:[{id:'known',quality:'rare',price:100,top_left:{x:0,y:0},bottom_right:{x:1,y:1}},{id:'hidden-item',quality:'common',price:200,top_left:{x:1,y:0},bottom_right:{x:2,y:1}}],round:5,method:'final',payoffs:{p1:0,p2:96}},decisions:[]};
 
 source=withFrames(source);
+
+test('timeout zero stays a numeric offer until an explicit withdrawal in both languages',()=>{
+  try{for(const locale of ['zh-CN','en']){
+    setLocale(locale,false);
+    const raw={...source,phase:'bidding',round:2,round_deadline:'2026-10-26T12:05:00Z',settlement:undefined,frames:[],public_hints:[],
+      players:source.players.map(p=>({...p,withdrawn:false,withdraw_round:undefined})),
+      history:[{round:1,bids:[{player_id:'p1',amount:0},{player_id:'p2',amount:100}]}]};
+    const state={...ui,cursor:null,focusPlayer:'p1',observer:false,activityTab:'bids'};
+    const view=normalizeView(raw);
+    assert.equal(view.round_deadline,raw.round_deadline);
+    assert.ok(status(view).includes(t('bidDeadline',{time:new Date(raw.round_deadline).toLocaleTimeString(locale)})));
+    const ledger=dialogContent('bids',null,view,emptyStats,state).content;
+    assert.ok(ledger.includes('<strong>0</strong>')&&!ledger.includes(t('withdrawn')));
+    const room=renderContent(view,emptyStats,state);
+    assert.ok(room.includes('<strong>0</strong>')&&!room.includes(t('withdrawn')));
+    const withdrawn={...view,round:3,players:view.players.map(p=>p.id==='p1'?{...p,withdrawn:true,withdraw_round:2}:p),
+      history:[...view.history,{round:2,bids:[{player_id:'p1',amount:0},{player_id:'p2',amount:100}]}]};
+    const updated=dialogContent('bids',null,withdrawn,emptyStats,state).content;
+    assert.ok(updated.includes('<strong>0</strong>')&&updated.includes('<strong>'+t('withdrawn')+'</strong>'));
+  }}finally{setLocale('zh-CN',false);}
+});
 
 test('room directory is empty until creation and management is restricted',()=>{
   for(const locale of ['zh-CN','en']){

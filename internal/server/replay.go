@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
-	"slices"
 	"strconv"
 )
 
@@ -70,6 +69,7 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 		for k, v := range full {
 			frame[k] = v
 		}
+		delete(frame, "round_deadline")
 		n := cursor
 		frame["history"] = view.History[:n]
 		hints := []game.Hint{}
@@ -151,9 +151,11 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 				copy[k] = v
 			}
 			copy["submitted"] = n > 0
-			copy["withdrawn"] = slices.ContainsFunc(view.History[:n], func(r game.RoundResult) bool {
-				return slices.ContainsFunc(r.Bids, func(b game.Bid) bool { return b.PlayerID == p["id"] && b.Amount == 0 })
-			})
+			withdrawRound, _ := p["withdraw_round"].(float64)
+			copy["withdrawn"] = withdrawRound > 0 && int(withdrawRound) <= n
+			if withdrawRound > float64(n) {
+				delete(copy, "withdraw_round")
+			}
 			players = append(players, copy)
 		}
 		frame["players"] = players

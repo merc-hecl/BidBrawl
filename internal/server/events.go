@@ -66,6 +66,10 @@ func (s *Server) CloseEvents() {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	s.eventsClosed = true
+	for id, timer := range s.deadlineTimers {
+		timer.Stop()
+		delete(s.deadlineTimers, id)
+	}
 	for ch := range s.subscribers {
 		delete(s.subscribers, ch)
 		close(ch)

@@ -131,6 +131,10 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 		_ = db.Close()
 		return nil, fmt.Errorf("load identity database %q: %w", path, err)
 	}
+	if err := s.resumeDeadlines(); err != nil {
+		_ = s.Close()
+		return nil, fmt.Errorf("resume room deadlines: %w", err)
+	}
 	return s, nil
 }
 

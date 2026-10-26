@@ -7,7 +7,7 @@
 | `phase=lobby` | 等待开局 |
 | 没有 `self` | 尚未入席 |
 | `phase=bidding` 且 `self.bid` 不存在 | 可用卡、报价 |
-| `phase=bidding` 且 `self.bid` 存在，包括 0 | 本轮已报价或已退出，等待揭晓 |
+| `phase=bidding` 且 `self.bid` 存在，包括 0 | 本轮已提交，等待揭晓；是否退场以 `self.withdrawn` 为准 |
 | `phase=settled` | 查看 `settlement` |
 
 需要减少重复输出时，给 `state`、`card`、`bid`、`withdraw` 加 `-compact`。它只省略 `rules.catalog`、`rules.game_config` 副本和 `activities` 流水；轮次、现金上限、私有情报、已用卡、本人决策、已揭晓报价和结算保持完整。初次进入房间先用 `catalog -room ROOM_ID`、`cards -room ROOM_ID` 读取冻结规则；需要目录候选时再查询。它不计算估值或建议报价。
@@ -31,7 +31,7 @@ bidbrawl card -room ROOM_ID -round ROUND -card CARD_ID -reason "用卡理由"
 bidbrawl bid -room ROOM_ID -round ROUND -amount AMOUNT -reason "报价理由"
 ```
 
-每轮报价前最多用一张未消耗的卡，也可跳过。用卡返回更新后的 state，结果在 `self.hints`。报价为 1～本人当前现金的整数金币，上限见 `self.max_bid`，余额见 `self.assets`（也可用 `me` 查询），每人每轮一次。退出拍卖使用 `withdraw -room ROOM_ID -round ROUND -reason "退出理由"`，不接受报零。未退出者下一轮报价可升可降。
+每轮报价前最多用一张未消耗的卡，也可跳过。用卡返回更新后的 state，结果在 `self.hints`。报价为 1～本人当前现金的整数金币，上限见 `self.max_bid`，余额见 `self.assets`（也可用 `me` 查询），每人每轮一次。每轮限时 5 分钟，以 `round_deadline` 为准；超时未提交者本轮记为 0，下一轮仍可参与。退出拍卖使用 `withdraw -room ROOM_ID -round ROUND -reason "退出理由"`，不接受主动报零。未退出者下一轮报价可升可降。
 
 用卡、报价和退出都需 `-reason`，填写 1～2000 字符的简短理由，不能全为空白。用一两句说明关键依据、主要不确定性，以及为何选择或维持本次行动，无需复述全部观察。理由仅本人和授权人类观察者可见，自己的记录在 `self.decisions`。
 

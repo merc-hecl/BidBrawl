@@ -14,10 +14,12 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"time"
 	"unicode/utf8"
 )
 
 const Rounds = 5
+const RoundTimeout = 5 * time.Minute
 const InitialInspectionCount = 3
 
 // Point is an integer grid boundary: x counts columns, y counts rows.
@@ -62,13 +64,14 @@ type RoundResult struct {
 	Bids  []Bid `json:"bids"`
 }
 type PlayerInfo struct {
-	ID        string `json:"id"`
-	Name      string `json:"name"`
-	Submitted bool   `json:"submitted"`
-	Avatar    *int   `json:"avatar,omitempty"`
-	Specialty string `json:"specialty"`
-	Category  string `json:"category,omitempty"`
-	Withdrawn bool   `json:"withdrawn"`
+	WithdrawRound int    `json:"withdraw_round,omitempty"`
+	ID            string `json:"id"`
+	Name          string `json:"name"`
+	Submitted     bool   `json:"submitted"`
+	Avatar        *int   `json:"avatar,omitempty"`
+	Specialty     string `json:"specialty"`
+	Category      string `json:"category,omitempty"`
+	Withdrawn     bool   `json:"withdrawn"`
 }
 type Self struct {
 	TicketCost        int64            `json:"ticket_cost"`
@@ -141,6 +144,7 @@ type Settlement struct {
 	Method          string           `json:"method"`
 }
 type Rules struct {
+	RoundTimeoutSeconds    int64              `json:"round_timeout_seconds"`
 	PublicHintDefinitions  []hints.Definition `json:"public_hint_definitions"`
 	TicketFee              int64              `json:"ticket_fee"`
 	Specialties            []Specialty        `json:"specialties"`
@@ -164,6 +168,7 @@ type Rules struct {
 	InitialInspectionCount int                `json:"initial_inspection_count"`
 }
 type View struct {
+	RoundDeadline      time.Time                   `json:"round_deadline,omitzero"`
 	PlayerCosts        map[string]PlayerCosts      `json:"player_costs,omitempty"`
 	Context            map[string]any              `json:"context"`
 	Intelligence       map[string][]Hint           `json:"intelligence,omitempty"`
@@ -204,6 +209,7 @@ type player struct {
 	assets              int64
 }
 type Game struct {
+	roundDeadline                             time.Time
 	loadoutChanges                            int
 	warehouse                                 string
 	mu                                        sync.Mutex
@@ -393,6 +399,7 @@ func (g *Game) StartWithAssets(balances map[string]int64) error {
 	}
 	g.phase = "bidding"
 	g.round = 1
+	g.roundDeadline = time.Now().UTC().Add(RoundTimeout)
 	for _, p := range g.players {
 		g.giveIntelligence(p)
 	}
@@ -512,6 +519,9 @@ func (g *Game) UseCard(token string, round int, card, target, reason string) err
 	if g.phase != "bidding" || g.round != round {
 		return errors.New("not the current bidding round")
 	}
+	if !time.Now().Before(g.roundDeadline) {
+		return errors.New("bidding deadline has passed")
+	}
 	if p.withdrawn {
 		return errors.New("already withdrawn")
 	}
@@ -582,6 +592,10 @@ func (g *Game) Submit(token string, round int, amount int64, reason string) erro
 	if g.phase != "bidding" || g.round != round {
 		return errors.New("not the current bidding round")
 	}
+	now := time.Now().UTC()
+	if !now.Before(g.roundDeadline) {
+		return errors.New("bidding deadline has passed")
+	}
 	if amount < 1 || amount > p.assets {
 		return fmt.Errorf("bid must be a positive integer up to your available cash; use withdraw to exit (%d)", p.assets)
 	}
@@ -597,7 +611,7 @@ func (g *Game) Submit(token string, round int, amount int64, reason string) erro
 			return nil
 		}
 	}
-	return g.resolveRound()
+	return g.resolveRound(now)
 }
 
 // Withdraw is an explicit decision; zero is reserved for published automatic skips.
@@ -614,6 +628,10 @@ func (g *Game) Withdraw(token string, round int, reason string) error {
 	if g.phase != "bidding" || round != g.round {
 		return errors.New("not the current bidding round")
 	}
+	now := time.Now().UTC()
+	if !now.Before(g.roundDeadline) {
+		return errors.New("bidding deadline has passed")
+	}
 	if p.withdrawn || p.bid != nil {
 		return errors.New("already withdrawn or bid this round")
 	}
@@ -623,10 +641,28 @@ func (g *Game) Withdraw(token string, round int, reason string) error {
 	p.bid = &zero
 	g.decisions = append(g.decisions, Decision{round, p.id, "withdraw", reason})
 	g.version++
-	return g.resolveRound()
+	return g.resolveRound(now)
 }
 
-func (g *Game) resolveRound() error {
+// ExpireRound fills only missing offers. A timeout never withdraws a player.
+func (g *Game) ExpireRound(now time.Time) error {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if g.phase != "bidding" || now.Before(g.roundDeadline) {
+		return nil
+	}
+	for _, p := range g.players {
+		if p.bid == nil {
+			zero := int64(0)
+			p.bid = &zero
+			g.decisions = append(g.decisions, Decision{g.round, p.id, "timeout", "本轮报价超时，自动记为 0。"})
+			g.version++
+		}
+	}
+	return g.resolveRound(now)
+}
+
+func (g *Game) resolveRound(now time.Time) error {
 	for {
 		result := RoundResult{Round: g.round, Bids: []Bid{}}
 		for _, p := range g.players {
@@ -647,6 +683,7 @@ func (g *Game) resolveRound() error {
 			return nil
 		}
 		g.round++
+		g.roundDeadline = now.UTC().Add(RoundTimeout)
 		if g.round == 3 {
 			g.hints = append(g.hints, g.plannedHints[1])
 		}
@@ -726,6 +763,7 @@ func (g *Game) settle(r RoundResult) {
 	}
 	g.settlement = &Settlement{TicketCosts: tickets, TotalTicketCost: ticketTotal, TotalCardCost: costTotal, CardCosts: costs, GrossProfit: gross, CashChanges: cash, WinnerID: winner, Paid: high, Total: total, Profit: gross - costTotal - ticketTotal, Payoffs: payoffs, Tied: ties, Items: g.items, Round: r.Round, Method: method}
 	g.phase = "settled"
+	g.roundDeadline = time.Time{}
 }
 
 // Observe serializes under the lock so no caller can mutate or race internal slices/maps.
@@ -741,12 +779,13 @@ func (g *Game) ObserveObserver() ([]byte, error) {
 	return g.observe("", true)
 }
 func (g *Game) observe(token string, observer bool) ([]byte, error) {
-	v := View{Version: g.version, Phase: g.phase, Round: g.round, Players: []PlayerInfo{}, Context: g.publicContext(), PublicHints: g.hints, History: g.history, Settlement: g.settlement,
+	v := View{RoundDeadline: g.roundDeadline, Version: g.version, Phase: g.phase, Round: g.round, Players: []PlayerInfo{}, Context: g.publicContext(), PublicHints: g.hints, History: g.history, Settlement: g.settlement,
 		Rules: Rules{TicketFee: g.gameConfig.TicketFee, Specialties: g.gameConfig.Specialties, Categories: Categories, Catalog: catalogForWarehouse(g.gameConfig, g.warehouse), Warehouse: g.warehouse, Warehouses: Warehouses, Rounds: Rounds, Width: g.width, Height: g.height, CoordinateUnit: "cell", GameConfig: g.gameConfig.Clone(), PlayerCount: g.maxPlayers, Qualities: CatalogQualities(g.gameConfig), Cards: g.cardConfig.Cards, CardsSchemaVersion: g.cardConfig.SchemaVersion, DefaultDeck: g.cardConfig.DefaultDeck, PublicHintPlugins: g.hintConfig.IDs(),
-			Description: "2–7 players. Five sealed-offer rounds; after each round all bids are published together. A unique positive highest bid settles at >= 2/1.6/1.3/1.1 times the runner-up in rounds 1–4. Round 5 chooses the highest bid, uniformly among ties. Offers must be positive; withdraw explicitly before bidding to permanently exit. Everyone withdrawing ends unsold. Tickets are charged once on start, nonrefundable and with no extra exit fine. Winner pays cash and receives items in their warehouse; sell to system outside bidding to obtain cash. Profit deducts consumed card costs and tickets for every player. Buy cards before bidding; one carried unused card per round. Configure a specialty in preparation; private intelligence grows by round. Reasons are private. Public clues arrive in rounds 1 and 3. Cash, not total inventory wealth, limits bids."}}
+			Description: "2–7 players. Five sealed-offer rounds, each with a five-minute deadline. Missing offers become 0 for that round without withdrawing the player. All bids are revealed together when everyone submits or the deadline passes. A unique positive highest bid settles at >= 2/1.6/1.3/1.1 times the runner-up in rounds 1–4. Round 5 chooses the highest bid, uniformly among ties. Submitted offers must be positive; only an explicit player withdrawal permanently exits. All-zero offers end unsold. Tickets are charged once on start, nonrefundable and with no extra exit fine. Winner pays cash and receives items in their warehouse; sell to system outside bidding to obtain cash. Profit deducts consumed card costs and tickets for every player. Buy cards before bidding; one carried unused card per round. Configure a specialty in preparation; private intelligence grows by round. Reasons are private. Public clues arrive in rounds 1 and 3. Cash, not total inventory wealth, limits bids."}}
 	v.Rules.EarlyMultipliers = []float64{2, 1.6, 1.3, 1.1, 0}
 	v.Rules.PublicHintDefinitions = g.hintConfig.Definitions()
 	v.Rules.InitialInspectionCount = InitialInspectionCount
+	v.Rules.RoundTimeoutSeconds = int64(RoundTimeout / time.Second)
 
 	if observer {
 		v.Items = g.items
@@ -768,7 +807,11 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 		}
 	}
 	for _, p := range g.players {
-		v.Players = append(v.Players, PlayerInfo{ID: p.id, Name: p.name, Submitted: p.bid != nil, Avatar: p.avatar, Specialty: p.specialty, Category: p.category, Withdrawn: g.publishedWithdrawal(p.id)})
+		withdrawRound := 0
+		if p.withdrawRound <= len(g.history) {
+			withdrawRound = p.withdrawRound
+		}
+		v.Players = append(v.Players, PlayerInfo{WithdrawRound: withdrawRound, ID: p.id, Name: p.name, Submitted: p.bid != nil, Avatar: p.avatar, Specialty: p.specialty, Category: p.category, Withdrawn: withdrawRound > 0})
 	}
 	if token != "" {
 		p := g.find(token)
@@ -866,15 +909,4 @@ func (g *Game) observerDecisions() []ObserverDecision {
 		result = append(result, view)
 	}
 	return result
-}
-
-func (g *Game) publishedWithdrawal(id string) bool {
-	for _, r := range g.history {
-		for _, b := range r.Bids {
-			if b.PlayerID == id && b.Amount == 0 {
-				return true
-			}
-		}
-	}
-	return false
 }

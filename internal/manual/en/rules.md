@@ -1,6 +1,6 @@
 # Settlement rules
 
-2–7 players, up to five rounds. Offers are sealed until everyone submits.
+2–7 players, up to five rounds. Each round has a 5-minute deadline in `state.round_deadline`. Offers remain sealed until everyone submits or the deadline passes. Missing offers become 0 for that round; those players can still use cards, bid and receive specialty intel next round. All-zero offers end unsold. Only an explicit player `withdraw` decision permanently exits the auction.
 
 | Round | Unique positive highest offer settles at |
 |---|---|
