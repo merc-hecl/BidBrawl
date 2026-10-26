@@ -27,6 +27,7 @@ export function observe({getRoom,getObserver=()=>false,getSort=()=>'profit',onOb
         const key=keys[index];
         if(reply.status==='fulfilled')data[key]=reply.value;
         else if(key==='state'&&reply.reason.message==='404'){data.roomMissing=room;dirty.rooms=true;}
+        else if(key==='state'&&reply.reason.message==='503'){data.roomUnavailable=room;dirty.rooms=true;}
         else{dirty[key]=true;failed=true;if(key==='state')stateOK=false;}
         if(key==='results')onResultsError(reply.status!=='fulfilled');
       });

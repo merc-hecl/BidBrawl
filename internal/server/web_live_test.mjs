@@ -12,6 +12,21 @@ class Stream {
 }
 const tick=()=>new Promise(resolve=>setTimeout(resolve,20));
 
+test('unavailable room returns to the directory without repeating replay reads',async()=>{
+  let room='unavailable';const reads=[],updates=[];
+  const live=observe({getRoom:()=>room,EventSourceType:Stream,
+    read:async path=>{reads.push(path);if(path.includes('room=unavailable'))throw new Error('503');return path.includes('replay')?{room_id:room}:{rooms:[]};},
+    onData:data=>{updates.push(data);if(data.roomUnavailable===room){room='';live.changeRoom();}},
+    onConnection:()=>{},onResultsError:()=>{}});
+  try{
+    Stream.latest.emit('ready');await tick();await tick();
+    assert.ok(updates.some(data=>data.roomUnavailable==='unavailable'));
+    assert.equal(reads.filter(path=>path.includes('replay')).length,1);
+    room='healthy';live.changeRoom();await tick();
+    assert.equal(reads.filter(path=>path.includes('room=healthy')).length,1);
+  }finally{live.close();}
+});
+
 test('room lifecycle events invalidate rooms and a deleted selection stops replay retries',async()=>{
   let room='table';
   const reads=[],updates=[];

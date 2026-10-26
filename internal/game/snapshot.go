@@ -18,6 +18,8 @@ import (
 // Snapshots are private storage records, never public observations. They retain
 // randomness, pending bids, private hints and seat tokens so a restart cannot
 // reroll a box, repeat a skill or change an already settled tie.
+const SnapshotSchemaVersion = 11
+
 type gameSnapshot struct {
 	RoundDeadline  time.Time        `json:"round_deadline"`
 	LoadoutChanges int              `json:"loadout_changes"`
@@ -65,7 +67,7 @@ type playerSnapshot struct {
 func (g *Game) Snapshot() ([]byte, error) {
 	g.mu.Lock()
 	defer g.mu.Unlock()
-	s := gameSnapshot{SchemaVersion: 11, RoundDeadline: g.roundDeadline, LoadoutChanges: g.loadoutChanges, Warehouse: g.warehouse, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
+	s := gameSnapshot{SchemaVersion: SnapshotSchemaVersion, RoundDeadline: g.roundDeadline, LoadoutChanges: g.loadoutChanges, Warehouse: g.warehouse, PlayerCount: g.maxPlayers, Config: g.gameConfig, Cards: g.cardConfig, HintConfig: g.hintConfig, PlannedHints: g.plannedHints,
 		Phase: g.phase, Round: g.round, Version: g.version, Players: []playerSnapshot{}, Items: g.items,
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
@@ -74,20 +76,36 @@ func (g *Game) Snapshot() ([]byte, error) {
 	return json.Marshal(s)
 }
 
-// Restore validates a snapshot and builds independent state with a fresh mutex.
-// It never generates items, clues, tokens or settlement randomness.
-func Restore(data []byte) (*Game, error) {
+func decodeSnapshot(data []byte) (gameSnapshot, error) {
+	var header struct {
+		SchemaVersion int `json:"schema_version"`
+	}
+	if err := json.Unmarshal(data, &header); err != nil {
+		return gameSnapshot{}, err
+	}
+	if header.SchemaVersion > SnapshotSchemaVersion {
+		return gameSnapshot{}, fmt.Errorf("snapshot schema %d exceeds supported schema %d: %w", header.SchemaVersion, SnapshotSchemaVersion, ErrFutureSnapshot)
+	}
 	d := json.NewDecoder(bytes.NewReader(data))
 	d.DisallowUnknownFields()
 	var s gameSnapshot
 	if err := d.Decode(&s); err != nil {
-		return nil, err
+		return s, err
 	}
 	var extra any
 	if err := d.Decode(&extra); err != io.EOF {
-		return nil, errors.New("expected exactly one game snapshot")
+		return s, errors.New("expected exactly one game snapshot")
 	}
-	if s.SchemaVersion != 11 {
+	return s, nil
+}
+
+// Restore validates the latest format without generating or replaying effects.
+func Restore(data []byte) (*Game, error) {
+	s, err := decodeSnapshot(data)
+	if err != nil {
+		return nil, err
+	}
+	if s.SchemaVersion != SnapshotSchemaVersion {
 		return nil, errors.New("unsupported game snapshot schema")
 	}
 	g, err := NewWithHints(s.PlayerCount, s.Config, s.Cards, s.HintConfig)

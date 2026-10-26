@@ -6,7 +6,7 @@ export const roomDate=value=>value?esc(new Intl.DateTimeFormat(getLocale(),{mont
 const disabled=ui=>ui.roomBusy?'disabled':'';
 
 export function roomActions(room,ui){
-  if(!ui.manage||room.phase==='bidding')return '';
+  if(!ui.manage||room.phase==='bidding'||room.phase==='unavailable')return '';
   const open=ui.roomMenu===room.room_id;
   return `<div class="room-card-actions">${button(icon('more'),'room-menu:'+room.room_id,'paper-button room-more',`aria-label="${tr('manageNamedRoom',{name:room.name})}" aria-expanded="${open}" ${disabled(ui)}`)}${open?`<section class="paper room-card-menu" aria-label="${tr('manageRoom')}"><span class="eyebrow">${tr('manageRoom')}</span>${button(icon('archive')+tr('archiveRoom'),'room-archive:'+room.room_id,'text-button',disabled(ui))}${button(icon('trash')+tr('deleteRoom'),'room-delete:'+room.room_id,'text-button negative',disabled(ui))}</section>`:''}</div>`;
 }

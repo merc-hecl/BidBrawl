@@ -7,38 +7,41 @@ import (
 )
 
 type agentMetrics struct {
-	TicketCost    int64    `json:"ticket_cost"`
-	CardCost      int64    `json:"card_cost"`
-	CashChange    int64    `json:"cash_change"`
-	AcquiredValue int64    `json:"acquired_value"`
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	Games         int      `json:"games"`
-	Profit        int64    `json:"profit"`
-	Paid          int64    `json:"paid"`
-	MaxProfit     int64    `json:"max_profit"`
-	MaxLoss       int64    `json:"max_loss"`
-	Rate          *float64 `json:"rate"`
-	Average       float64  `json:"average"`
+	UnavailableRooms int      `json:"unavailable_rooms,omitempty"`
+	TicketCost       int64    `json:"ticket_cost"`
+	CardCost         int64    `json:"card_cost"`
+	CashChange       int64    `json:"cash_change"`
+	AcquiredValue    int64    `json:"acquired_value"`
+	ID               string   `json:"id"`
+	Name             string   `json:"name"`
+	Games            int      `json:"games"`
+	Profit           int64    `json:"profit"`
+	Paid             int64    `json:"paid"`
+	MaxProfit        int64    `json:"max_profit"`
+	MaxLoss          int64    `json:"max_loss"`
+	Rate             *float64 `json:"rate"`
+	Average          float64  `json:"average"`
 }
 type statistics struct {
-	TicketCost  int64          `json:"ticket_cost"`
-	CardCost    int64          `json:"card_cost"`
-	GrossProfit int64          `json:"gross_profit"`
-	Games       int            `json:"games"`
-	Profit      int64          `json:"profit"`
-	Paid        int64          `json:"paid"`
-	Rate        *float64       `json:"rate"`
-	Agents      []agentMetrics `json:"agents"`
+	UnavailableRooms int            `json:"unavailable_rooms,omitempty"`
+	TicketCost       int64          `json:"ticket_cost"`
+	CardCost         int64          `json:"card_cost"`
+	GrossProfit      int64          `json:"gross_profit"`
+	Games            int            `json:"games"`
+	Profit           int64          `json:"profit"`
+	Paid             int64          `json:"paid"`
+	Rate             *float64       `json:"rate"`
+	Agents           []agentMetrics `json:"agents"`
 }
 type rankedAgent struct {
 	Rank int `json:"rank"`
 	agentMetrics
 }
 type leaderboard struct {
-	Sort     string        `json:"sort"`
-	Games    int           `json:"games"`
-	Rankings []rankedAgent `json:"rankings"`
+	UnavailableRooms int           `json:"unavailable_rooms,omitempty"`
+	Sort             string        `json:"sort"`
+	Games            int           `json:"games"`
+	Rankings         []rankedAgent `json:"rankings"`
 }
 
 func profitRate(profit, paid int64) *float64 {
@@ -141,6 +144,10 @@ func (s *Server) serveStatistics(w http.ResponseWriter, r *http.Request, ranked 
 		return
 	}
 	out := calculateStatistics(results)
+	out.UnavailableRooms = len(s.unavailableRooms)
+	for i := range out.Agents {
+		out.Agents[i].UnavailableRooms = out.UnavailableRooms
+	}
 	key := r.URL.Query().Get("sort")
 	if key == "" {
 		key = "profit"
@@ -154,7 +161,7 @@ func (s *Server) serveStatistics(w http.ResponseWriter, r *http.Request, ranked 
 		for i, a := range out.Agents {
 			rows = append(rows, rankedAgent{Rank: i + 1, agentMetrics: a})
 		}
-		reply(w, 200, leaderboard{Sort: key, Games: out.Games, Rankings: rows})
+		reply(w, 200, leaderboard{UnavailableRooms: out.UnavailableRooms, Sort: key, Games: out.Games, Rankings: rows})
 	} else {
 		reply(w, 200, out)
 	}
@@ -184,8 +191,9 @@ func (s *Server) accountStatsLocked(a *account) (agentMetrics, error) {
 	}
 	for _, record := range calculateStatistics(results).Agents {
 		if record.ID == "account:"+a.ID {
+			record.UnavailableRooms = len(s.unavailableRooms)
 			return record, nil
 		}
 	}
-	return agentMetrics{ID: "account:" + a.ID, Name: a.Name}, nil
+	return agentMetrics{UnavailableRooms: len(s.unavailableRooms), ID: "account:" + a.ID, Name: a.Name}, nil
 }

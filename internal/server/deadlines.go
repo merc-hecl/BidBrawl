@@ -13,7 +13,7 @@ func (s *Server) scheduleDeadline(rm *room, view game.View) {
 		timer.Stop()
 		delete(s.deadlineTimers, rm.id)
 	}
-	if s.eventsClosed || view.Phase != "bidding" {
+	if s.eventsClosed || view.Phase != "bidding" || s.roomRecoveryLocked(rm) {
 		return
 	}
 	id := rm.id
@@ -50,6 +50,9 @@ func (s *Server) resumeDeadlines() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	for _, rm := range s.rooms {
+		if s.roomRecoveryLocked(rm) {
+			continue
+		}
 		view, err := publicView(rm.game)
 		if err != nil {
 			return err

@@ -54,6 +54,7 @@ type room struct {
 	archivedAt      time.Time
 }
 type Server struct {
+	unavailableRooms    map[string]*unavailableRoom
 	deadlineTimers      map[string]*time.Timer
 	HostToken           string
 	ObserverToken       string
@@ -96,6 +97,7 @@ func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Confi
 	s := &Server{HostToken: secret(), UIToken: secret(), accounts: map[string]*account{}, accountsByID: map[string]*account{}, credentials: map[[32]byte]*account{}, credentialHashes: map[string][32]byte{}, sessions: map[string]*account{}, rooms: map[string]*room{}, cardConfig: cfg, gameConfig: geometry.Clone(), hintConfig: hintConfig.Clone()}
 	s.subscribers = make(map[chan roomEvent]struct{})
 	s.deadlineTimers = make(map[string]*time.Timer)
+	s.unavailableRooms = make(map[string]*unavailableRoom)
 	s.deletedResults = make(map[string]roomResult)
 	s.ObserverToken = secret()
 	s.observerSubscribers = make(map[chan roomEvent]struct{})
@@ -260,7 +262,12 @@ func (s *Server) getRoom(w http.ResponseWriter, r *http.Request) *room {
 	}
 	s.mu.Lock()
 	rm := s.rooms[id]
+	unavailable := s.unavailableRooms[id] != nil
 	s.mu.Unlock()
+	if unavailable {
+		fail(w, 503, errors.New("room cannot be recovered; original data has been preserved"))
+		return nil
+	}
 	if rm == nil {
 		fail(w, 404, errors.New("room not found"))
 	}
@@ -273,9 +280,16 @@ func (s *Server) listRooms(w http.ResponseWriter, r *http.Request) {
 	for id := range s.rooms {
 		ids = append(ids, id)
 	}
+	for id := range s.unavailableRooms {
+		ids = append(ids, id)
+	}
 	sort.Strings(ids)
 	list := []map[string]any{}
 	for _, id := range ids {
+		if rm := s.unavailableRooms[id]; rm != nil {
+			list = append(list, map[string]any{"room_id": id, "name": rm.name, "phase": "unavailable", "players": 0, "player_count": 0, "created_at": rm.createdAt})
+			continue
+		}
 		rm := s.rooms[id]
 		b, _ := rm.game.Observe("")
 		var v game.View
@@ -333,7 +347,7 @@ func (s *Server) create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	id := secret()[:16]
-	for s.rooms[id] != nil || s.deletedResults[id].RoomID != "" {
+	for s.rooms[id] != nil || s.unavailableRooms[id] != nil || s.deletedResults[id].RoomID != "" {
 		id = secret()[:16]
 	}
 	owner := ""
@@ -451,6 +465,10 @@ func (s *Server) join(w http.ResponseWriter, r *http.Request) {
 	}
 	if rm.members[a.ID] != "" {
 		fail(w, 409, errors.New("already joined this room; read state to resume"))
+		return
+	}
+	if s.recoveryLocked(a.ID) {
+		fail(w, 409, errors.New("account has an unrecovered room; assets remain locked"))
 		return
 	}
 	for _, other := range s.rooms {

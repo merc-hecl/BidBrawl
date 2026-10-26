@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log"
 	"maps"
 	"net/http"
@@ -56,52 +57,71 @@ func encodeRoom(rm *room) ([]byte, error) {
 
 func (s *Server) loadRooms(tx *bolt.Tx) error {
 	s.rooms = map[string]*room{}
+	s.unavailableRooms = map[string]*unavailableRoom{}
 	return tx.Bucket(roomBucket).ForEach(func(key, value []byte) error {
-		var rec roomRecord
-		if err := json.Unmarshal(value, &rec); err != nil {
+		var header struct {
+			Game struct {
+				SchemaVersion int `json:"schema_version"`
+			} `json:"game"`
+		}
+		if json.Unmarshal(value, &header) == nil && header.Game.SchemaVersion > game.SnapshotSchemaVersion {
+			return fmt.Errorf("room %s has snapshot schema %d, supported schema %d: %w", key, header.Game.SchemaVersion, game.SnapshotSchemaVersion, game.ErrFutureSnapshot)
+		}
+		rm, err := s.restoreRoom(key, value)
+		if errors.Is(err, game.ErrFutureSnapshot) {
 			return err
 		}
-		if string(key) != rec.ID || rec.ID == "" || !validName(rec.Name) || rec.CreatedAt.IsZero() || rec.Members == nil || rec.SeatAccounts == nil || rec.Owner != "" && s.accountsByID[rec.Owner] == nil {
-			return errors.New("invalid room record")
-		}
-		g, err := game.Restore(rec.Game)
 		if err != nil {
-			return err
+			return s.isolateRoom(tx, key, value, err)
 		}
-		public, err := g.Observe("")
-		if err != nil {
-			return err
-		}
-		var view game.View
-		if err = json.Unmarshal(public, &view); err != nil {
-			return err
-		}
-		if len(rec.Members) != len(view.Players) || len(rec.SeatAccounts) != len(view.Players) || (view.Phase == "settled") != !rec.SettledAt.IsZero() || !rec.SettledAt.IsZero() && rec.SettledAt.Before(rec.CreatedAt) {
-			return errors.New("inconsistent room membership or settlement date")
-		}
-		for _, p := range view.Players {
-			id := rec.SeatAccounts[p.ID]
-			a := s.accountsByID[id]
-			if a == nil || a.Name != p.Name || rec.Members[id] == "" {
-				return errors.New("invalid seat account")
-			}
-			private, err := g.Observe(rec.Members[id])
-			if err != nil {
-				return errors.New("invalid stored seat token")
-			}
-			var own game.View
-			if json.Unmarshal(private, &own) != nil || own.Self == nil || own.Self.ID != p.ID {
-				return errors.New("seat token does not match its account")
-			}
-		}
-		if !rec.ArchivedAt.IsZero() && (view.Phase == "bidding" || rec.ArchivedAt.Before(rec.CreatedAt)) {
-			return errors.New("invalid room archive")
-		}
-		s.rooms[rec.ID] = &room{activities: rec.Activities, id: rec.ID, name: rec.Name, owner: rec.Owner, game: g, members: rec.Members, seatAccounts: rec.SeatAccounts, createdAt: rec.CreatedAt, settledAt: rec.SettledAt, archivedAt: rec.ArchivedAt}
+		s.rooms[rm.id] = rm
 		return nil
 	})
 }
 
+func (s *Server) restoreRoom(key, value []byte) (*room, error) {
+	var rec roomRecord
+	if err := json.Unmarshal(value, &rec); err != nil {
+		return nil, err
+	}
+	if string(key) != rec.ID || rec.ID == "" || !validName(rec.Name) || rec.CreatedAt.IsZero() || rec.Members == nil || rec.SeatAccounts == nil || rec.Owner != "" && s.accountsByID[rec.Owner] == nil {
+		return nil, errors.New("invalid room record")
+	}
+	g, err := game.Restore(rec.Game)
+	if err != nil {
+		return nil, err
+	}
+	public, err := g.Observe("")
+	if err != nil {
+		return nil, err
+	}
+	var view game.View
+	if err = json.Unmarshal(public, &view); err != nil {
+		return nil, err
+	}
+	if len(rec.Members) != len(view.Players) || len(rec.SeatAccounts) != len(view.Players) || (view.Phase == "settled") != !rec.SettledAt.IsZero() || !rec.SettledAt.IsZero() && rec.SettledAt.Before(rec.CreatedAt) {
+		return nil, errors.New("inconsistent room membership or settlement date")
+	}
+	for _, p := range view.Players {
+		id := rec.SeatAccounts[p.ID]
+		a := s.accountsByID[id]
+		if a == nil || a.Name != p.Name || rec.Members[id] == "" {
+			return nil, errors.New("invalid seat account")
+		}
+		private, err := g.Observe(rec.Members[id])
+		if err != nil {
+			return nil, errors.New("invalid stored seat token")
+		}
+		var own game.View
+		if json.Unmarshal(private, &own) != nil || own.Self == nil || own.Self.ID != p.ID {
+			return nil, errors.New("seat token does not match its account")
+		}
+	}
+	if !rec.ArchivedAt.IsZero() && (view.Phase == "bidding" || rec.ArchivedAt.Before(rec.CreatedAt)) {
+		return nil, errors.New("invalid room archive")
+	}
+	return &room{activities: rec.Activities, id: rec.ID, name: rec.Name, owner: rec.Owner, game: g, members: rec.Members, seatAccounts: rec.SeatAccounts, createdAt: rec.CreatedAt, settledAt: rec.SettledAt, archivedAt: rec.ArchivedAt}, nil
+}
 func roomFailure(w http.ResponseWriter, err error) {
 	log.Printf("persist room: %v", err)
 	fail(w, 500, errors.New("could not persist room state"))
@@ -127,6 +147,9 @@ func (s *Server) mutateRoom(w http.ResponseWriter, rm *room, change func(*room) 
 func (s *Server) commitRoom(rm *room, change func(*room) error) (int, error) {
 	if s.rooms[rm.id] != rm {
 		return 404, errors.New("room not found")
+	}
+	if s.roomRecoveryLocked(rm) {
+		return 409, errors.New("participant has an unrecovered room; assets remain locked")
 	}
 	if !rm.archivedAt.IsZero() {
 		return 409, errors.New("restore the archived room before acting")

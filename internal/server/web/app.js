@@ -262,7 +262,7 @@ function setObserver(value) {
 const live=observe({getRoom:()=>ui.room,getObserver:()=>ui.observer,getSort:()=>ui.sort,read:readJSON,
   onObserverExpired(){ui.manage=false;ui.roomMenu=null;ui.bulkMode=false;ui.selectedRooms.clear();setObserver(false);},
   onData(data){
-    if(data.roomMissing===ui.room){ui.room='';source=null;closeDirectoryOnLoad=false;if(ui.page==='room')navigate('rooms');live.changeRoom();}
+    if(data.roomMissing===ui.room||data.roomUnavailable===ui.room){if(data.roomUnavailable===ui.room)ui.roomError=t('roomUnavailable');ui.room='';source=null;closeDirectoryOnLoad=false;if(ui.page==='room')navigate('rooms');live.changeRoom();}
     if(data.state){
       source=normalizeView(data.state,ui.observer);hideTip();
       if(closeDirectoryOnLoad&&source.room_id===ui.room){closeMobileSidebar();closeDirectoryOnLoad=false;}

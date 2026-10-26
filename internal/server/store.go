@@ -33,7 +33,7 @@ type identityRecord struct {
 
 var identityBucket = []byte("accounts")
 
-const identitySchemaVersion = "3"
+const identitySchemaVersion = "4"
 
 // Open restores identities and rooms from a local database, failing rather than silently
 // starting with an empty account set if it is locked, damaged or unsupported.
@@ -66,67 +66,7 @@ func OpenWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Conf
 	}
 	s := NewWithHints(geometry, cfg, hintConfig)
 	s.store = &persistentStore{db: db}
-	err = db.Update(func(tx *bolt.Tx) error {
-		if meta := tx.Bucket([]byte("metadata")); meta != nil {
-			version := string(meta.Get([]byte("schema_version")))
-			if version != identitySchemaVersion {
-				return fmt.Errorf("unsupported identity database schema %q (expected %q); check the data directory specified by -data-dir or BIDBRAWL_DATA_DIR", version, identitySchemaVersion)
-			}
-			if tx.Bucket(identityBucket) == nil {
-				return errors.New("identity database is missing accounts")
-			}
-			if tx.Bucket(roomBucket) == nil {
-				return errors.New("database is missing rooms")
-			}
-			return nil
-		}
-		if key, _ := tx.Cursor().First(); key != nil {
-			return errors.New("unrecognized identity database")
-		}
-		meta, err := tx.CreateBucket([]byte("metadata"))
-		if err != nil {
-			return err
-		}
-		if err := meta.Put([]byte("schema_version"), []byte(identitySchemaVersion)); err != nil {
-			return err
-		}
-		if _, err = tx.CreateBucket(identityBucket); err != nil {
-			return err
-		}
-		_, err = tx.CreateBucket(roomBucket)
-		return err
-	})
-	if err == nil {
-		err = db.View(func(tx *bolt.Tx) error {
-			if err := tx.Bucket(identityBucket).ForEach(func(key, value []byte) error {
-				var rec identityRecord
-				if json.Unmarshal(value, &rec) != nil {
-					return errors.New("invalid identity record")
-				}
-				id, idErr := hex.DecodeString(rec.ID)
-				digest, hashErr := hex.DecodeString(rec.CredentialHash)
-				if string(key) != rec.ID || idErr != nil || len(id) != 16 || hashErr != nil || len(digest) != 32 || !validName(rec.Name) || rec.Assets < 0 {
-					return errors.New("invalid identity record")
-				}
-				hash := [32]byte(digest)
-				if s.accounts[rec.Name] != nil || s.credentials[hash] != nil {
-					return errors.New("duplicate identity record")
-				}
-				a := &account{ID: rec.ID, Name: rec.Name, Assets: rec.Assets, CardStock: rec.CardStock, Warehouse: rec.Warehouse, ReliefAt: rec.ReliefAt}
-				s.accounts[a.Name] = a
-				s.accountsByID[a.ID] = a
-				s.credentials[hash] = a
-				s.credentialHashes[a.ID] = hash
-				return nil
-			}); err != nil {
-				return err
-			}
-			if err := s.loadRooms(tx); err != nil {
-				return err
-			}
-			return s.loadDeletedResults(tx)
-		})
-	}
+	err = s.loadDatabase(path)
 	if err != nil {
 		_ = db.Close()
 		return nil, fmt.Errorf("load identity database %q: %w", path, err)

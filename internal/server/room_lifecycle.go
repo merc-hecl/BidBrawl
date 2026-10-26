@@ -57,6 +57,10 @@ func (s *Server) manageRooms(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		seen[id] = true
+		if s.unavailableRooms[id] != nil {
+			fail(w, 503, errors.New("unrecovered rooms cannot be changed or deleted"))
+			return
+		}
 		rm := s.rooms[id]
 		if rm == nil {
 			fail(w, 404, errors.New("room not found"))

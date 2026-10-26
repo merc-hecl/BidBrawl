@@ -90,5 +90,8 @@ func (s *Server) listResults(w http.ResponseWriter, r *http.Request) {
 		fail(w, 500, err)
 		return
 	}
-	reply(w, 200, map[string]any{"rooms": results})
+	reply(w, 200, struct {
+		Rooms            []roomResult `json:"rooms"`
+		UnavailableRooms int          `json:"unavailable_rooms,omitempty"`
+	}{results, len(s.unavailableRooms)})
 }

@@ -35,6 +35,9 @@ func accountWealth(a *account) (items, cards int64) {
 	return
 }
 func (s *Server) inAuction(a *account) bool {
+	if s.recoveryLocked(a.ID) {
+		return true
+	}
 	for _, rm := range s.rooms {
 		if rm.members[a.ID] == "" {
 			continue
@@ -74,7 +77,7 @@ func (s *Server) inventory(w http.ResponseWriter, r *http.Request) {
 }
 func (s *Server) inventoryReply(w http.ResponseWriter, a *account) {
 	items, cards := accountWealth(a)
-	reply(w, 200, map[string]any{"cash": a.Assets, "items_value": items, "cards_value": cards, "total_assets": a.Assets + items + cards, "items": a.Warehouse, "cards": a.CardStock, "in_auction": s.inAuction(a), "relief_claimed_at": a.ReliefAt})
+	reply(w, 200, map[string]any{"cash": a.Assets, "items_value": items, "cards_value": cards, "total_assets": a.Assets + items + cards, "items": a.Warehouse, "cards": a.CardStock, "in_auction": s.inAuction(a), "recovery_blocked": s.recoveryLocked(a.ID), "relief_claimed_at": a.ReliefAt})
 }
 func (s *Server) buy(w http.ResponseWriter, r *http.Request) {
 	var v struct {

@@ -245,7 +245,7 @@ func TestIdentityDatabaseFailures(t *testing.T) {
 	if other, err := Open(g.GameConfig(), g.CardConfig(), path); err == nil {
 		_ = other.Close()
 		t.Fatal("unsupported schema silently replaced")
-	} else if !strings.Contains(err.Error(), strconv.Quote(path)) || !strings.Contains(err.Error(), `"99"`) || !strings.Contains(err.Error(), `"3"`) || !strings.Contains(err.Error(), "-data-dir") {
+	} else if !strings.Contains(err.Error(), strconv.Quote(path)) || !strings.Contains(err.Error(), `"99"`) || !strings.Contains(err.Error(), strconv.Quote(identitySchemaVersion)) || !strings.Contains(err.Error(), "-data-dir") {
 		t.Fatalf("schema failure omitted its path, versions or recovery guidance: %v", err)
 	}
 	db, err = bolt.Open(path, 0600, &bolt.Options{ReadOnly: true})
