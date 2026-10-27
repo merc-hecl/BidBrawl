@@ -1,7 +1,7 @@
 {
   "name": "BidBrawl",
   "identifier": "io.github.merc-hecl.bidbrawl",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "main": "./cmd/bidbrawl-desktop",
   "out": "build/desktop",
   "icon": "internal/server/web/brand-avatar.png",

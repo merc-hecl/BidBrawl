@@ -95,7 +95,7 @@ export async function releaseNotes(tag, cwd = process.cwd(), repository = proces
   const installation = [
     `Checksums: ${link("SHA256SUMS", "SHA256SUMS")} (SHA-256).`,
     "Windows installers are not Authenticode-signed and require WebView2 Runtime. macOS packages are not Developer ID-signed or notarized; Gatekeeper may block installation. Linux desktop packages require GTK 3 and WebKitGTK 4.1.",
-    "Stop the running host before upgrading. Only the current database format is supported; back up your data before upgrading.",
+    "Stop the running host before upgrading. Released database formats are migrated automatically, with a consistent backup created before migration. Existing rooms retain their frozen rules and private information. Older applications cannot write newer database formats.",
   ].join("\n\n");
   return [body, ...(people.length ? ["### Contributors", people.join("\n")] : []), downloads, installation]
     .filter(Boolean).join("\n\n") + "\n";
