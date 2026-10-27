@@ -62,7 +62,7 @@ function redraw() {
   // Keep the rendered room intact until its replacement snapshot arrives.
   const bookRules=ui.bookRoom?(source?.room_id===ui.bookRoom?source.rules:null):reference;
   const bookFailed=ui.bookRoom?connection==='disconnected':referenceFailed;
-  const html=contentPending&&lastContentObserver===ui.observer?lastContent:(ui.page==='handbook'?renderHandbook(bookRules,ui.book,{pending:!bookRules&&!bookFailed,failed:bookFailed,roomName:ui.bookRoom?(source?.room_name||ui.bookRoom):''}):ui.page==='rooms'?roomDirectory(rooms,ui):ui.page==='archives'?archivedDirectory(rooms,ui):ui.page==='history'?historyDirectory(rooms):renderContent(source,results,ui))+roomNotice(ui.notice,ui);
+  const html=contentPending&&lastContentObserver===ui.observer?lastContent:(ui.page==='handbook'?renderHandbook(bookRules,ui.book,{pending:!bookRules&&!bookFailed,failed:bookFailed,roomName:ui.bookRoom?(source?.room_name||ui.bookRoom):''}):ui.page==='rooms'?roomDirectory(rooms,ui,reference?.catalog):ui.page==='archives'?archivedDirectory(rooms,ui):ui.page==='history'?historyDirectory(rooms):renderContent(source,results,ui))+roomNotice(ui.notice,ui);
   if(lastContent!==html){
     patchContent($('content'),html);lastContent=html;
   }
@@ -108,14 +108,14 @@ function navigate(page){
   if(page==='handbook'){url.searchParams.set('section',ui.book.section);if(ui.bookRoom)url.searchParams.set('room',ui.bookRoom);}
   history.replaceState(null,'',url);redraw();
   if(page==='handbook')window.scrollTo({top:0,behavior:'instant'});
-  if(page==='handbook'&&!ui.bookRoom)loadReference();
+  if(page==='rooms'||page==='handbook'&&!ui.bookRoom)loadReference();
 }
 async function loadReference(){
   if(reference||referencePending)return;
   referencePending=true;referenceFailed=false;redraw();
   try{reference=hostReference(await readJSON('/api/config',AbortSignal.timeout(5000)));}
   catch{referenceFailed=true;}
-  finally{referencePending=false;if(ui.page==='handbook')redraw();}
+  finally{referencePending=false;if(ui.page==='rooms'||ui.page==='handbook')redraw();}
 }
 function chooseRoom(id,fromDirectory=false) {
   if(!fromDirectory)closeMobileSidebar();
@@ -293,7 +293,7 @@ function refreshSession(){
   if(!sessionUpdate)sessionUpdate=restoreSession().then(session=>{ui.manage=session.manage_rooms;if(!ui.manage){ui.roomMenu=null;ui.bulkMode=false;ui.selectedRooms.clear();}setObserver(session.authenticated);redraw();updateDialog();}).finally(()=>{sessionUpdate=null;});
 }
 refreshSession();
-if(ui.page==='handbook'&&!ui.bookRoom)loadReference();
+if(ui.page==='rooms'||ui.page==='handbook'&&!ui.bookRoom)loadReference();
 addEventListener('focus',refreshSession);
 addEventListener('pagehide',()=>live.close());
 addEventListener('pageshow',event=>{if(event.persisted)location.reload();});

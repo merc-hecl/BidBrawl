@@ -1,11 +1,74 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
-import {catalogs,t,setLocale,localizeCard,localizeName} from './web/i18n.js';
+import {catalogs,t,setLocale,localizeCard,localizeName,localizeItemName} from './web/i18n.js';
 import {normalizeView,observation,knownItems} from './web/model.js';
-import {renderContent,roomDirectory,dialogContent,status} from './web/render.js';
+import {esc,renderContent,roomDirectory,dialogContent,status} from './web/render.js';
 import {itemInfo,crate} from './web/room-ui.js';
 import {actionDetail,actionRows,activityTabs,intelligenceSummary} from './web/actions.js';
+import {itemArtSource,itemArtwork} from './web/item-art.js';
+import {createHash} from 'node:crypto';
+
+test('lobby waterfall uses unique public catalog items and preserves its selection across redraws and languages',async()=>{
+ const catalog=JSON.parse(await readFile(new URL('../game/items.json',import.meta.url),'utf8')).items;
+ const selected=html=>[...html.matchAll(/data-template="([^"]+)"/g)].map(match=>match[1]);
+ let original;
+ for(const locale of ['zh-CN','en']){
+  setLocale(locale,false);
+  const html=roomDirectory([],{},catalog),ids=selected(html);
+  assert.equal(new Set(ids).size,9);
+  if(original)assert.deepEqual(ids,original);else original=ids;
+  for(const id of ids){
+   const item=catalog.find(item=>item.id===id);
+   assert.ok(item&&item.category!=='easter_egg');
+   assert.ok(html.includes(`/item-art/${id}.svg`));
+   assert.ok(html.includes(esc(localizeItemName(item,catalog))));
+  }
+  assert.deepEqual(selected(roomDirectory([],{directoryFilter:'waiting'},catalog)),ids);
+ }
+ assert.doesNotMatch(roomDirectory([],{},[]),/collection-card/);
+ const egg=catalog.find(item=>item.category==='easter_egg');
+ assert.doesNotMatch(roomDirectory([],{},[egg,{...catalog[0],id:'custom-no-art'}]),/collection-card/);
+ setLocale('zh-CN',false);
+});
+
+test('every built-in item and easter egg has its exact exported Figma artwork',async()=>{
+ const catalog=JSON.parse(await readFile(new URL('../game/items.json',import.meta.url),'utf8')).items;
+ const provenance=JSON.parse(await readFile(new URL('../../docs/item-art.figma.json',import.meta.url),'utf8'));
+ assert.equal(catalog.length,568);
+ assert.equal(catalog.filter(item=>item.category==='easter_egg').length,8);
+ assert.equal(Object.keys(provenance.items).length,catalog.length);
+ for(const item of catalog){
+  assert.equal(itemArtSource(item,catalog),`/item-art/${item.id}.svg`);
+  const svg=await readFile(new URL(`./web/item-art/${item.id}.svg`,import.meta.url),'utf8');
+  assert.match(svg,/<svg\b/);
+  assert.doesNotMatch(svg,/<(?:script|foreignObject)\b|\bon\w+=|(?:href|src)="https?:/i);
+  assert.equal(createHash('sha256').update(svg).digest('hex'),provenance.items[item.id].sha256,item.id);
+ }
+});
+
+test('artwork never identifies an item from shape, quality, category, name or price guesses',async()=>{
+ const catalog=JSON.parse(await readFile(new URL('../game/items.json',import.meta.url),'utf8')).items;
+ const template=catalog[0],observed={id:'observed-id',quality:template.quality,category:template.category,price:template.price,top_left:{x:0,y:0},bottom_right:{x:1,y:1}};
+ for(const item of [observed,{...observed,name:template.name},{...observed,template_id:template.id},{...observed,name:template.name,template_id:'../'+template.id},{...template,id:'custom-template'},{...template,name:'Different host item'}])assert.equal(itemArtwork(item,catalog),'');
+ assert.ok(itemArtwork({...observed,template_id:template.id,name:template.name},catalog));
+});
+
+test('crate illustrations follow public, observer and selected-player disclosure including easter eggs',async()=>{
+ const catalog=JSON.parse(await readFile(new URL('../game/items.json',import.meta.url),'utf8')).items;
+ for(const template of [catalog[0],catalog.find(item=>item.category==='easter_egg')]){
+  const item={...template,id:'instance-id',template_id:template.id,top_left:{x:1,y:1},bottom_right:{x:2,y:2}};
+  const raw={room_id:'art-room',phase:'bidding',round:1,players:[{id:'player'}],rules:{catalog,box_width:5,box_height:5},public_hints:[],history:[],items:[item],initial_inspections:{player:[item]},item_reveals:{}};
+  const state={observer:false,focusPlayer:null,focusItem:null};
+  assert.doesNotMatch(crate(normalizeView(raw,false),state),/\/item-art\//);
+  assert.match(crate(normalizeView(raw,true),{...state,observer:true}),/\/item-art\//);
+  assert.doesNotMatch(crate(normalizeView(raw,true),{...state,observer:true,focusPlayer:'player'}),/\/item-art\//);
+  raw.item_reveals.player=[{item_id:item.id,name:template.name,template_id:template.id,top_left:item.top_left,bottom_right:item.bottom_right}];
+  assert.match(crate(normalizeView(raw,true),{...state,observer:true,focusPlayer:'player'}),/\/item-art\//);
+  raw.settlement={items:[item]};
+  assert.match(crate(normalizeView(raw,false),state),/\/item-art\//);
+ }
+});
 
 test('area averages preserve units, precision and an empty result in both languages',()=>{
  for(const locale of ['zh-CN','en']){

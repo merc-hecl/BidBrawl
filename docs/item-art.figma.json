@@ -1,0 +1,2365 @@
+{
+  "file_key": "HipYl99Ul99qeGLKFbetot",
+  "page_id": "57:3523",
+  "style": "Original warm ink outlines, muted material colors and paper shadows. Native SVG artwork authored for BidBrawl; covered by the project MIT license.",
+  "boards": [
+    {
+      "category": "furniture",
+      "nodeId": "345:305"
+    },
+    {
+      "category": "household",
+      "nodeId": "345:774"
+    },
+    {
+      "category": "electronics",
+      "nodeId": "345:1217"
+    },
+    {
+      "category": "computers",
+      "nodeId": "345:1812"
+    },
+    {
+      "category": "tools",
+      "nodeId": "345:2577"
+    },
+    {
+      "category": "machinery",
+      "nodeId": "345:3045"
+    },
+    {
+      "category": "art",
+      "nodeId": "345:3678"
+    },
+    {
+      "category": "antiques",
+      "nodeId": "345:4172"
+    },
+    {
+      "category": "jewelry",
+      "nodeId": "345:4565"
+    },
+    {
+      "category": "minerals",
+      "nodeId": "345:4980"
+    },
+    {
+      "category": "transport",
+      "nodeId": "345:5399"
+    },
+    {
+      "category": "energy",
+      "nodeId": "345:6012"
+    },
+    {
+      "category": "books",
+      "nodeId": "345:6560"
+    },
+    {
+      "category": "documents",
+      "nodeId": "345:7170"
+    },
+    {
+      "category": "music",
+      "nodeId": "345:7674"
+    },
+    {
+      "category": "toys",
+      "nodeId": "345:8209"
+    },
+    {
+      "category": "sports",
+      "nodeId": "345:8781"
+    },
+    {
+      "category": "medical",
+      "nodeId": "345:9156"
+    },
+    {
+      "category": "military",
+      "nodeId": "345:9694"
+    },
+    {
+      "category": "collectibles",
+      "nodeId": "345:10200"
+    },
+    {
+      "category": "easter_egg",
+      "nodeId": "345:10724"
+    }
+  ],
+  "items": {
+    "furniture_plastic_stool": {
+      "node_id": "345:308",
+      "sha256": "ac70a1851e3d7ff44ac77984242079557ced8b78f905bfcd5ed1856a980273f4"
+    },
+    "furniture_folding_camp_table": {
+      "node_id": "345:319",
+      "sha256": "d053389d50d2ee72986853c4139ca57da16fe57160c5760ebc51613a933990c3"
+    },
+    "furniture_particleboard_shelf": {
+      "node_id": "345:332",
+      "sha256": "b8fd4dd4db482d08765e1d91902b396b3fe24b874f0d83baf301163f17443289"
+    },
+    "furniture_steel_coat_rack": {
+      "node_id": "345:354",
+      "sha256": "e949c135f7ed57e51e055b8eae2c1fe0c38ff487175058b77e57f6b9ca512805"
+    },
+    "furniture_office_swivel_chair": {
+      "node_id": "345:369",
+      "sha256": "79b0a5991fbbcd68ed47c136409049bc598ecdbb36398a04f5aa3f3b83adfe3d"
+    },
+    "furniture_flatpack_shoe_cabinet": {
+      "node_id": "345:383",
+      "sha256": "241f57c1213a6ed57ba025aed34b88bdfe341cdfe1fea42e0296f4e71727824d"
+    },
+    "furniture_bamboo_armchair": {
+      "node_id": "345:405",
+      "sha256": "6761e3cbc92f933a50379469e98f222777d420cc535149c3933dae586cfb3e3c"
+    },
+    "furniture_oak_bedside_cabinet": {
+      "node_id": "345:437",
+      "sha256": "98ff754cb2396e3f0f543399a035db334244415da023a98f7623fb3e2e994d20"
+    },
+    "furniture_brass_reading_lamp": {
+      "node_id": "345:455",
+      "sha256": "b2fc4c59034fc445e715859c177dc5cf4fe99fc2969d4354290ef5803c60be21"
+    },
+    "furniture_steel_filing_cabinet": {
+      "node_id": "345:465",
+      "sha256": "3ee1dfd7e8779aa3e4acce4769f474d1df3ad5166ca7bad1484f82b2677b5fb0"
+    },
+    "furniture_cedar_blanket_chest": {
+      "node_id": "345:481",
+      "sha256": "6c7ba362adb9ffc3c1e3cfa95b6e6b5ed8f233b69b75a5180964668b180d4e78"
+    },
+    "furniture_leather_footstool": {
+      "node_id": "345:493",
+      "sha256": "f8b974f68dff38f9aaec62e798e3b7fb28014f4ba8f0dfca870d7df44a690697"
+    },
+    "furniture_walnut_rocking_chair": {
+      "node_id": "345:503",
+      "sha256": "e5738ab11536885d529f69e307ce3ef8ccde518ebd4b6d9f401464725d43c6b7"
+    },
+    "furniture_teak_writing_desk": {
+      "node_id": "345:518",
+      "sha256": "608ffe44f6e1be78f88793841acf2bc318ff48bb120b3995b0d04a9bc6e15787"
+    },
+    "furniture_marble_console": {
+      "node_id": "345:531",
+      "sha256": "4b2003b8ff52c4b8f4907106a3faf6bc335a77a2527424fe7ab7d7450f9d7387"
+    },
+    "furniture_stained_glass_floor_lamp": {
+      "node_id": "345:542",
+      "sha256": "75266deacf2c7c1e2ff2055a0069c0933db6d4a1a5825b60b3f44fbb70d64ae0"
+    },
+    "furniture_rosewood_dressing_table": {
+      "node_id": "345:557",
+      "sha256": "99f89ace0a739e77b16972bcf98db0a6ea8686c0f5a201341644ef807e4f37e5"
+    },
+    "furniture_elm_carved_screen": {
+      "node_id": "345:569",
+      "sha256": "6fb693abf5c7e4c207a48a1d520acd21123b0acf28d2bf4176159ed54b105b98"
+    },
+    "furniture_rosewood_inlaid_cabinet": {
+      "node_id": "345:597",
+      "sha256": "1eac0d9c0e6eb210bbb594b9dba458b75b80016738001217c1565c619793193d"
+    },
+    "furniture_marquetry_writing_box": {
+      "node_id": "345:620",
+      "sha256": "6b80af133318c896dad15ce72be2a6069e1e988a80b94018ac60f46047cdec8d"
+    },
+    "furniture_enamel_mantel_clock": {
+      "node_id": "345:633",
+      "sha256": "3958a9e4bbc09272eaca6133ba381537a2fd5dbc1f88ba4699348d6f07c87cc1"
+    },
+    "furniture_huanghuali_horseshoe_chair": {
+      "node_id": "345:660",
+      "sha256": "d113a2d5cbce787bb936a19c0d9a4d77e9e9868f8c587778c2d7d095c3bd06b3"
+    },
+    "furniture_palace_lacquer_screen": {
+      "node_id": "345:678",
+      "sha256": "74477ee2804217ed1325962467c67484159549fe1a2eaec399eca48b7f7bde6c"
+    },
+    "furniture_drafting_stool": {
+      "node_id": "345:705",
+      "sha256": "49af4d20462257264bfba83c1241f00b09da50215a5dbba863bd41797f004ce0"
+    },
+    "furniture_pine_bench": {
+      "node_id": "345:716",
+      "sha256": "68106be76db7f7f298d77001c901b9fef7869114d133eed17a433db52cf94159"
+    },
+    "furniture_plastic_drawer_tower": {
+      "node_id": "345:727",
+      "sha256": "763f8a64b5c748df7c34bef62f56106e6d86c2b4b8a38137ae8bed255253dcab"
+    },
+    "furniture_folding_drying_rack": {
+      "node_id": "345:747",
+      "sha256": "e18e64be07ac5f2813d8b2f8ae0781376ebd88d467668ccb6f28596677e50643"
+    },
+    "furniture_chipboard_tv_stand": {
+      "node_id": "345:762",
+      "sha256": "70e95d2decfc28ed8daf959a6174958629395216a092456a991a2c4636681b55"
+    },
+    "household_wooden_clothespins": {
+      "node_id": "345:777",
+      "sha256": "c0e9bceeb85fc77d1daab5ee67a5444ff1b018a5235c033403cb506bb908bf76"
+    },
+    "household_enamel_washbasin": {
+      "node_id": "345:807",
+      "sha256": "d6e04c1b33594634abb437bb0d14c037b3722f16683130064d6b9626f3c9443e"
+    },
+    "household_glass_water_jug": {
+      "node_id": "345:818",
+      "sha256": "1f60ebf6ac90aed2ee85ca188038ea33705f1b95ca2d99892a990123275fe492"
+    },
+    "household_steel_thermos": {
+      "node_id": "345:828",
+      "sha256": "ea7be42c6c1ed21cadd040e316501d4709d7e8e82c60ac7a8b80563b0f5ad627"
+    },
+    "household_ceramic_rice_jar": {
+      "node_id": "345:840",
+      "sha256": "c1cb3faf9e839e53c83af2c29578c87041b0319a7457e54cd0352fb24fcada7b"
+    },
+    "household_cotton_quilt": {
+      "node_id": "345:849",
+      "sha256": "215a0b34186c81cb65a08f117193ab3ccbaea983d1513b847dcd0cd61220098f"
+    },
+    "household_iron_frying_pan": {
+      "node_id": "345:868",
+      "sha256": "8c03fca4e421cb856777318b320502cb9bc9c37e74eafc22ffca2060ecdf0529"
+    },
+    "household_porcelain_tea_service": {
+      "node_id": "345:877",
+      "sha256": "3bb46b3a0df581a8039140a576fdc16e5a5028554424626a202f74d538323200"
+    },
+    "household_hand_coffee_mill": {
+      "node_id": "345:890",
+      "sha256": "f29cb1654ff93b675c4217572ba674b68d595159c08232ea70b84a647a0e6532"
+    },
+    "household_sewing_machine": {
+      "node_id": "345:903",
+      "sha256": "88266051833a80efb16b68d5ce86d01e40633d34436699335391a9de5857a15c"
+    },
+    "household_brass_candlesticks": {
+      "node_id": "345:917",
+      "sha256": "54e3e76da905c22c47efbc8f5a4ecb766f68d53cff0e63f67e48ee084344a308"
+    },
+    "household_wool_rug": {
+      "node_id": "345:933",
+      "sha256": "48739cad91b89addadf8c1a0c5e5fd861fb5ff691a07a237ab51742ce8046f46"
+    },
+    "household_cut_crystal_decanter": {
+      "node_id": "345:958",
+      "sha256": "ab99c3747e3a75849edad18443ee5d41d223baad2b3e6136fa923440d58df2bd"
+    },
+    "household_sterling_cutlery": {
+      "node_id": "345:967",
+      "sha256": "ba6205a3e197476ceac8ba3635602e88da5f1bec79e87e2a44664b877c66a72e"
+    },
+    "household_hand_painted_dinnerware": {
+      "node_id": "345:991",
+      "sha256": "57d200a85f2d93b409afc82fa9a50968c797d7b968379b05e6af2d21bfe90aaa"
+    },
+    "household_silver_tea_strainer": {
+      "node_id": "345:1005",
+      "sha256": "a1e3cc2282e27fb1f41cca4ec991355b67cc8efd07c966e360b92193eb821d5d"
+    },
+    "household_cloisonne_incense_burner": {
+      "node_id": "345:1023",
+      "sha256": "349a1e74bfc37ec3e94bcb35a7d4b32a49f465084155070ed36ad9950a52d233"
+    },
+    "household_silk_tapestry_blanket": {
+      "node_id": "345:1039",
+      "sha256": "1cc3b99e4c5c49b8656f83555198cfae5d355c68fb26e92bb04fae74165b08db"
+    },
+    "household_silver_gilt_samovar": {
+      "node_id": "345:1062",
+      "sha256": "ae7028421e11668c78460c4eecab70ce375890fd6335225d073ab5ff1ec26a5c"
+    },
+    "household_porcelain_moon_flask": {
+      "node_id": "345:1075",
+      "sha256": "86e7b9ae5bb8c64f36c488c59441a29115b7e157a0e0c815d6efd7812319c288"
+    },
+    "household_banquet_centerpiece": {
+      "node_id": "345:1090",
+      "sha256": "41cff25e8e340fc74f8028272305c29e97cdc559059f15914ad21e00ded9cade"
+    },
+    "household_rice_cooker": {
+      "node_id": "345:1101",
+      "sha256": "c9c1baf1a68d58d0a99cf5eff2df2c07cab12ad12ff536f9ed27e0b909697968"
+    },
+    "household_kitchen_scale": {
+      "node_id": "345:1114",
+      "sha256": "c23f64a76dc792820f19a53176e088c949b70e1889fbb77e66ebb93c6849f207"
+    },
+    "household_travel_alarm_clock": {
+      "node_id": "345:1139",
+      "sha256": "30839635b102ccfe05e4e249eae8d61648998d0d4b656b20df2232b5101e83ec"
+    },
+    "household_laundry_basket": {
+      "node_id": "345:1167",
+      "sha256": "7fef7c6237da9f7a9e9648245320e7c2b169e6f0e2664594f6fb38a0b78a513c"
+    },
+    "household_plastic_storage_trunk": {
+      "node_id": "345:1185",
+      "sha256": "ca71924335d85bf8ac61b4e9384dba6aeb3fd52f02d1418fbd857c4373c10bec"
+    },
+    "household_ironing_board": {
+      "node_id": "345:1199",
+      "sha256": "7b15da8874ed23d0f263951e8fd2b6d19eb3800cd6c0ea57ea0252f8a441ceee"
+    },
+    "household_foam_sleeping_mat": {
+      "node_id": "345:1208",
+      "sha256": "eda586b7cdf4c75554eb7b8acaed62464ec14566a7328ec5bf164a47e6125e32"
+    },
+    "electronics_pocket_calculator": {
+      "node_id": "345:1220",
+      "sha256": "4d067317012ed23a7476eb83c37d2ebf3864214e85a45179bd6bad1ec1d25af6"
+    },
+    "electronics_mono_radio": {
+      "node_id": "345:1246",
+      "sha256": "6faf3fbcfe60949dd460f941a791292b42bc71991c414a0146dbe77130433136"
+    },
+    "electronics_desk_fan": {
+      "node_id": "345:1271",
+      "sha256": "e6048821be7492cd4d2856bb70d544da65adb62851d4ef0acf4ea2f55de0dfce"
+    },
+    "electronics_cassette_player": {
+      "node_id": "345:1288",
+      "sha256": "031e73edfcc012ad697416667154d025f547cf5e5dba70f56a6e3903cc3ac9ff"
+    },
+    "electronics_bluetooth_headphones": {
+      "node_id": "345:1310",
+      "sha256": "550f48d36428d0f7e70eea27525cbe869f1286e3a485690e4fc7ba7c649f7d00"
+    },
+    "electronics_ebook_reader": {
+      "node_id": "345:1320",
+      "sha256": "161371bcb8a0d6e6e3d6d7da54b02c5090cdb99035787d93ec32e7db34f51142"
+    },
+    "electronics_portable_speaker": {
+      "node_id": "345:1335",
+      "sha256": "532455a4568804b74f58a02876e78b24c84315670981359474312962d99af84f"
+    },
+    "electronics_compact_camera": {
+      "node_id": "345:1347",
+      "sha256": "e81a18882426e596d1a77a341d4d8105694380f069166e665d2c06d2bf56cc2d"
+    },
+    "electronics_portable_projector": {
+      "node_id": "345:1362",
+      "sha256": "2538ccd18888b296c13cc7bbee3972d1b4aea8d5eaa2673d39cd055bf97356e6"
+    },
+    "electronics_mini_disc_recorder": {
+      "node_id": "345:1381",
+      "sha256": "9dc5cadac6c6b074858c774111ca20b4ca33211a5359d852c3b0e28d295eecbc"
+    },
+    "electronics_handheld_console": {
+      "node_id": "345:1406",
+      "sha256": "aa936ce5cc7376ebac97fcd3acaa144467a309bfa72d6972bef7ea3b09afd322"
+    },
+    "electronics_thermal_camera": {
+      "node_id": "345:1418",
+      "sha256": "19404cbdee68a5c3f20735937b3cf99930c7cc50101851f1b7cd5735a3801b51"
+    },
+    "electronics_digital_oscilloscope": {
+      "node_id": "345:1428",
+      "sha256": "7a8f4fbdd9f4156144510db8b4ae99409ffdc5d4c9ed07b931c15d52142c6ae8"
+    },
+    "electronics_mirrorless_camera": {
+      "node_id": "345:1446",
+      "sha256": "ece83676bd6c996442ba4b61552e94146504d40b369a76917c072ffa10ea0ad5"
+    },
+    "electronics_reel_tape_recorder": {
+      "node_id": "345:1465",
+      "sha256": "01e5a8360992247ddc094e39cc7356bef69a2eb3cf25bad772312f7844935a1f"
+    },
+    "electronics_satellite_receiver": {
+      "node_id": "345:1492",
+      "sha256": "cc91d72d8507d8bdd02062bf2e040e0f65920d53ac43cdb1c70468fd42c29bc7"
+    },
+    "electronics_tube_radio": {
+      "node_id": "345:1513",
+      "sha256": "5c535b01fab86a5567346ee315cf0ba3a4479a6401e6c28ca578a48ebec41048"
+    },
+    "electronics_studio_audio_recorder": {
+      "node_id": "345:1538",
+      "sha256": "f00d1e3c86c1482691dffb9fb0a23450ab719102ec1b254e58842ae69a5d6c47"
+    },
+    "electronics_broadcast_camera": {
+      "node_id": "345:1571",
+      "sha256": "1f7a785d48a070f6ff312eef913fea9426d167e8402cd65509ab81ee59a548ba"
+    },
+    "electronics_stereo_rangefinder_camera": {
+      "node_id": "345:1583",
+      "sha256": "aa3876eeba8f105c6c9526a1b5845f33b2c4078e63c9cec3b445370948d19d64"
+    },
+    "electronics_vacuum_tube_tester": {
+      "node_id": "345:1600",
+      "sha256": "e8f9b3336fb52aa153d099b86cd4ccf45c8497a6be3039ccd1826e2a05f56de4"
+    },
+    "electronics_prototype_transistor_radio": {
+      "node_id": "345:1631",
+      "sha256": "1361c88e6095a9f40e7d9e8f97e5a4c29e573c09a31dbe1703f493b4190317d0"
+    },
+    "electronics_radio_control_receiver": {
+      "node_id": "345:1656",
+      "sha256": "7a46d9a9a684e51a5861fa0da60043d8b7f5c4428ebe068d7fda98078a6d84bb"
+    },
+    "electronics_led_light_panel": {
+      "node_id": "345:1684",
+      "sha256": "54d0fbc08dcc635068c9a1f8bbd83d327f505525aaf51ecf575650e70060ef25"
+    },
+    "electronics_crt_television": {
+      "node_id": "345:1702",
+      "sha256": "fec79df958b3e88174fb9e2e772e8c66870fd5eef98d7b24127a7795fb98073c"
+    },
+    "electronics_vhs_player": {
+      "node_id": "345:1718",
+      "sha256": "bd8efa92974df21b5223b4acdb9ebab2e32b0b5b66bc0a1fec09f1fcb170b804"
+    },
+    "electronics_overhead_projector": {
+      "node_id": "345:1740",
+      "sha256": "8904cdacb1af213ffd96475428797c8791159e40be4809523249a0e63d901392"
+    },
+    "electronics_electric_typewriter": {
+      "node_id": "345:1762",
+      "sha256": "805f44137220a62f6b6ae5fe3fd0c0d282163070d79bc63248037f1dfbc0f3ea"
+    },
+    "computers_membrane_keyboard": {
+      "node_id": "345:1815",
+      "sha256": "26e16370c800440c8126c6306addabed10aaebea844fb63562bc7c0f28e72df8"
+    },
+    "computers_optical_mouse": {
+      "node_id": "345:1859",
+      "sha256": "942c815538dc64219f2859b5a5a2fa8ff4b606ef6d2e3901c8998d11f5831cff"
+    },
+    "computers_usb_hub": {
+      "node_id": "345:1870",
+      "sha256": "f2e42c46e626fc8ab6b43f1b2b8d4ec2b1c016bdc0088b902508c2b8904a0614"
+    },
+    "computers_desktop_speakers": {
+      "node_id": "345:1888",
+      "sha256": "912e712eaa41261165ee5da618c8d6623d51de4081b617f39070d6f01460919b"
+    },
+    "computers_single_board_computer": {
+      "node_id": "345:1906",
+      "sha256": "9c5294bcf39e3bc3f8b7c0e36509fd878877802418ae2196050d910e6b208ab2"
+    },
+    "computers_mechanical_keyboard": {
+      "node_id": "345:1932",
+      "sha256": "1f7780ffcad00d3a894678f2700888d0899d0d7ff396b14207c9f8062cb5b2f9"
+    },
+    "computers_graphics_tablet": {
+      "node_id": "345:1976",
+      "sha256": "489f2c468ec4ec98486afebc518931122e3578469bf3d318bb89d588255a9114"
+    },
+    "computers_business_laptop": {
+      "node_id": "345:1987",
+      "sha256": "547a0dee3de3f848147de48c5858b48f40828582b7db45879896280854214f16"
+    },
+    "computers_managed_network_switch": {
+      "node_id": "345:2018",
+      "sha256": "cf25b1622b3c98a135aa3c9af5ec92711a7a586263f1e4608a48eab2c58e5723"
+    },
+    "computers_ssd_array": {
+      "node_id": "345:2040",
+      "sha256": "93d36bfc84fa26dc63acdb7b0e9e9a497cc2adc546a5f52bc5fb73d76414ed74"
+    },
+    "computers_workstation_mainboard": {
+      "node_id": "345:2065",
+      "sha256": "7a3365e2f9e49b3eaf039259a1e162756ce7c6a7cd54c4500b621abe83203286"
+    },
+    "computers_professional_gpu": {
+      "node_id": "345:2095",
+      "sha256": "432cf90e9bc2d370669c400f73d5f309a57f12f06960472b8c74512c5e011c40"
+    },
+    "computers_tape_backup_drive": {
+      "node_id": "345:2132",
+      "sha256": "a1933aa0bc17032259bf6ce42359b76b2b6ea07e5cac646d5bbdf89bf92ef5de"
+    },
+    "computers_industrial_panel_pc": {
+      "node_id": "345:2154",
+      "sha256": "cc52c7fb89b0338c2a2774b5318c42542dc0ca7e10cab752a9366e693a68097e"
+    },
+    "computers_portable_workstation": {
+      "node_id": "345:2164",
+      "sha256": "6fc6d24143ae05863dd32117b37e00ac807ed6b2557fdd07bf938a2e492b3a58"
+    },
+    "computers_braille_display": {
+      "node_id": "345:2198",
+      "sha256": "c9f77194a12433c0102f5b0eea125e4facf81f5f995197611ea464fdf3747434"
+    },
+    "computers_server_blade": {
+      "node_id": "345:2224",
+      "sha256": "da2ccb571df83d24d4423420b0419b5254241970902148a6981427183f854807"
+    },
+    "computers_ai_accelerator": {
+      "node_id": "345:2246",
+      "sha256": "33a9dfa9248ce8ef14633ebfe0374c035c2f9ec937a11f10e463b8b479282118"
+    },
+    "computers_mechanical_calculator": {
+      "node_id": "345:2298",
+      "sha256": "067da5622ebc97bfaf56236435610913f5efd682eb3a180b42213d1e1370bb42"
+    },
+    "computers_early_microcomputer": {
+      "node_id": "345:2339",
+      "sha256": "e5d0d9deb51726fb0fc8de44d36e38ef6f3cc08138d8d26f85194d609c42c2b9"
+    },
+    "computers_core_memory_module": {
+      "node_id": "345:2377",
+      "sha256": "a85974090d72ced706e5b2d7cbf6351819c115531957ba14b2a6ec2963815d10"
+    },
+    "computers_computer_pioneer_prototype": {
+      "node_id": "345:2439",
+      "sha256": "ca2fb632da145b8067971bbc8df3f5ed96c8d4d551259917044bdf410b5a10e0"
+    },
+    "computers_crt_terminal": {
+      "node_id": "345:2486",
+      "sha256": "0acb868b4c039d61682ab945ebdbdaadce2e9db3da4ed9b7d644272ce888b6dc"
+    },
+    "computers_ergonomic_trackball": {
+      "node_id": "345:2502",
+      "sha256": "328a076ee790b463becabccde2749219790afa03e9acbb81a34ff65882e88a9c"
+    },
+    "computers_empty_tower_case": {
+      "node_id": "345:2511",
+      "sha256": "ec2aec0fc04b422bbb2853ee10b7dc367f06936e8e5cac2cd1e992ce90c52e1a"
+    },
+    "computers_dot_matrix_printer": {
+      "node_id": "345:2530",
+      "sha256": "8bcdf9c5d30fb277f43f78106853ffd486a7127be87d586ac21ab1195df4363e"
+    },
+    "computers_flatbed_scanner": {
+      "node_id": "345:2547",
+      "sha256": "7e244fa9cddbfad42816a09d6acfb335f1ad8250757b0f65ac675d7eaab1af8f"
+    },
+    "computers_diskette_storage_cabinet": {
+      "node_id": "345:2558",
+      "sha256": "ad4989933ffd6ff2a8c50a0e1d308ecfe660f38cb99b34fcc73bc27c3421ae30"
+    },
+    "tools_steel_claw_hammer": {
+      "node_id": "345:2580",
+      "sha256": "4e4b6565e9377ebb6d73dcc4e53e710745f3e72cfe2603a42ea50bcb7ea32e21"
+    },
+    "tools_flat_screwdriver_set": {
+      "node_id": "345:2590",
+      "sha256": "731e54a202724e2173493547e2bfb98778af98708010e33c7bb275d75a32a7e8"
+    },
+    "tools_folding_rule": {
+      "node_id": "345:2611",
+      "sha256": "b6165b36ea630e76e24920ecf21a95647a61ed5fe2619e4271e44db1a371d78a"
+    },
+    "tools_leather_hole_punch": {
+      "node_id": "345:2634",
+      "sha256": "93759a7f71d4024d38233c64246d9588de23b947e71b0a72598a84605f09153c"
+    },
+    "tools_pipe_cutter": {
+      "node_id": "345:2644",
+      "sha256": "bf0f64e5bb901abae38b7461e8c3394a3298248b3c9f8fe64f065481a6519515"
+    },
+    "tools_spirit_level": {
+      "node_id": "345:2655",
+      "sha256": "c89617990ef0130d1517d4f4cb819b1e95f5b670a04e31905200921cc2b39b79"
+    },
+    "tools_socket_wrench_set": {
+      "node_id": "345:2667",
+      "sha256": "e24d52dd2b7a088e61aee76e39b7e99c8a5714217ef856efaaf5f0f8f2cd55c4"
+    },
+    "tools_bench_plane": {
+      "node_id": "345:2687",
+      "sha256": "3c337e4e6f3d74fc1aa8c54e16d29214f88fd42ea7ca95adae9f75a2feabe0ba"
+    },
+    "tools_hand_brace": {
+      "node_id": "345:2697",
+      "sha256": "6290899c7577a37d6d4e21ee45f067e398eab2e7b89ba2219a2d1ddb7ebef7ed"
+    },
+    "tools_wood_carving_chisels": {
+      "node_id": "345:2707",
+      "sha256": "6f97191b0fe9b6bb848861e968e5ad1f6f2fb6f5ac78d183701fef24d80b4357"
+    },
+    "tools_bookbinding_press": {
+      "node_id": "345:2733",
+      "sha256": "5e7acca92580faffb17771a2adcee379aaac17eb4026fff62a6d005559079908"
+    },
+    "tools_digital_caliper": {
+      "node_id": "345:2747",
+      "sha256": "5f09e9e6f2f0dcbd9d52b6c8ff33375b6e6733de8e56441592c2484090fe83c8"
+    },
+    "tools_engineer_micrometer": {
+      "node_id": "345:2770",
+      "sha256": "f97587eb7a40e5f1d38ee000545e83f5bf8f4bb9515f2bb3e5a040ec82a64319"
+    },
+    "tools_gauge_block_set": {
+      "node_id": "345:2785",
+      "sha256": "f509068f8222c74baf11b16438cf1f0853067e2900ee8c9d2e19c3349066141b"
+    },
+    "tools_watchmaker_lathe": {
+      "node_id": "345:2813",
+      "sha256": "5c970de4d0fd13c39ac6dbb5d1e66a27788e8bc10efd71373d0b0a38ecbb3e6e"
+    },
+    "tools_jeweler_engraving_ball": {
+      "node_id": "345:2828",
+      "sha256": "74890b1938233af8682d7d0e99d95dc8c9f8a0e9c7121106bf46f82dd455eca0"
+    },
+    "tools_optical_level": {
+      "node_id": "345:2840",
+      "sha256": "9fe146c32d27ba15cc1dcb65232df53863760bbb6e5c8e29f3855843b81d3f4d"
+    },
+    "tools_engraved_masons_tools": {
+      "node_id": "345:2852",
+      "sha256": "4f6d9464a8e4dd7bfda9c2238945b1b08d383596e81944949d70c58deb486d9c"
+    },
+    "tools_infill_smoothing_plane": {
+      "node_id": "345:2879",
+      "sha256": "fdcdc7ea02c0c56115c783ebc350a9ddc8c7a20ef517cb686c11b98875e711b1"
+    },
+    "tools_watchmaker_complication_tools": {
+      "node_id": "345:2891",
+      "sha256": "cba3593f34f95c338ad5d687648e1dce93b8fe9f1368efb3ee04bfd39e140137"
+    },
+    "tools_instrument_makers_divider": {
+      "node_id": "345:2915",
+      "sha256": "42a09d040b1af92e411fc3827c563a6569bde7ceb8a8e6e819e79e5ed9434eef"
+    },
+    "tools_master_joiner_tool_chest": {
+      "node_id": "345:2924",
+      "sha256": "158bb3b2fcdd671a4599c78724a9c0718848f1ed09237d1ef3722955db5cbf68"
+    },
+    "tools_astronomical_dividing_engine": {
+      "node_id": "345:2941",
+      "sha256": "c2045d502a0702e843fc716b4fd39c032d20ad01bfe0ba96d86415eae3ca708b"
+    },
+    "tools_steel_bench_vise": {
+      "node_id": "345:2977",
+      "sha256": "c264310870aaaa3c0279364a69ced170778c7f4550e421a16e62ca776ff72de2"
+    },
+    "tools_wood_sawhorse": {
+      "node_id": "345:2995",
+      "sha256": "7cc92992d5b2e8ee69beb3553d3b3151f04d1a39fd40288346ddf1a01e0aeba6"
+    },
+    "tools_empty_tool_chest": {
+      "node_id": "345:3011",
+      "sha256": "f541a2039a0e405e0ccbcd3222adf4741e0af137417f6e36d2d1f192c41e3df1"
+    },
+    "tools_long_saw": {
+      "node_id": "345:3022",
+      "sha256": "a0bd255558a924e5e0f62623c9e65792d9fb8fa5bfe6a6facb996f46d2422eb1"
+    },
+    "tools_garden_spade_bundle": {
+      "node_id": "345:3031",
+      "sha256": "28275c09d3fed4a25fbaf06182f2314591c9639bfdb5c0422818c6515c4bccf5"
+    },
+    "machinery_hand_crank_counter": {
+      "node_id": "345:3048",
+      "sha256": "6dcf7e6687f0bd33023ff0d1e7dd92b071c4bbf31a47a73d8691eafdce395da2"
+    },
+    "machinery_sewing_shuttle": {
+      "node_id": "345:3066",
+      "sha256": "c02293fda5185d3d0aeeb6aa759ee870e85664f6f9076ffdc284bda11fa9a278"
+    },
+    "machinery_pressure_gauge": {
+      "node_id": "345:3084",
+      "sha256": "e9d4133c376af85d05ee1a0d79957b2e8f5f5116d26ef36c8d04d7aa94187ea9"
+    },
+    "machinery_grease_gun": {
+      "node_id": "345:3108",
+      "sha256": "92bef0032eedce4e7db8a0e76dad519c825373676ec1a3dff042b3b518b2b282"
+    },
+    "machinery_belt_pulley": {
+      "node_id": "345:3118",
+      "sha256": "3d9fd65b8a3ece7d622c775ef83aada77c34df756bd9bc2e301c6f464f72b302"
+    },
+    "machinery_gear_reducer": {
+      "node_id": "345:3133",
+      "sha256": "67d2d967b646fdb00d8eeb77aa236f6ab64848c1603ed8823ca726efee5021be"
+    },
+    "machinery_bench_drill": {
+      "node_id": "345:3157",
+      "sha256": "655efa9e5b6df2f685facd10764c6ad3f692e8c132f18440b1f42b309f42b9cf"
+    },
+    "machinery_induction_motor": {
+      "node_id": "345:3172",
+      "sha256": "13c69b3222c17c90848fa4200b0b37dba9070d7dafc7fabf4b1c4aaeea665e05"
+    },
+    "machinery_pneumatic_valve_bank": {
+      "node_id": "345:3191",
+      "sha256": "9472f33dc959714b6063cb3f7dacd427f68a973b205ca22bb5523131a2616092"
+    },
+    "machinery_hydraulic_pump": {
+      "node_id": "345:3214",
+      "sha256": "20c47b40f4586bc8a833155701ab75d768f4050eaed38f9e39500f8f254071f4"
+    },
+    "machinery_chain_hoist": {
+      "node_id": "345:3239",
+      "sha256": "074a41ef1187f8065fda733c4cf9a60ed1889799c65eab1e634206e92b609c12"
+    },
+    "machinery_mini_metal_lathe": {
+      "node_id": "345:3257",
+      "sha256": "676875f757465182d454f6d66bcedcd63ef486ea91fc13d77bd294ab32a837d4"
+    },
+    "machinery_granite_surface_plate": {
+      "node_id": "345:3272",
+      "sha256": "9a2fe4017cb5bf130ccf10f39c700d7f10daf2d3dab38d07d4fd3fd6f49aa1f0"
+    },
+    "machinery_servo_motor": {
+      "node_id": "345:3288",
+      "sha256": "f2e17620dc0606439fbc0923d68a24c1f6ec239db64fc2d67168513ec6275cd6"
+    },
+    "machinery_vacuum_pump": {
+      "node_id": "345:3309",
+      "sha256": "08e895bcb49e03fcece58d32c9315c91fe7e33f6445c6c48eab52024908a7397"
+    },
+    "machinery_precision_gearbox": {
+      "node_id": "345:3334",
+      "sha256": "639f773ab515d81e84a5f84cf499338422a057c9ceeaa20ef774cac0bf137636"
+    },
+    "machinery_linear_motion_stage": {
+      "node_id": "345:3358",
+      "sha256": "ee801227eb9e25f50ff401e5c61fde3be0ced70d6143f62b1c54511d81611280"
+    },
+    "machinery_steam_governor": {
+      "node_id": "345:3374",
+      "sha256": "4f95a3263eb40f572fa1022823550675cd96339274d7030723174c0e099334f6"
+    },
+    "machinery_working_stirling_engine": {
+      "node_id": "345:3397",
+      "sha256": "02f304f64fa9be11378e8d411514ac3661af9be3845be95d934eb5ad48780d40"
+    },
+    "machinery_jacquard_mechanism": {
+      "node_id": "345:3420",
+      "sha256": "74ab015cb9f8908cf21bb256f841e8f79a94ba4d6fe0208afad05ff84da1e0af"
+    },
+    "machinery_precision_watch_gear_cutter": {
+      "node_id": "345:3456",
+      "sha256": "04b84e1f5e73ced2faf1e728f586b6965d76ab36e4aace8d3da8bfb60d0a4492"
+    },
+    "machinery_patented_engine_model": {
+      "node_id": "345:3489",
+      "sha256": "872b7d85aefa6ca6914709005581881ecb316081e9d9c307f8df3314e7f38080"
+    },
+    "machinery_early_turbine_prototype": {
+      "node_id": "345:3512",
+      "sha256": "abfc53e77994e066720659bbf3a559ad0672db1336edaffa88ed9d4466ea6c4a"
+    },
+    "machinery_vacuum_feedthrough": {
+      "node_id": "345:3556",
+      "sha256": "71fc7bd29e8e25297099109b7adaea9ad6ec12b26424cb641ab60440a540143f"
+    },
+    "machinery_roller_conveyor_section": {
+      "node_id": "345:3594",
+      "sha256": "9fad7905539f850f05bbbccf7d8047f96a6823505f3b10ab7d9b62b2015777ad"
+    },
+    "machinery_bench_grinder_frame": {
+      "node_id": "345:3610",
+      "sha256": "7826c2be6f8af7412e496a1e093ca40162f02ac66b119f58c57b7fb47f88a40a"
+    },
+    "machinery_mechanical_flywheel": {
+      "node_id": "345:3634",
+      "sha256": "acd875139a1c013da01b9e6a424a932bcb55f79f2ed2f4cf70c33a28b94e63e7"
+    },
+    "machinery_industrial_control_cabinet": {
+      "node_id": "345:3649",
+      "sha256": "2b61da26a5cd5c4467c271a8c8a3ced072a6167456c2d74a52672d3cd5dffcb3"
+    },
+    "art_botanical_poster": {
+      "node_id": "345:3681",
+      "sha256": "5e0913a5db443a4950fd251c1e76fd9be4e9ccb32492f2491b8233dd98828dfa"
+    },
+    "art_reproduction_cityscape": {
+      "node_id": "345:3694",
+      "sha256": "39256a28fbe61608918d1bc38e6d4d6236be01cf368e085021ac526982b8fa51"
+    },
+    "art_plaster_drawing_bust": {
+      "node_id": "345:3723",
+      "sha256": "38e709ed0ba79118d9dba97e6286df2eb1b786f10cfd3b6efb0c8c7334eea2b7"
+    },
+    "art_festival_paper_cut": {
+      "node_id": "345:3733",
+      "sha256": "bc3f85740c90fe83bf7ccad15477e7d2e6d421cb04f2c833111ec90597dc6553"
+    },
+    "art_student_charcoal_study": {
+      "node_id": "345:3756",
+      "sha256": "79bbb0cb4239203896346fb148123782663381469d0ee37641d53fadfa50db25"
+    },
+    "art_woodblock_folk_print": {
+      "node_id": "345:3768",
+      "sha256": "11db61f4383905684db7671c7512387c0483171b1b152d67770547be89f932e7"
+    },
+    "art_ceramic_relief_tile": {
+      "node_id": "345:3792",
+      "sha256": "78059a37a07e9af3c90089b5d305c7cefa87c12995baf4f409d48804ce3c6bc1"
+    },
+    "art_handwoven_wall_hanging": {
+      "node_id": "345:3816",
+      "sha256": "5a5f03d61a12561aa5cb9a97b062b2248e9acf0e6c48cdd29e3e7fa6a63ad976"
+    },
+    "art_watercolor_harbor": {
+      "node_id": "345:3841",
+      "sha256": "50a369ee23ad9fbec6fb91610a960cc11f1e0b8414711fcc9f263e816e8a1649"
+    },
+    "art_lacquer_painted_panel": {
+      "node_id": "345:3854",
+      "sha256": "869aa19c2d6153cbaed6dce99f9612f7d5221d8804b40446e7117bc473ec4939"
+    },
+    "art_numbered_copper_etching": {
+      "node_id": "345:3867",
+      "sha256": "3dc28a9c04722d687edcfde103c81acbaaff0e5c6074450dc507fb5c61999606"
+    },
+    "art_kiln_cast_glass": {
+      "node_id": "345:3892",
+      "sha256": "80f7d1626d2131038f11e8c6be30bfe5d1f37764579fb442a1a034918895ca8d"
+    },
+    "art_bronze_portrait_bust": {
+      "node_id": "345:3903",
+      "sha256": "bc1300336186a5c7f10d6c07aa3b6e9eb18a71662595f79595f3e905565df2de"
+    },
+    "art_ink_landscape_scroll": {
+      "node_id": "345:3913",
+      "sha256": "776f748f739cc406cf9cc718cecda22d7f67f0a2e3827feee6b4d73dbdca6f30"
+    },
+    "art_oil_painting_still_life": {
+      "node_id": "345:3926",
+      "sha256": "4ab643cd35ee06d78c8625b19ee775c88e8d0f52ef9df4b892b8a7fba0fbfd3c"
+    },
+    "art_artist_proof_lithograph": {
+      "node_id": "345:3943",
+      "sha256": "1754e5fb43be8256d68063488f4b7c519314b643bf13063be43b698ad51a19ba"
+    },
+    "art_silk_embroidery_panel": {
+      "node_id": "345:3956",
+      "sha256": "1a0a68a946761b6dc95ea615676a2fbaa2283cd818b1034ca6a9048fb1ec30dc"
+    },
+    "art_sculptor_clay_maquette": {
+      "node_id": "345:3980",
+      "sha256": "09353309ee22b8ebec2fa247ce840a48a0cac1556cacdeb68c10f9e4455b6976"
+    },
+    "art_calligraphy_couplets": {
+      "node_id": "345:3990",
+      "sha256": "9f70f9436ae376ed1c85ebe11c4203ac705cbc884cbb358d515b3766c2ebf1d8"
+    },
+    "art_exhibition_oil_triptych": {
+      "node_id": "345:4008",
+      "sha256": "f765265a6f5b3f253d324a6011c1f9dd73acc7fa729ad209b61928a1f2cc9e8e"
+    },
+    "art_court_kesi_panel": {
+      "node_id": "345:4023",
+      "sha256": "9005bf47ad29f2e808cdeb90bd09b3a26216f4b28123f954399466b69ca91b69"
+    },
+    "art_sculptor_unique_bronze": {
+      "node_id": "345:4047",
+      "sha256": "53326976a3f72dd782ae7d29c0381fbe4954d0311dac3b93d93edaa436dfe856"
+    },
+    "art_miniature_enamel_portrait": {
+      "node_id": "345:4058",
+      "sha256": "58f575b3b1be9d161ec52c0d70a8f9bd3ef7508a6299d26bc1db136331b0e2a1"
+    },
+    "art_stone_rubbing_album": {
+      "node_id": "345:4071",
+      "sha256": "43a13abe4bae8d869c399595b92040b7fa3c88f348740c591910abb3ca1e168b"
+    },
+    "art_gilt_picture_frame": {
+      "node_id": "345:4106",
+      "sha256": "31cfcb6e0ea361b61d9b0224c70f504ba377e4df3b235bd1c8d20f40a77984ae"
+    },
+    "art_student_canvas_bundle": {
+      "node_id": "345:4115",
+      "sha256": "a86fdb389b3a3ccb38b183797bfd99c908d5302a09a9743d15f9e425958c0d5c"
+    },
+    "art_theater_backdrop_panel": {
+      "node_id": "345:4129",
+      "sha256": "4c24371064c41d3650d3fb23cbff7ecf9e3d1059bae5e32634f9429099b9c96d"
+    },
+    "art_decorative_wall_mosaic": {
+      "node_id": "345:4159",
+      "sha256": "8dc59de972d39ab2929317d6f846c23be0689cc021b74a79890031a89fde9cf7"
+    },
+    "antiques_replica_bronze_mirror": {
+      "node_id": "345:4175",
+      "sha256": "c52c84e92ee2ebfb056db58eaf0614efcc73a1f9e266996286498fe37247fd35"
+    },
+    "antiques_modern_incense_censer": {
+      "node_id": "345:4185",
+      "sha256": "a9fa3f554590a8a27d629cef1cef01ecc2207b76b549aa3f38610571e7c580ef"
+    },
+    "antiques_pottery_oil_lamp": {
+      "node_id": "345:4200",
+      "sha256": "c2395e8874f725396df761479fc9552c85a912801a9fddce362b0d12444b6c7f"
+    },
+    "antiques_stoneware_pickling_jar": {
+      "node_id": "345:4210",
+      "sha256": "cda0afdb8f13873e2d41d3e19a389ad52342705603dc76e269274dd737dcd815"
+    },
+    "antiques_brass_door_knocker": {
+      "node_id": "345:4219",
+      "sha256": "55c21d0cf4dff0b693ca0f952740a51690b9cb71646f195e047d0fb5c03fd3f7"
+    },
+    "antiques_ceramic_pillow": {
+      "node_id": "345:4229",
+      "sha256": "b06e4c8cdae6b45abe1a8045efa6ec1cd19b3ab588e18188fc1154c52f8ab858"
+    },
+    "antiques_celadon_lotus_bowl": {
+      "node_id": "345:4241",
+      "sha256": "88f3883e4bea3cc66832255cc566e2f4706cbdc55e46e5030ba099927b9d8592"
+    },
+    "antiques_blue_white_jar": {
+      "node_id": "345:4250",
+      "sha256": "12a261edc6ff645f8a03de0e46d7db2386cc1c81c76e1964f5e7eba1160e223d"
+    },
+    "antiques_bronze_belt_hook": {
+      "node_id": "345:4264",
+      "sha256": "9482ab7e0599b2e4ff3d62838f8368b3eb02e744b1755b03b122cc0bc09131cf"
+    },
+    "antiques_glass_snuff_bottle": {
+      "node_id": "345:4275",
+      "sha256": "bcd1396e144dec2230e29a25a494f8996282e8c75a93d02dca64b3ee311dabde"
+    },
+    "antiques_bamboo_brush_pot": {
+      "node_id": "345:4288",
+      "sha256": "c5e3c35468fb08195cc67214978cc94ab8ba4c03f4d8a12a520c08b037e4cef0"
+    },
+    "antiques_duan_inkstone": {
+      "node_id": "345:4304",
+      "sha256": "3e05294e16f5a3f3bc17416a7d25e00cca1e18441b4ad750e63a8c798bc001a2"
+    },
+    "antiques_lacquer_toiletry_box": {
+      "node_id": "345:4314",
+      "sha256": "ad5a0faee381b33eb2a3dfa3df3af7c0130f2ac4327f03717aad1fb60e398c3f"
+    },
+    "antiques_bronze_tripod_vessel": {
+      "node_id": "345:4327",
+      "sha256": "38760bd9267d5438fefbf361188f9afd0ab5ad2c4ef2b6a30cebc1b9db26ce02"
+    },
+    "antiques_gilt_buddhist_figure": {
+      "node_id": "345:4342",
+      "sha256": "3f0423f04d290a48f311713b81f78cdb280a0f29be50be7d4e52c574f4dc3ddd"
+    },
+    "antiques_cloisonne_vase": {
+      "node_id": "345:4354",
+      "sha256": "e9618b85c5085733fdf7cea266b899a8c2d1865520638ddb50001188bd7f5968"
+    },
+    "antiques_silver_inlaid_lacquer_box": {
+      "node_id": "345:4369",
+      "sha256": "38aa155b962f39624053f551443fafe010d61468f74dfda2b9eddafc8e6f568a"
+    },
+    "antiques_rosewood_brush_rest": {
+      "node_id": "345:4383",
+      "sha256": "79375dc745651ac67624f22afbcac6518be9e437dc593711b215a7df007928ed"
+    },
+    "antiques_imperial_seal": {
+      "node_id": "345:4391",
+      "sha256": "74173c16ca39900dabafe26ea6d1e9343e20b1dc6d799f6f1f68e49bf63bfdb4"
+    },
+    "antiques_official_kiln_vase": {
+      "node_id": "345:4400",
+      "sha256": "b855b15990179b1de70a77d6e73a6e24a808bc88d50e260055c4faae5cd8ded2"
+    },
+    "antiques_ritual_bronze_set": {
+      "node_id": "345:4415",
+      "sha256": "c59034b2a10f0bb74ea64b023f28e7725c77ca7863a61c4687ef12611bae5be6"
+    },
+    "antiques_carriage_clock": {
+      "node_id": "345:4438",
+      "sha256": "39a034e7b3ff15bc5f80240691071825a5f5f51428e37d66bd8a88ef6d608247"
+    },
+    "antiques_porcelain_scholars_water_dropper": {
+      "node_id": "345:4465",
+      "sha256": "e056674dad2f66c8835f40f035bbab3e79839409f9adc030a0d3d48636057bf8"
+    },
+    "antiques_carved_agate_cup": {
+      "node_id": "345:4480",
+      "sha256": "a26e227c31501e1d76f30a9def6b5a80e352ab9be66773aba9ac103dbc8555d4"
+    },
+    "antiques_reproduction_terracotta_warrior": {
+      "node_id": "345:4493",
+      "sha256": "93cb16ab647c0a8b8ab2a2b8a3283a91f210fb38d69938dffffa32602cd901d0"
+    },
+    "antiques_replica_garden_vessel": {
+      "node_id": "345:4510",
+      "sha256": "19a44baf324be5f55f33a99b8670cb5688a638f654f661fde5fa689effda5f62"
+    },
+    "antiques_souvenir_stone_rubbing": {
+      "node_id": "345:4519",
+      "sha256": "a19988363a3872f9ff66a2e4de50317da32f104a9b371f923950a8fd70f6459f"
+    },
+    "antiques_replica_wooden_shrine": {
+      "node_id": "345:4553",
+      "sha256": "65a4364b9da02164704a719f79b2e30bb57583aee4ac7654af6709cb0f89bdda"
+    },
+    "jewelry_resin_bead_necklace": {
+      "node_id": "345:4568",
+      "sha256": "4d3a4673905e5c2db195f7c5d407da6fd69c0ff9e4041121a1c4cb3b7f7c4f0a"
+    },
+    "jewelry_glass_cabochon_brooch": {
+      "node_id": "345:4592",
+      "sha256": "f8a8946011fba411f31d6a0f03da7ad81db9372574e33e9c695ba0b4bcdd79cb"
+    },
+    "jewelry_brass_costume_bangle": {
+      "node_id": "345:4601",
+      "sha256": "20bc35ba8139811150f4049c91343dc05ee64456037395771e0cd07ba24fee3a"
+    },
+    "jewelry_steel_cufflinks": {
+      "node_id": "345:4608",
+      "sha256": "1ee9bcfa315df1c2cf847612cbb36a17009ea982125f4aa998a857fe8bd6d7ba"
+    },
+    "jewelry_sterling_pendant": {
+      "node_id": "345:4620",
+      "sha256": "38b05ae9df9516ae7763ed77d5c9b7edc7e603040e3262b07227619b61e273dd"
+    },
+    "jewelry_freshwater_pearl_studs": {
+      "node_id": "345:4629",
+      "sha256": "c1bf583d56c04fe789ff19f3c93ef9a594669a52749793371df1fd3688fd64a0"
+    },
+    "jewelry_garnet_silver_ring": {
+      "node_id": "345:4641",
+      "sha256": "cfe79a6e0c58447f8e27b454b1a51f4467273f7a9229a7e1d0e43e1cd304a58f"
+    },
+    "jewelry_enamel_silver_brooch": {
+      "node_id": "345:4650",
+      "sha256": "4d42b9b550408b4117aaae6292d3791ac102ce2ef16ba9d1091d7dcf2c1bcf53"
+    },
+    "jewelry_amber_bead_bracelet": {
+      "node_id": "345:4661",
+      "sha256": "8a42289c30747419a873864881e15384b765b6489261a675710819e762d6b9a1"
+    },
+    "jewelry_gold_chain": {
+      "node_id": "345:4684",
+      "sha256": "f69c38f22f012f9211c02062d74c4a40c9f2bca433f2c173d9695f4b4a35780c"
+    },
+    "jewelry_platinum_wedding_band": {
+      "node_id": "345:4708",
+      "sha256": "0f94e46aa4154eaf2e34c7ce7431577e895bcd9e1ffb3b8b78c7e9f30549675f"
+    },
+    "jewelry_jadeite_earrings": {
+      "node_id": "345:4717",
+      "sha256": "6889522f59779dd54c6d1252a85ff1d793527afb906cb9c2cd38eae4e0055884"
+    },
+    "jewelry_akoya_pearl_brooch": {
+      "node_id": "345:4729",
+      "sha256": "35186904c713a76511eb1666f029d027d3d46b24781c891212eeb6875b914c33"
+    },
+    "jewelry_gold_pocket_watch": {
+      "node_id": "345:4742",
+      "sha256": "095ac64754b0fe22b93a461ab1c4c9f02e20d46f4963d48bf01c69c6fe89b111"
+    },
+    "jewelry_star_sapphire_ring": {
+      "node_id": "345:4767",
+      "sha256": "801645097c886b8dbd426014860a671195600244bbe2fcc12a8649cce1b350ea"
+    },
+    "jewelry_old_cut_diamond_pin": {
+      "node_id": "345:4776",
+      "sha256": "4207e0bc08345b05858d7ed349d6b48fbdc10dde18eb6bf07ecc4e5cb57365cb"
+    },
+    "jewelry_gold_jade_hairpin": {
+      "node_id": "345:4784",
+      "sha256": "87e470d08ada92c9fe3c1187c09b40705746e10ac67ba2f031eaa74dcfb9a8cc"
+    },
+    "jewelry_art_deco_platinum_bracelet": {
+      "node_id": "345:4797",
+      "sha256": "f81b6cbc0dc8e3f302363221dba86305a7f88eb93e59aa60fbf1318411171513"
+    },
+    "jewelry_natural_pearl_tiara": {
+      "node_id": "345:4820",
+      "sha256": "b9849b5e356688c093add0330115c99aefb828b2893490e6282398ebd80e9497"
+    },
+    "jewelry_pigeon_blood_ruby": {
+      "node_id": "345:4833",
+      "sha256": "77c7d40f547de7719f8162a9e9d923bea03bdda8b46b1e538d7cac8fd5fe11ec"
+    },
+    "jewelry_royal_jewel_box": {
+      "node_id": "345:4842",
+      "sha256": "15b59a668f83aaff240a259e51d68a223706555d2a5e87600593f8ae82cee8db"
+    },
+    "jewelry_tourbillon_wristwatch": {
+      "node_id": "345:4855",
+      "sha256": "ba32e21a3727d4afb0cae8e66d938c2afb77a9f38ca3adb0d1a8447e1d55538f"
+    },
+    "jewelry_shell_cameo": {
+      "node_id": "345:4881",
+      "sha256": "4c91d93dca1b17890537905353ec8bb7cfc9e15b6de330b9567155be84a12f68"
+    },
+    "jewelry_silver_jewelry_casket": {
+      "node_id": "345:4892",
+      "sha256": "f9aa3ae3061b84d4c604b74f62707c71c9119de07786d8b499696e292b40b720"
+    },
+    "jewelry_costume_necklace_display": {
+      "node_id": "345:4905",
+      "sha256": "80ac3d761515621c2739a0b7bb365c790398540403bcbffbd76f1f2e896458bb"
+    },
+    "jewelry_stage_costume_headdress": {
+      "node_id": "345:4922",
+      "sha256": "fa908eb6b3045709f7fa653da84475c9bcf81b6a19df4b1e645c095b3d705598"
+    },
+    "jewelry_bead_craft_tray": {
+      "node_id": "345:4936",
+      "sha256": "f6e41386e63ffdf89806753fe141c924322112790b9e32621f028bd09d58b84b"
+    },
+    "jewelry_replica_crown_display": {
+      "node_id": "345:4968",
+      "sha256": "15b061e3ea30234af1e9459e4cdc2bf77a0008a5c94bd325119879f496de588a"
+    },
+    "minerals_quartz_crystal": {
+      "node_id": "345:4983",
+      "sha256": "b60af81fd77509dcc517185e5ab90bb3f772c631e6b1557ca8a7b86b601c038c"
+    },
+    "minerals_pyrite_cube": {
+      "node_id": "345:4996",
+      "sha256": "0723ab5ce0eeaa81e4ee6aca87f35235922f47d88c4420ff4609946acd1a2dbe"
+    },
+    "minerals_calcite_cluster": {
+      "node_id": "345:5005",
+      "sha256": "904c318182df160fd847fc22eb41555cea332c2f25c9b867ae15e070b615f000"
+    },
+    "minerals_hematite_rosette": {
+      "node_id": "345:5022",
+      "sha256": "dcd42611eaadf4bf10c913de2224002535995c94666ed824d766e00580bd34bc"
+    },
+    "minerals_fluorite_octahedron": {
+      "node_id": "345:5044",
+      "sha256": "bd2bd1dd3e646967fed4db95c73d7d6d2cf61bda4b582d732affb9406a87c344"
+    },
+    "minerals_amethyst_cluster": {
+      "node_id": "345:5053",
+      "sha256": "ec03344ba37f2562e68af9e26ba31bc0280ce5bf6d78a7892cf8974516d227a2"
+    },
+    "minerals_malachite_slice": {
+      "node_id": "345:5070",
+      "sha256": "b19d7a8e99810d4615c4bbc1eaede5d6433d197f6786c592e9ec3fab9cc9278b"
+    },
+    "minerals_agate_geode": {
+      "node_id": "345:5082",
+      "sha256": "0ad6bb08c3f85acc2c88e8589f50ddd63ea42bd9d3aa7da6edf08912abfff68d"
+    },
+    "minerals_celestite_cluster": {
+      "node_id": "345:5091",
+      "sha256": "9f6f733f4a3e8576b4377eeee72d36758c468a6d5ed44df4ee05e0b897e24857"
+    },
+    "minerals_lapis_block": {
+      "node_id": "345:5108",
+      "sha256": "91e882260d450a2a1d29405319a9b6eac157f738d9ed0a3e2b861f89f951aa14"
+    },
+    "minerals_watermelon_tourmaline": {
+      "node_id": "345:5116",
+      "sha256": "d8e81a4ae936d967265bb3f148e05826971fa9534f75d83f357d854a463bc7d1"
+    },
+    "minerals_garnet_mica_matrix": {
+      "node_id": "345:5130",
+      "sha256": "a4738e689a40b10768de27a3d0cbb0f50ff114eeba2c30b16f3a3d5125cdd78c"
+    },
+    "minerals_meteorite_widmanstatten": {
+      "node_id": "345:5150",
+      "sha256": "a0caec464aa2ece2757ac034968dbcaaa49a9bf5cb430dcf5635a0795818b407"
+    },
+    "minerals_amber_insect": {
+      "node_id": "345:5166",
+      "sha256": "4bd071571a05d0c49de2bb5180131f7fe12c4b6361297773746e348dc0ca3deb"
+    },
+    "minerals_boulder_opal": {
+      "node_id": "345:5175",
+      "sha256": "4bf8b847a787dbcc42f89d8a292ca88a40096c783e94ec43873e56b2229978cc"
+    },
+    "minerals_aquamarine_beryl": {
+      "node_id": "345:5187",
+      "sha256": "5f742fc7d6f023fb6e04658264fccb47af91ddfc08d7b7e434cab0a713d16121"
+    },
+    "minerals_emerald_matrix": {
+      "node_id": "345:5200",
+      "sha256": "82214345c10dc3a904d5595117c30ea5dc9e69171f7ab1120a0aacfb3a83c49c"
+    },
+    "minerals_black_opal": {
+      "node_id": "345:5217",
+      "sha256": "cbaa2ec238a0472a7ef2b4e043835dcb2ac906446ba90680ba7d19218582125c"
+    },
+    "minerals_gold_in_quartz": {
+      "node_id": "345:5236",
+      "sha256": "2ae2d2f1625b992ed05f67a08a11807f5f5d02c8897aa1744c578076a3081cc7"
+    },
+    "minerals_museum_tourmaline": {
+      "node_id": "345:5244",
+      "sha256": "00ec0ccbe92e567748cad72837f897e659d87aafdd94b8d1b0b64b26c1824e70"
+    },
+    "minerals_lunar_meteorite": {
+      "node_id": "345:5259",
+      "sha256": "b4505c61c08ad15e196e4105efe6cc18c6a2d8eb06a6dff5525795e93bca1a0f"
+    },
+    "minerals_alexandrite": {
+      "node_id": "345:5275",
+      "sha256": "8ccc671b678b892b75d80ba7c932afe52273d0081a2320d37fc8f623fa1c8e3d"
+    },
+    "minerals_massive_amethyst_geode": {
+      "node_id": "345:5284",
+      "sha256": "134377f6506b4f19ea4d1924a6bc93247cdc307b8b949e94f5770c02d0f355b3"
+    },
+    "minerals_gypsum_desert_rose": {
+      "node_id": "345:5294",
+      "sha256": "024bd523f52a988de4131df6dbc1e3997ccfad6f11a083c29463681b9365236c"
+    },
+    "minerals_granite_core_samples": {
+      "node_id": "345:5317",
+      "sha256": "de5df261d764edeb8f3160473e25ff477ce01db24bb07d7f3dcca0398cd0ad59"
+    },
+    "minerals_sedimentary_rock_set": {
+      "node_id": "345:5344",
+      "sha256": "c130b604de77fa3ddf767394c7da7058dbcdfb6f135b6ff8302741d5d0488826"
+    },
+    "minerals_basalt_column_section": {
+      "node_id": "345:5364",
+      "sha256": "ce12c145940b693287b925e9e66ea99dbf483e50e2365e1d86b7c71564af4d9b"
+    },
+    "minerals_polished_limestone_slab": {
+      "node_id": "345:5383",
+      "sha256": "3d01e8b129d06032bc0c6a309ad5004071a513b7b3b28a5d70c3f2f19cf9752c"
+    },
+    "transport_bicycle_bell": {
+      "node_id": "345:5402",
+      "sha256": "af9f3b2c95b046826c36f833f39de0e1c909322a673dca750acc3b0803aac0b4"
+    },
+    "transport_car_speedometer": {
+      "node_id": "345:5415",
+      "sha256": "aa9ad3808eae7657e3dd39e621d73c0653c974520380ae85921a53dab8e34e0c"
+    },
+    "transport_steel_bicycle_frame": {
+      "node_id": "345:5439",
+      "sha256": "7f89d601b653b5510e8812b110924554d2123295995f7300453ccacdc42b6228"
+    },
+    "transport_railway_signal_lamp": {
+      "node_id": "345:5447",
+      "sha256": "7d996d86ad55726d65091e5d61f5ea716e7f7306931c4bb66bb7f1236d35a2d3"
+    },
+    "transport_wooden_ship_wheel": {
+      "node_id": "345:5460",
+      "sha256": "5eca4738aa73f408ceae080cce51653688cf8c5959d0d2a43051d6ed87c406d7"
+    },
+    "transport_marine_compass": {
+      "node_id": "345:5475",
+      "sha256": "0ebff0bd993adc3a34ca2ceec2e038d4fa89b89c124ba12995723f1a093ea866"
+    },
+    "transport_aircraft_altimeter": {
+      "node_id": "345:5501",
+      "sha256": "3c5e7080baf81f70478de15e0ad68f960f35d218285cf63b66b15a101ed9c116"
+    },
+    "transport_locomotive_nameplate": {
+      "node_id": "345:5525",
+      "sha256": "a1453597147c9b8a45b1afac719348cd9ddb5835c8869f15557f07446a11b018"
+    },
+    "transport_brass_ship_bell": {
+      "node_id": "345:5542",
+      "sha256": "832ededb5faa6a589622814f774b26f30588ea2a01f65e0e60bbf1950aba1dc5"
+    },
+    "transport_railway_station_clock": {
+      "node_id": "345:5553",
+      "sha256": "a3bb756144952bbc0aaba05e0ae6a8f3f5d8d72d1f11dbba4e24c9a9169a0e6b"
+    },
+    "transport_aircraft_gyro_horizon": {
+      "node_id": "345:5579",
+      "sha256": "7137c2476dd778123225caf6047047631155b66e7d6c2e1f4481c1e00ee2286c"
+    },
+    "transport_marine_chronometer": {
+      "node_id": "345:5606",
+      "sha256": "645e78e591bcc48d995756bca71115fe5cb44255cf8296dbf449efceb664c3a8"
+    },
+    "transport_pilot_navigation_computer": {
+      "node_id": "345:5634",
+      "sha256": "b7857f5e319fc52c5014320b9c05af04a1ea032e62800ea2755d210acbc5aee2"
+    },
+    "transport_carriage_lantern_pair": {
+      "node_id": "345:5682",
+      "sha256": "48f0760231b35a94d0d1b8f13b8b0bdf901c741969cb4dedbe56d9f7d3d6444f"
+    },
+    "transport_motorcycle_engine": {
+      "node_id": "345:5698",
+      "sha256": "42fc03e620084d3f292356938ca747450b0fbdbb182f5731c9f86cfb81d5999c"
+    },
+    "transport_ship_telegraph": {
+      "node_id": "345:5728",
+      "sha256": "42e22c7060e551246b5bd4ccf32051cddb90c0b0a5cb1c9341477547b09fe75c"
+    },
+    "transport_airship_instrument_panel": {
+      "node_id": "345:5755",
+      "sha256": "e873aae78ab2ca196398addcd35015d3f1aa0869c45ddbd69513a7a3496b1a8f"
+    },
+    "transport_racing_steering_wheel": {
+      "node_id": "345:5848",
+      "sha256": "54a8630e72c23afe49c9bb13664a5b4fb0cdc26a2b934599d070d05e34724e1d"
+    },
+    "transport_prototype_engine_piston": {
+      "node_id": "345:5862",
+      "sha256": "2dcb7637e64935eaa3bbf74ca89a41f73295b8c34b611b92d8878bdce3f6f754"
+    },
+    "transport_pioneer_flight_recorder": {
+      "node_id": "345:5876",
+      "sha256": "27af6c472a64371857206e70e177e554c96894dedc222c86c310c7a03f437552"
+    },
+    "transport_expedition_ship_chronometer": {
+      "node_id": "345:5895",
+      "sha256": "7a04fa8e8d0d7f68779a86680500092cd6670ed53be4ce79cac31a9390245c4a"
+    },
+    "transport_railway_foundation_plate": {
+      "node_id": "345:5923",
+      "sha256": "21088aab24a30662d0f5a5e75e9b8843f0eb79c76b33315a1338c9d6357cd6db"
+    },
+    "transport_aluminum_pedal_set": {
+      "node_id": "345:5940",
+      "sha256": "264db5a1eb5dbbabcb0d61706ea42be78a617b922b03610020486b5435b96dde"
+    },
+    "transport_traffic_cone": {
+      "node_id": "345:5952",
+      "sha256": "b38cde7a43002e49092cf17b75c71d2c1c267592206b5e308940925d5b2b0565"
+    },
+    "transport_steel_car_wheel": {
+      "node_id": "345:5962",
+      "sha256": "12bb80ed3b8705e84d71996f11f67230f0c2f39195244fc21d3bc55efdea4a1b"
+    },
+    "transport_station_luggage_rack": {
+      "node_id": "345:5977",
+      "sha256": "cde91e53b6d9ee1443f0d0062acd5c26bf67d7e07a62eef84bc84a9531f0737e"
+    },
+    "transport_wooden_paddle_pair": {
+      "node_id": "345:5992",
+      "sha256": "efd78b0fd55312eac930d4a6b08d6cf5608e6f02325b2492fc501a130aac1971"
+    },
+    "transport_bicycle_repair_stand": {
+      "node_id": "345:6004",
+      "sha256": "f7f849aa0672ac74fd44684c1919464521928e341e48a7232947be115d00945c"
+    },
+    "energy_camping_oil_lantern": {
+      "node_id": "345:6015",
+      "sha256": "778545679b6dc750f7dca8a255d7e302b1c95bbf2c9ffd92d81926a10a608392"
+    },
+    "energy_solar_garden_lights": {
+      "node_id": "345:6028",
+      "sha256": "b7de3db2d5d5aed69af226e5639e6e867242fb63026439a5b7aae0ee4d3a7f97"
+    },
+    "energy_rechargeable_cells": {
+      "node_id": "345:6044",
+      "sha256": "b01c82b6c6c4fc53d0bd7fb4897a58bb441697563cd6ae45e2430139037f9c38"
+    },
+    "energy_hand_crank_generator": {
+      "node_id": "345:6067",
+      "sha256": "cd350820b769853a9bc4b0f0d578e1c073fd8c9b498b91e426a04e5763ff8725"
+    },
+    "energy_folding_solar_panel": {
+      "node_id": "345:6088",
+      "sha256": "49671314ce7021096a1d60a607cd6bda78f50a36aa33643e5a0fe51a84c627ad"
+    },
+    "energy_mppt_controller": {
+      "node_id": "345:6106",
+      "sha256": "5aaa60a4daf02f5f4df8f9471490e1fda149e668cb264779d15ec3d56890546e"
+    },
+    "energy_camping_stove": {
+      "node_id": "345:6125",
+      "sha256": "f732957e056bb45ec9535906649e2c3e2300744c4330391d586514427df33cc1"
+    },
+    "energy_portable_power_station": {
+      "node_id": "345:6135",
+      "sha256": "ac5d16e719539f46ff4d24a1b670de3ecdac7a4d1c7cacde02c14a844906398c"
+    },
+    "energy_toroidal_transformer": {
+      "node_id": "345:6155",
+      "sha256": "deaf7a26eb23cdecd174bbebc3f91405fa6c18dff952b623561bae6581dcdbc7"
+    },
+    "energy_wind_anemometer": {
+      "node_id": "345:6194",
+      "sha256": "e506808f97b3d43168db0a8a832f41cdf28d3fab2b4eb27a41d91ab3fa9f8f31"
+    },
+    "energy_fuel_cell_kit": {
+      "node_id": "345:6212",
+      "sha256": "c544e6f9ae040ac785b355da56f35697ef1221db982e93696072695e5be699a7"
+    },
+    "energy_thermoelectric_generator": {
+      "node_id": "345:6228",
+      "sha256": "64ccd4b4b2d61c919c82e84b607263513d6137a2061b2db9e0412690d5b54362"
+    },
+    "energy_vacuum_solar_tube": {
+      "node_id": "345:6244",
+      "sha256": "9b7e66212df301de34adcd434ab7b2d24f78d66439ec086ffdfbe90217cc2e66"
+    },
+    "energy_magneto_ignition": {
+      "node_id": "345:6254",
+      "sha256": "8196530563f358be7444b5dacdc8b8e0e036c829364bec40d6a032d2afd2ed73"
+    },
+    "energy_oil_drill_bit": {
+      "node_id": "345:6275",
+      "sha256": "4bad671ebf4d0bf5bc470341953af984df445225b59d2747a765ae45e43f2243"
+    },
+    "energy_laboratory_power_supply": {
+      "node_id": "345:6297",
+      "sha256": "d79087a6d321da7524b4644e41de25fbb1ed398d5a66cd1934130719815ce070"
+    },
+    "energy_inverter_module": {
+      "node_id": "345:6316",
+      "sha256": "c630510b6cf707bc1db7acbd9e1277271e454c348434647f2d967682f8fa3d22"
+    },
+    "energy_micro_hydro_turbine": {
+      "node_id": "345:6335",
+      "sha256": "b62d7048f8b683031df974f159322f106d55508ed5b7bf2bc90976228e384827"
+    },
+    "energy_solar_cell_prototype": {
+      "node_id": "345:6379",
+      "sha256": "4eb97618676ec5af4b0c093a831195859353d81bd65ce2727946b46d19571eb2"
+    },
+    "energy_stirling_solar_engine": {
+      "node_id": "345:6407",
+      "sha256": "e60ff8bb5d89d58578e2ed5161b274c36eb1726b2901fc3e96db7f823a64ee58"
+    },
+    "energy_early_dynamo": {
+      "node_id": "345:6432",
+      "sha256": "3611c901c1ea7f9a0f160c0fdd3f62f27908f3b04926cf7f24498815b942cc0e"
+    },
+    "energy_expedition_generator": {
+      "node_id": "345:6451",
+      "sha256": "5f0d1056b085dbc953a8b9026a170c052da56da75beeead688cf1abd5088ad66"
+    },
+    "energy_energy_lab_archive": {
+      "node_id": "345:6474",
+      "sha256": "43e61ad127edc0e8f63e02241b3e65b9d53759a46d21c876abe4cc3ee6ef4ad6"
+    },
+    "energy_first_run_fuel_cell": {
+      "node_id": "345:6491",
+      "sha256": "af384048fdc8be1c5ec339a5c808498cf20713be05c982602925989b03337d0d"
+    },
+    "energy_steel_fuel_can": {
+      "node_id": "345:6507",
+      "sha256": "9605f5065a222b4508c9d04185bb0ac82e45d4f78b9b6b0dbaadf56c12f10988"
+    },
+    "energy_solar_panel_frame": {
+      "node_id": "345:6517",
+      "sha256": "d1c09f40c88ee593d465a99faffa77eb5278126c90d7f2a766052a084859dfef"
+    },
+    "energy_cast_iron_stove": {
+      "node_id": "345:6537",
+      "sha256": "7c527cc064fa598191ada7ae301413d90f5e0f52e9dad23b740d14009061a343"
+    },
+    "energy_ventilation_duct_bundle": {
+      "node_id": "345:6550",
+      "sha256": "ff88a131c744cbd193171215f03e0a13f57c11da3d136452678516eefd423c46"
+    },
+    "books_school_dictionary": {
+      "node_id": "345:6563",
+      "sha256": "c65e6bafb633e3bd9434ed21407aa95a412313c3dfc3c5cd96d82bfec95e46f9"
+    },
+    "books_paperback_novel": {
+      "node_id": "345:6593",
+      "sha256": "827e4fb4742cb14fa602472246208680d8fe0d7c395eda79fcb8826fdbe0be9a"
+    },
+    "books_travel_guide": {
+      "node_id": "345:6609",
+      "sha256": "3a1f9e2d37ef3c49b8189a09a694bfb224561ac0c1fa4f484a8d9f216bb7a344"
+    },
+    "books_sewing_pattern_book": {
+      "node_id": "345:6621",
+      "sha256": "0da1ee1f6a132e6aa18efbee451a3ac675ba31568eafc330a41dce53fb59fb7e"
+    },
+    "books_encyclopedia_set": {
+      "node_id": "345:6644",
+      "sha256": "ffe30fb2f94ed855dd175a0da0b6d7a9d0df51a820c002c70e815f9c11dfb831"
+    },
+    "books_photography_manual": {
+      "node_id": "345:6675",
+      "sha256": "a67251934678f789a6dfb659b51278599bd770f61511f6a00caa0bd3f33fbcff"
+    },
+    "books_local_gazetteer_reprint": {
+      "node_id": "345:6707",
+      "sha256": "20694ec4b5c696d6f622d138e5900cbbcdb8be3926a91e35f83f404e7a37749e"
+    },
+    "books_botanical_field_guide": {
+      "node_id": "345:6727",
+      "sha256": "ff3f09471e8dc96906ace0d6534e4f90f8a26f1c2435b1dccfcc638b45de600a"
+    },
+    "books_sheet_music_album": {
+      "node_id": "345:6742",
+      "sha256": "86ffdf5b1caeee21d4aaccd0bb682e6650f25e058111686288172d821cd60c93"
+    },
+    "books_out_of_print_art_book": {
+      "node_id": "345:6756",
+      "sha256": "4fb568d7734d451201176b3d6447af8fa5c43a842af62368c08c257f4d2a7d4a"
+    },
+    "books_signed_first_novel": {
+      "node_id": "345:6788",
+      "sha256": "dd77d29cb74e30e1845a24ee60e5ea79528acc82f450b188b418a125ae863a76"
+    },
+    "books_woodblock_poetry": {
+      "node_id": "345:6805",
+      "sha256": "2a8f049688c87bd9a28aba7ab5fa027aa57621e56bbc3d652195224926bac713"
+    },
+    "books_copperplate_atlas": {
+      "node_id": "345:6826",
+      "sha256": "c7aa6f15579acfbd3a81cbb1c2749c59ace64508e4ffbe9cbac766bb31cad044"
+    },
+    "books_observatory_star_catalog": {
+      "node_id": "345:6835",
+      "sha256": "e58a8fb26ebb975ca4bd4ce73fd37f5a6ac1b1036981ee847f75aca784393268"
+    },
+    "books_early_medical_text": {
+      "node_id": "345:6848",
+      "sha256": "73d608c97ec77fa90dfa99e016d871fea0c7ee01584d605589ecea9ce091aefc"
+    },
+    "books_opera_prompt_book": {
+      "node_id": "345:6862",
+      "sha256": "a02f52312bd9b3e2c1059bfba556d642ced0d187b39d46adadd2393aa43ca29d"
+    },
+    "books_naturalist_folio": {
+      "node_id": "345:6883",
+      "sha256": "4fb1abea620d9270c13558343e60c29fe4618276d71dc1cc4616c19020a5976b"
+    },
+    "books_annotated_navigation_log": {
+      "node_id": "345:6895",
+      "sha256": "7d96a6e74a830420aa32d7734ba65ae5bb53bf98088eb34654ae3b7d71170a6e"
+    },
+    "books_private_press_book": {
+      "node_id": "345:6907",
+      "sha256": "2ccb0203239131e69d9554af2f8ebd3f013338692a3a99545a0fc8ff51b813cd"
+    },
+    "books_author_manuscript": {
+      "node_id": "345:6929",
+      "sha256": "fa193e5aca45fff7692b4c6eeff029b86d6af8a39c475e7866642701b98d582a"
+    },
+    "books_unique_woodblock_text": {
+      "node_id": "345:6956",
+      "sha256": "8686aac332c52f4728f242b2b0ccf7e012186e7ea17a91d4b468d8869316d86f"
+    },
+    "books_illuminated_codex": {
+      "node_id": "345:6979",
+      "sha256": "e38b13cfb2beb632066af5e5a32a06329d42f4e9075b7dce97846839ffe43b47"
+    },
+    "books_engineering_reference_set": {
+      "node_id": "345:6990",
+      "sha256": "b36a59752249104ab4fede275dcb990677e33ff8042cd00918492d247a4f9fc2"
+    },
+    "books_miniature_almanac": {
+      "node_id": "345:7021",
+      "sha256": "09d2dbaca72d55117b26044435e1a7a3ceb4777857a2cbd58315c95e3278ced5"
+    },
+    "books_newspaper_bound_volumes": {
+      "node_id": "345:7047",
+      "sha256": "84479a64d48271fd1ecee8e265217c93d57c9fc8d9dc4eab5fbd5bf822de2dc7"
+    },
+    "books_school_textbook_set": {
+      "node_id": "345:7078",
+      "sha256": "e51c3271c2ba029d56b8910885b41e1412007dcaf8de4aeb990c99bdb29870dc"
+    },
+    "books_telephone_directory_set": {
+      "node_id": "345:7109",
+      "sha256": "140e08999cd6914a2ee84d48abde8df4eca25d142d754510eb3d62b5013f34da"
+    },
+    "books_mass_market_comic_crate": {
+      "node_id": "345:7140",
+      "sha256": "91390a875f8cff82c570a153aa8cbd508ec557e3ff0fdc161a3481ffa9c674fd"
+    },
+    "documents_railway_timetable": {
+      "node_id": "345:7173",
+      "sha256": "77ae36e3c70d1f617eaa0f65a7882a7443082caae6d90dcb4783612323104a45"
+    },
+    "documents_blank_invoice_book": {
+      "node_id": "345:7190",
+      "sha256": "8809b74660783024a84412c79e99c53c9dc46fcf549651d7d4a0f80390c2dc4b"
+    },
+    "documents_cinema_program": {
+      "node_id": "345:7207",
+      "sha256": "ed4a2d6423063da0fca765d3792c48dbb3baa3961cdaceabc4b419cc3574fc59"
+    },
+    "documents_shipping_bill": {
+      "node_id": "345:7227",
+      "sha256": "c68002e05ff7f8dfd18075177c77a6e65a7e82c6c70c94da87535f489e6e1535"
+    },
+    "documents_factory_ledger": {
+      "node_id": "345:7248",
+      "sha256": "2c83d68e1afcd985882d3b70e54e201c0a12e65cb9ca68d67101af0e03b02018"
+    },
+    "documents_retired_share_certificate": {
+      "node_id": "345:7269",
+      "sha256": "e4e55f4785ae4761f24623d913bc2b23617ceaefe6967028fd27c53ee6e4a7b8"
+    },
+    "documents_postal_route_map": {
+      "node_id": "345:7286",
+      "sha256": "0e106baa4b39d0cd1524f23929bbf97a6cb61b8d1fe9344e19d70e132e152933"
+    },
+    "documents_building_blueprints": {
+      "node_id": "345:7297",
+      "sha256": "557a0e95b91829a9cdd241f88e44cb938e9194c35582fb14d3222d268a4086bb"
+    },
+    "documents_hand_drawn_land_deed": {
+      "node_id": "345:7308",
+      "sha256": "bbbf4c3433b8759c43b08c812708d96ce651c246245eb500b422738a03447da1"
+    },
+    "documents_engineer_notebook": {
+      "node_id": "345:7325",
+      "sha256": "527d1d407f9f3ac56c3ba90f42f7f47311149407d6bfbb63e92fa1aefa8ee549"
+    },
+    "documents_signed_actor_letter": {
+      "node_id": "345:7348",
+      "sha256": "d7cdb0621cf73de50258d44bd62c97d5357b3ff39b1074441cf0c42472de84e2"
+    },
+    "documents_expedition_passport": {
+      "node_id": "345:7368",
+      "sha256": "663eba277c13c9db5633badacb4cd14c82c1e6d16c4497004df55cbcbd47ff4a"
+    },
+    "documents_early_telegraph_forms": {
+      "node_id": "345:7385",
+      "sha256": "a38ecb181542d33ed3c10a918a589dfd975d2f1174cac7ef72d278e441aec101"
+    },
+    "documents_premiere_storyboard": {
+      "node_id": "345:7412",
+      "sha256": "dbbbfa097371a26cf72cf118f6fa75ca4b5d5a300fa82d698f8ed8fe4d15793a"
+    },
+    "documents_invention_patent_drawing": {
+      "node_id": "345:7434",
+      "sha256": "b3fcf298bcd127b0f23629cd65c6da3f64670f0be131fe5fd0fc7f710afdb812"
+    },
+    "documents_composer_correspondence": {
+      "node_id": "345:7443",
+      "sha256": "cd37f1c529e6cd9bddbdb2ec9b919c3673a0c7103fb340cba52cd0998008a613"
+    },
+    "documents_shipbuilders_plans": {
+      "node_id": "345:7463",
+      "sha256": "f8e61225f32a64bde6b1a60df438920ed90adb6f499beab787df7a910942e8c4"
+    },
+    "documents_city_founding_charter": {
+      "node_id": "345:7475",
+      "sha256": "ecfb5c8b775fc4b6176567d16a5d875489283576578e4ae2a1755beb648d0a25"
+    },
+    "documents_scientific_discovery_notes": {
+      "node_id": "345:7494",
+      "sha256": "3881fd9ea8c848ac8271016d5b482bbf55309746ff962e31ff6869b0ed9602ab"
+    },
+    "documents_polar_survey_map": {
+      "node_id": "345:7521",
+      "sha256": "ff00750caf07b7a1f1712a5193f943cad85940b9362ff7dbd045cfa20d436f27"
+    },
+    "documents_school_report_archive": {
+      "node_id": "345:7541",
+      "sha256": "d21c8d72d2d3fb79695b92332a46f89abb9f85ae57da597252c5872138d7f144"
+    },
+    "documents_industrial_design_portfolio": {
+      "node_id": "345:7552",
+      "sha256": "c39b0cbc631d38eee5e54f1eab7b3863fb5176b307348599f61b2ab59fdf3a36"
+    },
+    "documents_theater_ticket_bundle": {
+      "node_id": "345:7572",
+      "sha256": "8960a40168fef862289b3a36c5dab5bc57fb4f6f6347eee0e1598525cf23071a"
+    },
+    "documents_ship_launch_guestbook": {
+      "node_id": "345:7581",
+      "sha256": "0c3337f74a98f93e02bca84fe402b1bc09b66252940cb5411c55f305f300e4ae"
+    },
+    "documents_shop_receipt_archive": {
+      "node_id": "345:7600",
+      "sha256": "1a4f397de40fa4051bfe096f4b5008cda47c73f4ee5991539166c51a2dab7101"
+    },
+    "documents_duplicated_blueprint_rolls": {
+      "node_id": "345:7611",
+      "sha256": "c001e09bfd2bc9f1445defaa577932c0f99c330f5b79b04d0029126518bdce0b"
+    },
+    "documents_public_notice_bundle": {
+      "node_id": "345:7624",
+      "sha256": "f803649fd09e44a28efc499ffa52c32836e5cebbc121e1da2c5711710c08f74e"
+    },
+    "documents_office_form_cabinet": {
+      "node_id": "345:7653",
+      "sha256": "d25ae6db4aab24cfbcdd58b97c452cf1494a8b48224413980b7e7167ee968c45"
+    },
+    "music_plastic_recorder": {
+      "node_id": "345:7677",
+      "sha256": "707d5b2f1e88bab523dd57de2907a13331ed45dc0180d066a9df37f268ec8e2d"
+    },
+    "music_student_harmonica": {
+      "node_id": "345:7693",
+      "sha256": "06d9092e3d1c9d8b1b70c5d2709aba8d361627e4194d0c223ac38b994ac303b4"
+    },
+    "music_tambourine": {
+      "node_id": "345:7710",
+      "sha256": "09b92e1ce0b1eabe88bc1a7a1ebbca478da69902d89dce2e1f76ab246451fdaf"
+    },
+    "music_practice_drum_pad": {
+      "node_id": "345:7731",
+      "sha256": "7bf94d673006c6f51a1aa60c5cd15cc58acb8d231a18529f4df702081b7b2df4"
+    },
+    "music_student_guitar": {
+      "node_id": "345:7749",
+      "sha256": "3fa89eb55f7bee9306652262dc9b8d18e21eccbdaf628a66d9caea0c5adb2498"
+    },
+    "music_brass_trumpet": {
+      "node_id": "345:7764",
+      "sha256": "a9b1c7277e56bdebd2667e77ea006e4f5cf38c3f62c435106116f1bef6cb1923"
+    },
+    "music_upright_metronome": {
+      "node_id": "345:7779",
+      "sha256": "4b25adc15137f5d33b1581a0079e642d49eb8d9e6fc7903cee2fe2c158b0dce3"
+    },
+    "music_vinyl_turntable": {
+      "node_id": "345:7795",
+      "sha256": "e26942656f4c79b2bd4ff2352ff2b64d9ef4322ea8f8cf15a3634b0d786d9923"
+    },
+    "music_studio_monitor_pair": {
+      "node_id": "345:7808",
+      "sha256": "bf94d5c19f63b80fcacf74948f585d9cbb343a032475f9a8df5b902e4a17e0ee"
+    },
+    "music_analog_synthesizer": {
+      "node_id": "345:7826",
+      "sha256": "27d6ad617e03e129c9a823087ad500a91cb767710a2947eeee516339b38cb11a"
+    },
+    "music_concert_flute": {
+      "node_id": "345:7883",
+      "sha256": "52170cd8952c5c34a0c27cb67e8ed3f36698d42e0c17005c91035d77ecaf16fa"
+    },
+    "music_button_accordion": {
+      "node_id": "345:7898",
+      "sha256": "8c622ed368c2f7ed94b1a55fa885270d993aa9561e9077df252f23cc0305ab8c"
+    },
+    "music_maple_violin": {
+      "node_id": "345:7924",
+      "sha256": "db68bf5d7eaa6daa80fa39d034d0322cabed7904ff561453e77d03d5bafc1798"
+    },
+    "music_brass_gramophone": {
+      "node_id": "345:7942",
+      "sha256": "f451134a9987128a53cde7cef687169d2b36c02a4bc9fa48db4d2cb36b1691c1"
+    },
+    "music_pipe_organ_rank": {
+      "node_id": "345:7957",
+      "sha256": "5fec3c49521e7fc28bea1cbb3945be5515eed4024fa3bab7c3b6cb0f5591e2d7"
+    },
+    "music_luthier_classical_guitar": {
+      "node_id": "345:7978",
+      "sha256": "5635d42a5a0987a15e08912aaafb871b3284095bcdf344f2478413e5497327a2"
+    },
+    "music_concert_violin_bow": {
+      "node_id": "345:7993",
+      "sha256": "f309231725e435e0f15afbb7c59c3620f67c009300a9ace138a0885127355df3"
+    },
+    "music_vintage_ribbon_microphone": {
+      "node_id": "345:8009",
+      "sha256": "3b7edf4dcd3d23a046649c6335403364223911d00209095541272c9c0451abe3"
+    },
+    "music_concertina": {
+      "node_id": "345:8026",
+      "sha256": "36d3fdbb65b2024b2f29fdb17f538ab6c32c6f1f710c307db3d7c95ac2b6eef7"
+    },
+    "music_composers_pitch_fork": {
+      "node_id": "345:8055",
+      "sha256": "62e63ae78e8c43256eb01cc091f8fea734c5ad83f9a0232b4665712e4fd9b933"
+    },
+    "music_documented_italian_violin": {
+      "node_id": "345:8062",
+      "sha256": "0f54dc976600b465eb36084a4375551d09e5e79e5ce16a2b5cb55f9a4ef6b71e"
+    },
+    "music_premiere_conductors_baton": {
+      "node_id": "345:8080",
+      "sha256": "78beeb824d394416dbf66287caeb72c27e0e95ecdd648a5d756c360814cae944"
+    },
+    "music_touring_musicians_guitar": {
+      "node_id": "345:8095",
+      "sha256": "d45838733bafafbd6bc3261aa522c9c091f1fe7ecd3f88d3de9f8ad20ec1e991"
+    },
+    "music_folding_music_stand": {
+      "node_id": "345:8112",
+      "sha256": "95a8ad851dee9e6f6682cd85f182b13425fa0cb9670c3ddb6e11d3f0a9459036"
+    },
+    "music_portable_practice_keyboard": {
+      "node_id": "345:8122",
+      "sha256": "f9e832159b23ee1fb63ef872ff256f93e7c9366093e3fbef18c9f8aecfd27f39"
+    },
+    "music_school_bass_drum": {
+      "node_id": "345:8165",
+      "sha256": "24a3c0654ffc5a8b4e9f2a8ad4c35ecf460623417dece8376bfd0efb455df711"
+    },
+    "music_empty_amplifier_cabinet": {
+      "node_id": "345:8183",
+      "sha256": "3372a276c0f0761504251e8c5bafb38fd2eaf77fcaeb51d81af279c71745cddc"
+    },
+    "music_orchestra_percussion_box": {
+      "node_id": "345:8195",
+      "sha256": "3842e439e0e7654f3a5ab127292a870ce4c034dae58f8eca7f18dd58d97be535"
+    },
+    "toys_wooden_top": {
+      "node_id": "345:8212",
+      "sha256": "81ad1f673a3901c0457fbedb6460370707495bfc3e16f3462bd96e46316566ad"
+    },
+    "toys_marble_tin": {
+      "node_id": "345:8223",
+      "sha256": "424bc38a301744db98e9660c42a87d5ce0a92490c424487024c89c03a974ffc8"
+    },
+    "toys_rubber_duck": {
+      "node_id": "345:8250",
+      "sha256": "7dfb01b5131947ad3ba04ea89251e03fee40308ab24e33f2a73d66883eba0524"
+    },
+    "toys_paper_kite": {
+      "node_id": "345:8260",
+      "sha256": "d11e95cc4551d2d2dba8043d681266a9313d137db5646be86b4bcab7c90d345f"
+    },
+    "toys_wood_block_set": {
+      "node_id": "345:8271",
+      "sha256": "55c7497d34a97f417b3d32d8f0f83810dea9ea02c8e6eb2376a4d2c53550bbbb"
+    },
+    "toys_tin_windup_robot": {
+      "node_id": "345:8285",
+      "sha256": "660c24df07eb02a9845ed68d70ffc0eeade483eb1add1e1600d422621d3e03ea"
+    },
+    "toys_clockwork_train": {
+      "node_id": "345:8303",
+      "sha256": "6cd6386346975cb7bfced3222bd59bc9fa576c2f6acd37b2ee27cd712216ae81"
+    },
+    "toys_mechanical_music_box": {
+      "node_id": "345:8343",
+      "sha256": "cd6811243564cb5cbf9ec525f2ba8501246dc32e978b6e900c6ae52df9c5c115"
+    },
+    "toys_model_steamship": {
+      "node_id": "345:8367",
+      "sha256": "19277084037d1ce64e17f7dc92ba0bf72633c3e30a2cdbac54d99d1f5cf49dac"
+    },
+    "toys_porcelain_doll": {
+      "node_id": "345:8377",
+      "sha256": "6fab193c761a9326093d7a8cc7788354fac5856546816283e4f2075f899be370"
+    },
+    "toys_lead_soldier_set": {
+      "node_id": "345:8395",
+      "sha256": "d1bda61dcdab69aa0000af2e9b5cc9d262c2708f50bced64d6791f3dd9c4ec94"
+    },
+    "toys_live_steam_locomotive": {
+      "node_id": "345:8413",
+      "sha256": "422805609e0333e14fc6d5b9553c4f2aabf75f39a2cd5321344f2a96e346b340"
+    },
+    "toys_limited_resin_figure": {
+      "node_id": "345:8453",
+      "sha256": "f5dee38e759bc01cd141cee7a673ecc7893a7b79154a791412c89108bb6d2e91"
+    },
+    "toys_mechanical_orrery": {
+      "node_id": "345:8463",
+      "sha256": "5aaf54207744ba790fd07707d78f10bf0658a222f56eabb1fa4b9217bb6e2bdc"
+    },
+    "toys_handmade_dollhouse": {
+      "node_id": "345:8477",
+      "sha256": "47cc6cc816fa7074c8fc3d8b08336579025ca4cd52d9e492615822b054067d37"
+    },
+    "toys_early_tin_airship": {
+      "node_id": "345:8490",
+      "sha256": "6421b5c1ceff10c4110a3fed3fb24c202af2db2978cfce527fe787df0dd2fff4"
+    },
+    "toys_automaton_bird_cage": {
+      "node_id": "345:8500",
+      "sha256": "7a7f142d8e8ae44365687e83c9aae3a7dcb31867d25fa4620e06581c114540e9"
+    },
+    "toys_prototype_board_game": {
+      "node_id": "345:8521",
+      "sha256": "2e82186d08ab7a96439c8d432accd530d86ab925f5d71659e3e9d9f6846101a4"
+    },
+    "toys_exhibition_model_yacht": {
+      "node_id": "345:8575",
+      "sha256": "672443576d05eb95cae6433296539b38196f695a1b45a80a17f330b2186f8d08"
+    },
+    "toys_toy_workshop_sample": {
+      "node_id": "345:8585",
+      "sha256": "24ef9a41fec355395b6405f8ecb42a8ce539cfa3e97ad2ed960c5d8c095368ba"
+    },
+    "toys_royal_dollhouse_room": {
+      "node_id": "345:8603",
+      "sha256": "04f401425022370d78a5788ecccf4812556808a02213dc6be589280d74b01153"
+    },
+    "toys_artisan_puzzle_box": {
+      "node_id": "345:8620",
+      "sha256": "ea275df26fbf123ea803a58221c3af58b94ef6efc09cfe799d2b27d0ca216170"
+    },
+    "toys_cast_iron_fire_engine": {
+      "node_id": "345:8633",
+      "sha256": "288cc3be2b51f29a43baea19383e453aef667b90c8a80e9973a2dcc7e887687d"
+    },
+    "toys_wood_rocking_horse": {
+      "node_id": "345:8674",
+      "sha256": "6b7dde8e3effe6bc68d82f4bd24b3b35180a99b48ee64123452e9e7e3b610264"
+    },
+    "toys_plastic_play_kitchen": {
+      "node_id": "345:8695",
+      "sha256": "9557d6c3f3fe94835f98bd0489604603540248259f73f5df63f4a81e380d7554"
+    },
+    "toys_cardboard_castle": {
+      "node_id": "345:8711",
+      "sha256": "fe9f62d273f4ac19d7d6e6ab452bf6e0185ff29b119fc917f65cd589aef3bbc2"
+    },
+    "toys_plush_bear": {
+      "node_id": "345:8724",
+      "sha256": "fa0be718464d68e588f815f1c36c92b9838677f746fb2ba57c0a165c19ae1cb4"
+    },
+    "toys_pedal_toy_car": {
+      "node_id": "345:8742",
+      "sha256": "22f359ea0e85444060b355b49a9edaba4416e651a38a44a07c96401d4d245c07"
+    },
+    "sports_canvas_ball_bag": {
+      "node_id": "345:8784",
+      "sha256": "656802a747c8de9f5e6f2b1c7bb066a1a9a672722b8a28af77ce7098509553cc"
+    },
+    "sports_steel_whistle": {
+      "node_id": "345:8796",
+      "sha256": "d9379e08c3553bcc1f1f7adf0791ea3e54cf184ee7c46f86f4f2bccae1dc1d4a"
+    },
+    "sports_wooden_badminton_racket": {
+      "node_id": "345:8806",
+      "sha256": "a32206f7c9ebdb7f45a34ab7a53ffcbcd764dd1c5f3d6ad87850846d4dc4fb38"
+    },
+    "sports_rubber_swim_fins": {
+      "node_id": "345:8830",
+      "sha256": "76ea211a591c7b096d419b8c50ae90bc33b5b071c2b8cb3df30d765b8f3ecb46"
+    },
+    "sports_camp_cookware": {
+      "node_id": "345:8844",
+      "sha256": "366e0c7ac12264f0f5834c3ffdd320084c10c600f2227516b467ac6a895f6112"
+    },
+    "sports_leather_boxing_gloves": {
+      "node_id": "345:8854",
+      "sha256": "66f53a780d4105d431556b40aee28aef724a6fc274ab5150fb1afa3f9e3aeb60"
+    },
+    "sports_fly_fishing_reel": {
+      "node_id": "345:8866",
+      "sha256": "fc4319b68d1e32e72393fcf1f56eea5192dc9caf73023fce88f81d65d66ca9dc"
+    },
+    "sports_climbing_ice_axe": {
+      "node_id": "345:8884",
+      "sha256": "1b9c7e126d3f0d4cdc48ae63276a1ea8bc7d7129f009eb2676f2668f25323ce3"
+    },
+    "sports_cross_country_skis": {
+      "node_id": "345:8894",
+      "sha256": "95418607ecc644cbcbda1a27b83a574fe03e7287fb2d5bbef25538553dcff40f"
+    },
+    "sports_archery_sight": {
+      "node_id": "345:8908",
+      "sha256": "b81ef36d075b0e8eb14d96edba8b972733075e103ffedff86b29a6cd94c62306"
+    },
+    "sports_sailing_binoculars": {
+      "node_id": "345:8921",
+      "sha256": "97ac3b1736c69a52d1463ecd086a65cf2d75495d56e097a03eb8a859de09df85"
+    },
+    "sports_split_cane_fly_rod": {
+      "node_id": "345:8934",
+      "sha256": "fbee7229125532837e2f8c7f9740007823b79e7f0325fffdc9dec9191afe129c"
+    },
+    "sports_competition_stopwatch": {
+      "node_id": "345:8950",
+      "sha256": "436c1f8eda98001b35e03815b0ffc7164cb0033ce06ca96e128751da7ac41607"
+    },
+    "sports_fencing_foil_set": {
+      "node_id": "345:8976",
+      "sha256": "5e1e0be8b3732dd98c2a7b04072b95e0678e649baaade766bf0fbd7eb172c1d7"
+    },
+    "sports_wooden_canoe_model": {
+      "node_id": "345:8991",
+      "sha256": "baec48ca71742bfbe6a94769a15db10479aadb2eaaed2a492b294044afd329aa"
+    },
+    "sports_signed_match_ball": {
+      "node_id": "345:8999",
+      "sha256": "425f4953451954c791f0195c20c0534f02797f3eb1dcc69284f3daa56dd749ec"
+    },
+    "sports_championship_boxing_belt": {
+      "node_id": "345:9008",
+      "sha256": "f2641d7cf2fb47c09d610133fd72b15827ff2d7feb6f0e48d803ce6ae646d46f"
+    },
+    "sports_expedition_ice_axe": {
+      "node_id": "345:9018",
+      "sha256": "3f8dfb70d08ed5e67673867a6bd54a4676d594b74da9b9ef6295d5470e88bb48"
+    },
+    "sports_record_runners_spikes": {
+      "node_id": "345:9029",
+      "sha256": "1bed9ec7f03d8868f231c16d46e5aea2b404acd0024855baa47fb57f34e166e1"
+    },
+    "sports_olympic_torch": {
+      "node_id": "345:9047",
+      "sha256": "c086f620ab29c9295ea9c0296dc97c6152d2400f31f219cbfdd2bab5d0218c35"
+    },
+    "sports_inaugural_gold_medal": {
+      "node_id": "345:9056",
+      "sha256": "16b12a71be099d7e4bc58007432185df98673dc53c6bf7900afa0874fc2518b0"
+    },
+    "sports_world_record_timing_clock": {
+      "node_id": "345:9067",
+      "sha256": "998f770e58ad71c629eafed0430c34693a5911d2853443347b8e16960faba0f7"
+    },
+    "sports_leather_medicine_ball": {
+      "node_id": "345:9095",
+      "sha256": "3467a88e03e3ed3b1d5577ddb8c4545fccad66591476318b7174c5ee68d085d4"
+    },
+    "sports_archery_recurve_bow": {
+      "node_id": "345:9104",
+      "sha256": "19e3c73fcff94b2ed9387a727d89964e98d5a8429bc2ed433c74d5a0a56e0490"
+    },
+    "sports_foam_training_hurdles": {
+      "node_id": "345:9114",
+      "sha256": "b9f3560558a7d2c698ba5d9964179160cbed71de7dd4d8ce77f0d8173d169245"
+    },
+    "sports_folding_camp_chair": {
+      "node_id": "345:9127",
+      "sha256": "8444d8dcec321b41e6be22a2d475970c484a9c946a213ae7da42d15195302aee"
+    },
+    "sports_rolled_exercise_mat": {
+      "node_id": "345:9137",
+      "sha256": "5fdcdf99bfd01ebcfdf689b2cc3267b162422813cb291293979cf0bd55325aa7"
+    },
+    "sports_plastic_sled": {
+      "node_id": "345:9147",
+      "sha256": "1ae25be6b27e88631c20e28af331acbea1f58c588c86b06f47666384d3f19169"
+    },
+    "medical_glass_test_tubes": {
+      "node_id": "345:9159",
+      "sha256": "f6ceffec109e93fda6c529f558803a8a4c97deee3f41a23ec47caf8dbdba1d25"
+    },
+    "medical_enamel_instrument_tray": {
+      "node_id": "345:9204",
+      "sha256": "8f1a47ea7c9dfeaedc02c83b9b899e029363b305413668dc29977d1ba0b2879d"
+    },
+    "medical_measuring_cylinder": {
+      "node_id": "345:9215",
+      "sha256": "a39bf363752047163ef8f1025778c7b0e11dcd8dfac8036ca52f03a92a14f0e6"
+    },
+    "medical_training_stethoscope": {
+      "node_id": "345:9229",
+      "sha256": "6175caef8f07b2b32d1975b3f3427c04b5e1554f63157c311cb5d8662b9407a1"
+    },
+    "medical_porcelain_mortar": {
+      "node_id": "345:9239",
+      "sha256": "aa36f4546c7fca0c3a78d86ef6f8d80de3bfe1bacc9f86481a88e78cde213898"
+    },
+    "medical_mercury_free_sphygmomanometer": {
+      "node_id": "345:9249",
+      "sha256": "f9773f961fffad0140130e0c3a79f4d3d663ee984d36f0a6a74b4a897275a32f"
+    },
+    "medical_brass_syringe_case": {
+      "node_id": "345:9276",
+      "sha256": "a425b8aadc6b05cca127346b3870b50b8903338cbc1d4c2593771818e474cdb2"
+    },
+    "medical_pharmacy_balance": {
+      "node_id": "345:9307",
+      "sha256": "2d67a3b3600bb75139fc98c20fcc2b6f9ab3cfc0e08f42158f6d5873a7e584c1"
+    },
+    "medical_anatomical_teaching_model": {
+      "node_id": "345:9321",
+      "sha256": "48b56e744760364ce590f0e9461c4c3fe5c1a653d41f8b2db9e20432313cc17d"
+    },
+    "medical_optical_microscope": {
+      "node_id": "345:9332",
+      "sha256": "676d6ee27a8faf3f694ea78bcfa2acb8038f965f2d9764c1041cb8bd86a02ecf"
+    },
+    "medical_ophthalmoscope_set": {
+      "node_id": "345:9347",
+      "sha256": "487ea4614210dd7ede9f48f5d62f3609ee3f6fd9f71d3ad607917563d622a76f"
+    },
+    "medical_portable_refractometer": {
+      "node_id": "345:9378",
+      "sha256": "ecef401534a581630d0e961d88fa1441935b692bc3f0713469089e7b94c883a5"
+    },
+    "medical_centrifuge_rotor": {
+      "node_id": "345:9403",
+      "sha256": "e5ffd68a3da517cd6db69c3c847f34cb344aae41e5154fc839d7dc862cc4b3da"
+    },
+    "medical_dental_drill_display": {
+      "node_id": "345:9423",
+      "sha256": "fa40c4272d2addf074ba3632c97104e859b34c8615eef2165533dfc509d53e77"
+    },
+    "medical_surgical_instrument_case": {
+      "node_id": "345:9438",
+      "sha256": "5a434e56496c3665733db6e23244410af8895dd1731fef942aa37f0153371191"
+    },
+    "medical_microtome": {
+      "node_id": "345:9455",
+      "sha256": "ff3a0ea98ad0531587e8fa8f5757ab9cc1efd518144947343869dbab61e61398"
+    },
+    "medical_apothecary_jar_set": {
+      "node_id": "345:9490",
+      "sha256": "8422a9851b6fc5947cbecced4910195a0ad8e91d2f76cb668907e3170737afd2"
+    },
+    "medical_early_achromatic_microscope": {
+      "node_id": "345:9502",
+      "sha256": "326a1ded1d9130b446798fe3df9c509e0e31c1984828530d3f81d069de218b5b"
+    },
+    "medical_optical_trial_lens_set": {
+      "node_id": "345:9517",
+      "sha256": "b4fe0fd5ddb51c242b65257c67b8aea3af3e12b356c318b348caf334d649ae85"
+    },
+    "medical_surgeons_travel_case": {
+      "node_id": "345:9537",
+      "sha256": "c0ce126e88c77f6f933f9bbc71f1edc3d352ffbb33f408842aca6a097cf73885"
+    },
+    "medical_anatomist_wax_model": {
+      "node_id": "345:9554",
+      "sha256": "a3f432ee93d076e0efe1e03ddfc678a28f9dc0a46e6c74e28aec602d2f0c589f"
+    },
+    "medical_research_microscope_prototype": {
+      "node_id": "345:9567",
+      "sha256": "986b72140b67e2c1d69776cfeda619ad1a25c186f15d361936bc32931c8c3eeb"
+    },
+    "medical_medical_pioneer_archive": {
+      "node_id": "345:9584",
+      "sha256": "db4bb14086f1a30c8509529671457dd8d446c5c1666626d58940393a2b6d08f8"
+    },
+    "medical_braille_medication_labeler": {
+      "node_id": "345:9604",
+      "sha256": "e6ae4e2c2ac42a6e1b84692109aef68e2bada0078801928e70ff9fda0cb477eb"
+    },
+    "medical_folding_stretcher": {
+      "node_id": "345:9632",
+      "sha256": "79e60d8e3c4ae0593455a06618d895ef2673a091afd4da92b964be687b69c55c"
+    },
+    "medical_clinic_privacy_screen": {
+      "node_id": "345:9643",
+      "sha256": "8f77d9b2ac6896b34d3ac19bf0de68d06b67eafbc538c129e823330d219af3d0"
+    },
+    "medical_empty_first_aid_case": {
+      "node_id": "345:9670",
+      "sha256": "1686385743a667e5302a04b475dc9bc7c37f902007f805e630c9d772b99621bf"
+    },
+    "medical_training_torso_shell": {
+      "node_id": "345:9683",
+      "sha256": "7daa9be3242fc83326b5073476747af981b84e2b4c11272269b3f9cbbae5d97d"
+    },
+    "military_aluminum_canteen": {
+      "node_id": "345:9697",
+      "sha256": "3fa57f5d292f94b8457fb6f0ec34581f05113553794a8b4b8681c2066ab39381"
+    },
+    "military_canvas_map_case": {
+      "node_id": "345:9709",
+      "sha256": "371b7ef31f759997846d4049a795b48083f23d289284553531da0d2fc0082255"
+    },
+    "military_mess_tin": {
+      "node_id": "345:9723",
+      "sha256": "1b92e016481edba822772b3ff459bf219691f78873cef7f0d4b472ce63a33417"
+    },
+    "military_training_compass": {
+      "node_id": "345:9735",
+      "sha256": "fb85cd117fc7e6b7d8a0122000f8f035f139e6ebbf44244aba76ae81c5182e0c"
+    },
+    "military_deactivated_dummy_shell": {
+      "node_id": "345:9761",
+      "sha256": "11c95d834ec8ec4dd238511228b0eabbe0d3377b7a1ce1edfb84919736f90f69"
+    },
+    "military_field_telephone": {
+      "node_id": "345:9771",
+      "sha256": "110dc8b07457a84b1c9ecb9b2ebc2f52881365037e4a8a3b23531fc575ea35d5"
+    },
+    "military_brass_bugle": {
+      "node_id": "345:9794",
+      "sha256": "18c2694ff573f98a18b8e83909326446a7c080cbe097a088b662706ef26e9e65"
+    },
+    "military_canvas_rations_pack": {
+      "node_id": "345:9803",
+      "sha256": "716da59d119a6aa05fd27205f97768fbea8441b32ade07284e74221d2fd1ec99"
+    },
+    "military_signal_lantern": {
+      "node_id": "345:9815",
+      "sha256": "3bfafca19c00550198098781df35b874644ed4760c6b6e2d1e76ef3218de2a40"
+    },
+    "military_ship_recognition_album": {
+      "node_id": "345:9828",
+      "sha256": "84fa9de2a486fa5d0eee17a44c4462f964f288f62c35ba91e661af2abb3d8555"
+    },
+    "military_training_sight": {
+      "node_id": "345:9840",
+      "sha256": "fb821442d93d25c66659e59a4065c82ac9ef29fb26b0d7029c3e9bb0161189ec"
+    },
+    "military_field_radio": {
+      "node_id": "345:9853",
+      "sha256": "b171e8f39b0c315b36702a5a01bcc5984d705e63027849980debee53cd040519"
+    },
+    "military_aircraft_navigation_dial": {
+      "node_id": "345:9879",
+      "sha256": "bb00b8367b3862810bacf502f8585c5e4a564707632d92103dbaf1503f849f74"
+    },
+    "military_survey_theodolite": {
+      "node_id": "345:9904",
+      "sha256": "4d8b0cda295cbf3ebacd76a19caf24691289233cb22ed5e8279f4f671da4d825"
+    },
+    "military_parade_drum": {
+      "node_id": "345:9916",
+      "sha256": "f1202853ab79bd19635a75e737e79cfd1d6439a857176fbc8bba4ffd8d3c1217"
+    },
+    "military_inscribed_service_watch": {
+      "node_id": "345:9934",
+      "sha256": "51f8229ae33fc95d44a1e015f9215aa0747b0c457e4d317fc40a132fe87e08ee"
+    },
+    "military_campaign_map_original": {
+      "node_id": "345:9958",
+      "sha256": "3ac541c0423f703fa1fefe0851052a217a414b1a82c46e0277e43f716f9cc4ad"
+    },
+    "military_code_machine_training": {
+      "node_id": "345:9968",
+      "sha256": "c71a8be025ede9e557d4fdb358babfcdf5bc80ad3658058e469f15b8d8973d15"
+    },
+    "military_signed_unit_flag": {
+      "node_id": "345:10020",
+      "sha256": "af5755565b73a0c2733567c86a5e3addb4897881e79579c017a89db696fe3f78"
+    },
+    "military_naval_award_set": {
+      "node_id": "345:10030",
+      "sha256": "0615d29aa638faba57b0ad8f55d8a26f348f3aa65341e2a1fbbcbb8cd86f1aec"
+    },
+    "military_military_broadcast_microphone": {
+      "node_id": "345:10045",
+      "sha256": "0091dadb279c56e1f600ad2a05174d0c43c31f3ae647a89a6789dfe00469cec8"
+    },
+    "military_armistice_document_case": {
+      "node_id": "345:10062",
+      "sha256": "7759282bb02ebe1bc25511fe5e0e50a4476b5cf80a79355d756678d6711bc982"
+    },
+    "military_documented_cipher_prototype": {
+      "node_id": "345:10073",
+      "sha256": "a099035d12066f7289583b108bc5daebdbc91953cc28ed9bc3cebdae354c4f52"
+    },
+    "military_recruitment_poster": {
+      "node_id": "345:10125",
+      "sha256": "b92df07b0a3e90333c13da1a88d735f71dc9eb76e71f5a74a0bec53a0805bf11"
+    },
+    "military_surplus_cot": {
+      "node_id": "345:10140",
+      "sha256": "6cacbbfddf2ed3898c0d9750f9d1e0e6889e5641d2de8bd3dec81ba3e2df914f"
+    },
+    "military_empty_ammunition_crate": {
+      "node_id": "345:10152",
+      "sha256": "fdcaaf8ca59219ab76c435103e18bbab77867e2d9c439a7f3c5c32c02f069029"
+    },
+    "military_camouflage_net_roll": {
+      "node_id": "345:10166",
+      "sha256": "fd63e8f24c653674cbbecefa12b46dee811b6b8e311c56253a4d302fe406d608"
+    },
+    "military_drill_sandbag_bundle": {
+      "node_id": "345:10185",
+      "sha256": "b8837da044a0ec8c8458c86bd813cbcbf3631626ebe7ae8af0d2df9727c1400d"
+    },
+    "collectibles_tourist_pin_set": {
+      "node_id": "345:10203",
+      "sha256": "4bc9ecfb1fe9d9c799744311245439575ac1ad4e19674fca8bef34e102f02a93"
+    },
+    "collectibles_commemorative_token": {
+      "node_id": "345:10235",
+      "sha256": "1ed02bb672479bf6636eabadd255f155aa18993333ee1e21bbe0df9b051c4e96"
+    },
+    "collectibles_souvenir_postcards": {
+      "node_id": "345:10244",
+      "sha256": "aee92a59e35f4213fa0d074c473d1888757382faed373887983d3dbc5a0f32f7"
+    },
+    "collectibles_mass_produced_trophy": {
+      "node_id": "345:10260",
+      "sha256": "fdc55b736419bc60b039bb835ca763daae2aa040a92be91f159e66e9de99db3b"
+    },
+    "collectibles_transport_ticket_album": {
+      "node_id": "345:10272",
+      "sha256": "8070f891cbcb6e0225b0e735dc2c0a6393f494262d89143d2f2a04fb8196dc4b"
+    },
+    "collectibles_circulated_banknotes": {
+      "node_id": "345:10288",
+      "sha256": "4c5b37b143cb104d05c8150db2f33d069f84ab041d46e950ad276f51263b2534"
+    },
+    "collectibles_exhibition_badge": {
+      "node_id": "345:10304",
+      "sha256": "41520775450b4dce6afcd71503b8a60c7d5a273c3ab2bb5851facaf57f38ad65"
+    },
+    "collectibles_wood_chess_set": {
+      "node_id": "345:10315",
+      "sha256": "b4f8e4da01d7fe173037d6f540cc38308a5a93060c0088e747a0d9eeeb2f12d0"
+    },
+    "collectibles_silver_commemorative_medal": {
+      "node_id": "345:10366",
+      "sha256": "e3af4b18ffdbcfbdd808b2218173221ad938d5dc074a404b7963938ab4afec6f"
+    },
+    "collectibles_limited_stamp_sheet": {
+      "node_id": "345:10377",
+      "sha256": "17398bf4e93445c1e625b8fbdb27de5c5bd48256c69330656f401c600fb8beb7"
+    },
+    "collectibles_film_reel": {
+      "node_id": "345:10396",
+      "sha256": "fd2769f72af2d45ff9af1c78dabad8021bc993bd3b51c4d6f92abb76bcaadf25"
+    },
+    "collectibles_space_program_patch": {
+      "node_id": "345:10416",
+      "sha256": "80b6806c67ad379184238420465ac5970975d5ea7edd9339144fccdce1ee47de"
+    },
+    "collectibles_coin_die_trial": {
+      "node_id": "345:10425",
+      "sha256": "fa54d3a5d68f3507f6989afad823df3c49a144be3e90a49ece41627910dcd94e"
+    },
+    "collectibles_signed_film_poster": {
+      "node_id": "345:10434",
+      "sha256": "7852a86518aba9d540c45890706c28a3855e9e732799d7117f0c3c899e4ae1f7"
+    },
+    "collectibles_enamel_presentation_watch": {
+      "node_id": "345:10449",
+      "sha256": "c887fd218c260a279432139cc7a489dd157f24eda56c629e4495ffbdf557aa6c"
+    },
+    "collectibles_postal_error_stamp": {
+      "node_id": "345:10475",
+      "sha256": "6cc920348ed8b4009ac4115f7d216b98b1666860b2153f2522ebaf8bdf6d1067"
+    },
+    "collectibles_championship_chess_set": {
+      "node_id": "345:10495",
+      "sha256": "ff3558221cd74c3a1bba932865391e3c36f1bd6b8fe2f2f6691a66b23903584b"
+    },
+    "collectibles_animation_cel": {
+      "node_id": "345:10546",
+      "sha256": "6ad5ee596f346c3bc4a8a607e56952f0ae5b65c5d1849e92145b489f90061a17"
+    },
+    "collectibles_flight_carried_medallion": {
+      "node_id": "345:10562",
+      "sha256": "bc08bcd9fade1b21bf599d3bd95e893e02e2106015ffb1acecf657b43075bae7"
+    },
+    "collectibles_withdrawn_banknote_proof": {
+      "node_id": "345:10575",
+      "sha256": "6b6c0a2a8d861e710e8e8bdcbec2b2d29c7dfd281d92ccf23b215e0bb8813bf1"
+    },
+    "collectibles_world_fair_master_medal": {
+      "node_id": "345:10586",
+      "sha256": "b7d0d9d759d7fb826638133b0c76bcb31f887600b0ab99c101394d8941d48942"
+    },
+    "collectibles_city_charter_key": {
+      "node_id": "345:10595",
+      "sha256": "f9d4f049cd0e1eba054b0c8296add9f8c23bc099c2417f5f699ac63629eaf976"
+    },
+    "collectibles_silk_festival_banner": {
+      "node_id": "345:10605",
+      "sha256": "6fa1da4b3aff9f3de8e7b4695e06d523322b736e4e125614e041c37516adcfed"
+    },
+    "collectibles_porcelain_fair_plate": {
+      "node_id": "345:10615",
+      "sha256": "7f450170eb59ca18eeb1a1e87dd428fdad2245a4e701683d5125cd260511b52a"
+    },
+    "collectibles_souvenir_mug_crate": {
+      "node_id": "345:10629",
+      "sha256": "bf4986f2c24827ce436f0c1ebf1c3b61ef8b9dd4e95115ff259221bed41d0175"
+    },
+    "collectibles_promo_cardboard_standee": {
+      "node_id": "345:10652",
+      "sha256": "436d0c5567510318ba61cc58894cda7323fec2433be6e56182731ae8edcda4d1"
+    },
+    "collectibles_tourist_banner_bundle": {
+      "node_id": "345:10662",
+      "sha256": "89bffae91c56e58cc31a886050fb19c7fcd24b99310e82baab3f30924727462f"
+    },
+    "collectibles_plastic_commemorative_chess": {
+      "node_id": "345:10674",
+      "sha256": "8de3e24771e3cc284f742d6287c0fd2792f09f32b2b974db9c0da6566b2859ae"
+    },
+    "easter_egg_00": {
+      "node_id": "345:10727",
+      "sha256": "d046fe6fa494c95bd1f0265c6c14a8baa7cdd2050085c28f400a5f60e34babe8"
+    },
+    "easter_egg_01": {
+      "node_id": "345:10738",
+      "sha256": "ed32c4b331da5474d14edac9cc193626828f5c0ce61600ed39e2bb142355dea5"
+    },
+    "easter_egg_02": {
+      "node_id": "345:10765",
+      "sha256": "e4ead3f2ea94ce07fed223ac05c32494388355d5c3db2a1c1b8bb7c911bfda0f"
+    },
+    "easter_egg_03": {
+      "node_id": "345:10780",
+      "sha256": "31c81c4e32aed7c5dd3413af46e9e29a1c3d4419da83de8ca26b6165bdc244cd"
+    },
+    "easter_egg_04": {
+      "node_id": "345:10790",
+      "sha256": "069e702592ad2390deccffc12bdcab3e0df0b19e2a7f8ea0d1fe50f0c77595d1"
+    },
+    "easter_egg_05": {
+      "node_id": "345:10810",
+      "sha256": "98b9399cfcfdbd5ef16a0aa3f32baeb17de95ed68f443fc657ce7cb1b3a6f602"
+    },
+    "easter_egg_06": {
+      "node_id": "345:10821",
+      "sha256": "69542b2a072355769a517ffbff48b088ea950a2302ba3610120e29f04438793c"
+    },
+    "easter_egg_07": {
+      "node_id": "345:10833",
+      "sha256": "599a52434c0f8dcdd0ec7ae7cb7362125bb082fc302a397f0f6e3d2909f13cc6"
+    }
+  }
+}

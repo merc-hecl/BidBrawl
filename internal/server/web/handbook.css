@@ -29,6 +29,7 @@
 .handbook-item-table thead th{font:13px/1.5 var(--body);color:var(--muted);border:0}
 .handbook-item-table th:first-child{width:40%}.handbook-item-table th:nth-child(2){width:17%}.handbook-item-table th:nth-child(3){width:18%}.handbook-item-table th:last-child{width:25%;text-align:right}
 .handbook-item-table tbody tr{height:60px}.handbook-item-table tbody th>button{width:100%;font-size:16px;white-space:normal;overflow-wrap:anywhere}
+.handbook-item-select{display:flex;align-items:center;gap:8px;text-align:left}.handbook-item-select>.item-artwork{width:48px;height:36px;flex:none}.handbook-item-select>span{min-width:0}.handbook-artwork{display:grid;place-items:center}.handbook-artwork>.item-artwork{width:100%;height:clamp(140px,17vw,210px)}
 .handbook-item-table tr.selected>*{background:var(--soft);border-color:var(--line)}.handbook-item-table tr>*:first-child{border-radius:12px 0 0 12px}.handbook-item-table tr>*:last-child{border-radius:0 12px 12px 0}
 .handbook-item-table .footprint{white-space:nowrap;font-family:'Space Grotesk Variable',var(--body)}
 .handbook-price{font:20px/1.5 'Space Grotesk Variable',var(--body);text-align:right!important;white-space:nowrap}
