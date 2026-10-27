@@ -62,7 +62,7 @@ test("first release includes its root commit", async (t) => {
   assert.match(notes, /Initial feature/);
   assert.doesNotMatch(notes, /compare\//);
   assert.equal((notes.match(/releases\/download\/v0\.1\.0\//g) || []).length, 11);
-  assert.match(notes, /BidBrawl%20Setup%200.1.0%20amd64.exe/);
+  assert.match(notes, /BidBrawl-Setup-0.1.0-amd64.exe/);
   assert.match(notes, /not Developer ID-signed or notarized/);
 });
 

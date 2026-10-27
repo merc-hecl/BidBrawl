@@ -10,7 +10,7 @@ export function assetNames(version, platform) {
   if (!/^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(version)) throw new Error('Expected a stable mygo.json version');
   if (!platforms.includes(platform)) throw new Error(`Unsupported release platform: ${platform}`);
   const [os, arch] = platform.split('/');
-  const installer = os === 'windows' ? `BidBrawl Setup ${version} ${arch}.exe`
+  const installer = os === 'windows' ? `BidBrawl-Setup-${version}-${arch}.exe`
     : os === 'linux' ? `bidbrawl_${version}_${arch}.deb` : `BidBrawl-${version}-${arch}.pkg`;
   return { installer, archive: `bidbrawl-${version}-${os}-${arch}-cli.${os === 'windows' ? 'zip' : 'tar.gz'}` };
 }

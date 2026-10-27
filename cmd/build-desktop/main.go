@@ -130,7 +130,7 @@ func windowsInstaller(dir, version, arch string) error {
 	if err != nil {
 		return err
 	}
-	args := []string{"-DSOURCE=" + dir, "-DOUTPUT=" + filepath.Join(dir, "BidBrawl Setup "+version+" "+arch+".exe"), "-DVERSION=" + version, script}
+	args := []string{"-DSOURCE=" + dir, "-DOUTPUT=" + filepath.Join(dir, "BidBrawl-Setup-"+version+"-"+arch+".exe"), "-DVERSION=" + version, script}
 	if runtime.GOOS == "windows" {
 		for i := 0; i < 3; i++ {
 			args[i] = "/" + strings.TrimPrefix(args[i], "-")

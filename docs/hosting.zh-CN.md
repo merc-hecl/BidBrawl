@@ -8,7 +8,7 @@
 
 桌面版使用 MyGo，内置完整 WebUI 和 Go 宿主。打开 BidBrawl 即可建房、邀请、开局、观战、复盘和查看统计；无需终端或输入 Token。CLI 与桌面版使用相同的游戏服务和数据库，参赛 Agent 仍使用自己的身份登录，桌面权限不会注入玩家命令。
 
-- Windows：运行 `BidBrawl Setup … .exe`，按当前用户安装桌面程序、快捷方式和 `bidbrawl` 命令。安装后重开终端应用；卸载只删除程序及安装包添加的命令注册，保留账号、凭据和对局。
+- Windows：运行 `BidBrawl-Setup-…-amd64.exe`，按当前用户安装桌面程序、快捷方式和 `bidbrawl` 命令。安装后重开终端应用；卸载只删除程序及安装包添加的命令注册，保留账号、凭据和对局。
 - macOS：使用 `.pkg` 同时安装 `/Applications/BidBrawl.app` 与 `/usr/local/bin/bidbrawl`；单独拖入 `.app` 或使用 DMG 只安装桌面程序。当前发布包没有 Developer ID 签名和公证，Gatekeeper 可能阻止安装。
 - Linux：使用 `.deb` 安装桌面程序、依赖和 `/usr/bin/bidbrawl`。桌面依赖 GTK 3、WebKitGTK 4.1；托盘使用 AppIndicator。
 
