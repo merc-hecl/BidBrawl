@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
+	"reflect"
 	"testing"
 	"time"
 
@@ -19,6 +21,19 @@ func releasedDatabase(t *testing.T, phase string) (string, string, []string, map
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "accounts.db")
 	s := persistentServer(t, path)
+	cfg := game.DefaultConfig()
+	cfg.Specialties = nil
+	raw, err := os.ReadFile("../game/testdata/released-specialties.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &cfg.Specialties); err != nil {
+		t.Fatal(err)
+	}
+	s.rooms["table"].game, err = game.NewWithConfig(2, cfg, cards.Default())
+	if err != nil {
+		t.Fatal(err)
+	}
 	a, ca := accountSession(t, s, "Upgrade A")
 	b, cb := accountSession(t, s, "Upgrade B")
 	purchaseJoinCards(t, s, a, `{"cards":["item_count"]}`)
@@ -135,7 +150,7 @@ func TestReleasedMigrationPreservesAccountsRoomsAndBackup(t *testing.T) {
 				t.Fatal(err)
 			}
 			_ = loginAgain(t, s, credentials[0])
-			backups, err := filepath.Glob(path + ".pre-v4-*.bak")
+			backups, err := filepath.Glob(path + ".pre-v5-*.bak")
 			if err != nil || len(backups) != 1 {
 				t.Fatal("missing unique backup")
 			}
@@ -179,11 +194,69 @@ func TestReleasedMigrationPreservesAccountsRoomsAndBackup(t *testing.T) {
 			if again.Version != v.Version || !again.RoundDeadline.Equal(v.RoundDeadline) {
 				t.Fatal("restart repeated migration")
 			}
-			backups, _ = filepath.Glob(path + ".pre-v4-*.bak")
+			backups, _ = filepath.Glob(path + ".pre-v5-*.bak")
 			if len(backups) != 1 {
 				t.Fatal("restart repeated backup")
 			}
 		})
+	}
+}
+
+func TestSchemaFourUpgradePreservesFrozenRulesAndExistingDeadline(t *testing.T) {
+	path, id, _, _ := releasedDatabase(t, "bidding")
+	deadline := time.Now().UTC().Add(4 * time.Minute)
+	db, err := bolt.Open(path, 0600, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var frozen json.RawMessage
+	err = db.Update(func(tx *bolt.Tx) error {
+		var rec map[string]json.RawMessage
+		if err := json.Unmarshal(tx.Bucket(roomBucket).Get([]byte(id)), &rec); err != nil {
+			return err
+		}
+		var snapshot map[string]json.RawMessage
+		if err := json.Unmarshal(rec["game"], &snapshot); err != nil {
+			return err
+		}
+		snapshot["schema_version"] = json.RawMessage(`11`)
+		snapshot["round_deadline"], _ = json.Marshal(deadline)
+		frozen = bytes.Clone(snapshot["game_config"])
+		rec["game"], _ = json.Marshal(snapshot)
+		raw, _ := json.Marshal(rec)
+		if err := tx.Bucket(roomBucket).Put([]byte(id), raw); err != nil {
+			return err
+		}
+		return tx.Bucket([]byte("metadata")).Put([]byte("schema_version"), []byte("4"))
+	})
+	db.Close()
+	if err != nil {
+		t.Fatal(err)
+	}
+	s, err := Open(game.DefaultConfig(), cards.Default(), path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer s.Close()
+	v, err := publicView(s.rooms[id].game)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !v.RoundDeadline.Equal(deadline) || len(v.Rules.Specialties) != 26 || v.Rules.Specialties[0].Style != "" {
+		t.Fatal("schema 4 room rules or deadline replaced")
+	}
+	raw, _ := s.rooms[id].game.Snapshot()
+	var snapshot map[string]json.RawMessage
+	json.Unmarshal(raw, &snapshot)
+	var before, after any
+	json.Unmarshal(frozen, &before)
+	json.Unmarshal(snapshot["game_config"], &after)
+	if !reflect.DeepEqual(before, after) {
+		t.Fatal("migration changed frozen game configuration")
+	}
+	backups, _ := filepath.Glob(path + ".pre-v5-*.bak")
+	if len(backups) != 1 {
+		t.Fatal("schema 4 migration missing consistency backup")
 	}
 }
 

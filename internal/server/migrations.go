@@ -26,8 +26,8 @@ func (s *Server) loadDatabase(path string) error {
 			return nil
 		}
 		version = string(meta.Get([]byte("schema_version")))
-		if version != "3" && version != identitySchemaVersion {
-			return fmt.Errorf("unsupported identity database schema %q (expected %q or released schema 3); check the data directory specified by -data-dir or BIDBRAWL_DATA_DIR; newer databases require a newer application", version, identitySchemaVersion)
+		if version != "3" && version != "4" && version != identitySchemaVersion {
+			return fmt.Errorf("unsupported identity database schema %q (expected %q or released schema 3/4); check the data directory specified by -data-dir or BIDBRAWL_DATA_DIR; newer databases require a newer application", version, identitySchemaVersion)
 		}
 		if tx.Bucket(identityBucket) == nil || tx.Bucket(roomBucket) == nil {
 			return errors.New("identity database is missing accounts or rooms")
@@ -37,7 +37,7 @@ func (s *Server) loadDatabase(path string) error {
 	if err != nil {
 		return err
 	}
-	if version == "3" {
+	if version == "3" || version == "4" {
 		if err := s.backupDatabase(path); err != nil {
 			return fmt.Errorf("backup before migration: %w", err)
 		}
@@ -53,7 +53,7 @@ func (s *Server) loadDatabase(path string) error {
 		if err := s.loadAccounts(tx); err != nil {
 			return err
 		}
-		if version == "3" {
+		if version == "3" || version == "4" {
 			if err := s.upgradeRooms(tx, time.Now().UTC()); err != nil {
 				return err
 			}
@@ -69,7 +69,7 @@ func (s *Server) loadDatabase(path string) error {
 }
 
 func (s *Server) backupDatabase(path string) error {
-	f, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".pre-v4-*.bak")
+	f, err := os.CreateTemp(filepath.Dir(path), filepath.Base(path)+".pre-v5-*.bak")
 	if err != nil {
 		return err
 	}

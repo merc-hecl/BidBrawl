@@ -154,7 +154,7 @@ func TestMigrationFailureAfterRoomConversionRollsBackAllWrites(t *testing.T) {
 				if future {
 					var rec roomRecord
 					_ = json.Unmarshal(tx.Bucket(roomBucket).Get([]byte("table")), &rec)
-					rec.Game = json.RawMessage(`{"schema_version":12,"unknown_future_field":true}`)
+					rec.Game = json.RawMessage(`{"schema_version":13,"unknown_future_field":true}`)
 					raw, err := json.Marshal(rec)
 					if err != nil {
 						return err

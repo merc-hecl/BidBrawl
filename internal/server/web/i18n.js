@@ -44,7 +44,7 @@ export function localizeCard(card) {
 }
 export function localizeName(kind,definition) {
   if(!definition)return '';
-  const key=`${kind}.${definition.id}.name`;
+  const key=kind==='specialty'&&definition.style?`specialtyStyle.${definition.style}.name`:`${kind}.${definition.id}.name`;
   return zh[key]===definition.name?t(key):definition.name;
 }
 export function localizeItemName(item,catalog=[]) {

@@ -2,7 +2,7 @@ import {t,money,signed,localizeCard,localizeName,localizeItemName} from './i18n.
 import {knownItems} from './model.js';
 import {esc,icon,button} from './html.js';
 import {avatar,avatars} from './avatars.js';
-import {activityList,playerActivities,intelligenceSummary,intelligenceTitle} from './actions.js';
+import {activityList,playerActivities,intelligenceSummary,intelligenceTitle,specialtyStatusSummary} from './actions.js';
 import {itemArtwork} from './item-art.js';
 
 const tr=(key,values)=>esc(t(key,values));
@@ -13,7 +13,7 @@ const itemQuality=item=>item.category==='easter_egg'?t('easterEgg'):item.quality
 export function decisionChoice(choice,view){
   const definition=choice.action==='card'?(view.rules.cards||[]).find(card=>card.id===choice.card_id):null;
   const card=definition?localizeCard(definition):null,tip=`card-tip-${choice.round}-${choice.player_id}`;
-  return `<article class="peek-thought"><span>${tr(choice.action==='card'?'cardDecision':'bidDecision')}</span>${card?`<div class="decision-card"><strong>${esc(card.name)}</strong>${button('?',`card:${card.id}`,'card-help',`aria-label="${tr('cardHelp',{name:card.name})}" aria-describedby="${esc(tip)}"`)}<div id="${esc(tip)}" class="card-tooltip" role="tooltip">${esc(card.description)}</div></div>`:''}<p>${esc(choice.reason)}</p></article>`;
+  return `<article class="peek-thought"><span>${tr(choice.action==='card'?'cardDecision':choice.action==='specialty'?'specialtyChoice':'bidDecision')}</span>${card?`<div class="decision-card"><strong>${esc(card.name)}</strong>${button('?',`card:${card.id}`,'card-help',`aria-label="${tr('cardHelp',{name:card.name})}" aria-describedby="${esc(tip)}"`)}<div id="${esc(tip)}" class="card-tooltip" role="tooltip">${esc(card.description)}</div></div>`:''}<p>${esc(choice.reason)}</p></article>`;
 }
 export function playerPeek(source,view,ui){
   return view.players.some(p=>p.id===ui.focusPlayer)?inspectionPanel(source,view,{...ui,inspector:'player'}):'';
@@ -31,7 +31,8 @@ function playerInfo(source,view,ui){
  if(tab==='actions')body=activityList(view,{...ui,actionRound:ui.actionRound??round});
  else if(tab==='intel')body=`<div class="private-intel-records">${(view.intelligence?.[p.id]||[]).map(h=>`<article class="peek-thought"><span>${tr('round',{round:h.round})} · ${tr(h.source==='specialty'?'specialtyIntel':'privateSkills')}</span><strong>${esc(intelligenceTitle(h,view))}</strong><p>${esc(intelligenceSummary(h.data,view))}</p></article>`).join('')||`<p class="peek-empty">${tr('noHints')}</p>`}</div>`;
  else body=`<div class="player-bid-records">${view.history.map(h=>`<div><span>${tr('round',{round:h.round})}</span><strong>${esc(bidText(p,h.round,h.bids.find(b=>b.player_id===p.id)?.amount||0))}</strong></div>`).join('')}${view.phase==='bidding'?`<div><span>${tr('round',{round:view.round})}</span><small>${tr('bidNotRevealed')}</small></div>`:''}${!ui.observer?`<div class="activity-restricted">${icon('lock')}<strong>${tr('activityRestrictedTitle')}</strong></div>`:''}</div>`;
- return `<div class="player-action-summary">${identity}${metrics}${tabs}</div><div class="player-tab-content" data-region="player-tab:${tab}">${body}</div>`;
+ const specialtyStatus=ui.observer?specialtyStatusSummary(view.specialty_states?.[p.id]):'';
+ return `<div class="player-action-summary">${identity}${metrics}${specialtyStatus?`<p class="peek-thought">${esc(specialtyStatus)}</p>`:''}${tabs}</div><div class="player-tab-content" data-region="player-tab:${tab}">${body}</div>`;
 }
 function seat(player,i,view,ui){
   const winner=view.settlement?.winner_id===player.id;

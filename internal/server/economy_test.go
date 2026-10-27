@@ -4,6 +4,7 @@ import (
 	"bidbrawl/internal/game"
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"path/filepath"
 	"testing"
 )
@@ -16,11 +17,11 @@ func TestInventoryPurchaseConsumptionSettlementAndRestart(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["item_count"]}`, 409)
 	checkedRequest(t, s, "POST", "/api/buy", a, `{"card":"item_count","quantity":2}`, 200)
 	checkedRequest(t, s, "POST", "/api/buy", b, `{"card":"random_quality","quantity":1}`, 200)
-	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["item_count"],"specialty":"category","category":"household"}`, 201)
-	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":["random_quality"],"specialty":"late"}`, 201)
+	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["item_count"],"specialty":"quick"}`, 201)
+	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":["random_quality"],"specialty":"research"}`, 201)
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
 	checkedRequest(t, s, "POST", "/api/buy", a, `{"card":"quality_counts","quantity":1}`, 409)
-	checkedRequest(t, s, "POST", "/api/loadout?room=table", a, `{"cards":[],"specialty":"late"}`, 409)
+	checkedRequest(t, s, "POST", "/api/loadout?room=table", a, `{"cards":[],"specialty":"research"}`, 409)
 	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"item_count","round":1,"reason":"count before estimating"}`, 200)
 	checkedRequest(t, s, "POST", "/api/card", b, `{"card":"random_quality","round":1,"reason":"inspect before bidding"}`, 200)
 	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"item_count","round":1,"reason":"duplicate"}`, 409)
@@ -159,10 +160,17 @@ func TestObserverReplayIncludesOnlyAvailableSpecialtyIntel(t *testing.T) {
 	s := persistentServer(t, filepath.Join(t.TempDir(), "accounts.db"))
 	a, _ := accountSession(t, s, "Late")
 	b, _ := accountSession(t, s, "Analysis")
-	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":[],"specialty":"late"}`, 201)
-	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":[],"specialty":"analysis"}`, 201)
+	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":[],"specialty":"research"}`, 201)
+	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":[],"specialty":"survey"}`, 201)
 	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
+	var own game.View
+	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state?room=table", a, "", 200), &own)
+	topic := own.Self.SpecialtyState.Questions[0].ID
+	checkedRequest(t, s, "POST", "/api/specialty?room=table", a, fmt.Sprintf(`{"round":1,"action":"start","topic":%q,"reason":"investigate one question before committing"}`, topic), 200)
 	for round := 1; round <= 5; round++ {
+		if round == 2 {
+			checkedRequest(t, s, "POST", "/api/specialty?room=table", a, `{"round":2,"action":"commit","reason":"wait for expanded research instead of an immediate report"}`, 200)
+		}
 		body, _ := json.Marshal(map[string]any{"round": round, "amount": 100, "reason": "equal offers for replay boundary fixture"})
 		for _, token := range []string{a, b} {
 			checkedRequest(t, s, "POST", "/api/bid", token, string(body), 200)
@@ -210,7 +218,7 @@ func TestObserverReplayIncludesOnlyAvailableSpecialtyIntel(t *testing.T) {
 			}
 		}
 	}
-	if len(replay.Frames[0].Intelligence["p1"]) != 0 || len(replay.Frames[1].Intelligence["p1"]) != 1 || len(replay.Frames[3].Intelligence["p1"]) != 1 || len(replay.Frames[4].Intelligence["p1"]) != 2 || len(replay.Frames[5].Intelligence["p1"]) != 3 {
-		t.Fatal("late specialty timing not preserved")
+	if len(replay.Frames[0].Intelligence["p1"]) != 0 || len(replay.Frames[1].Intelligence["p1"]) != 1 || len(replay.Frames[2].Intelligence["p1"]) != 1 || len(replay.Frames[3].Intelligence["p1"]) != 2 || len(replay.Frames[5].Intelligence["p1"]) != 2 {
+		t.Fatal("research delivery timing not preserved")
 	}
 }

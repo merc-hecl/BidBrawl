@@ -70,6 +70,7 @@ func (s *Server) replayFor(w http.ResponseWriter, r *http.Request, observer bool
 			frame[k] = v
 		}
 		delete(frame, "round_deadline")
+		delete(frame, "specialty_states")
 		n := cursor
 		frame["history"] = view.History[:n]
 		hints := []game.Hint{}

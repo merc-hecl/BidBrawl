@@ -18,13 +18,13 @@ func UpgradeSnapshot(data []byte, now time.Time) ([]byte, error) {
 	if s.SchemaVersion == SnapshotSchemaVersion {
 		return data, nil
 	}
-	if s.SchemaVersion != 10 {
+	if s.SchemaVersion != 10 && s.SchemaVersion != 11 {
 		return nil, errors.New("unsupported pre-release game snapshot schema")
 	}
-	s.SchemaVersion = SnapshotSchemaVersion
-	if s.Phase == "bidding" {
+	if s.SchemaVersion == 10 && s.Phase == "bidding" {
 		s.RoundDeadline = now.UTC().Add(RoundTimeout)
 	}
+	s.SchemaVersion = SnapshotSchemaVersion
 	upgraded, err := json.Marshal(s)
 	if err != nil {
 		return nil, err

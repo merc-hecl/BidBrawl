@@ -187,13 +187,14 @@ test('action details present game facts in both languages without technical payl
   assert.ok(!revealed.includes('/api/')&&!revealed.includes('POST')&&!revealed.includes('amount:'));
   const handbook=actionDetail({...base,source:'cli',action:'handbook',status:'reported',params:{topic:'play',lang:'en'}},view);
   assert.ok(handbook.includes(t('topic_play'))&&handbook.includes(t('languageEnglish'))&&handbook.includes(t('source_cli')));
-  const loadout=actionDetail({...base,action:'loadout',params:{specialty:'appraisal',category:'electronics',cards:[]}},view);
-  for(const key of ['specialty.appraisal.name','category.electronics.name','noCarriedCards'])assert.ok(loadout.includes(t(key)),key);
+  const loadout=actionDetail({...base,action:'loadout',params:{specialty:'research',cards:[]}},view);
+  for(const key of ['specialtyStyle.research.name','noCarriedCards'])assert.ok(loadout.includes(t(key)),key);
   const purchase=actionDetail({...base,action:'buy',params:{card:'quality_counts',quantity:2}},view);
   assert.ok(purchase.includes(t('cardQuantity',{count:2}))&&purchase.includes(t('purchasedCard')));
   for(const [kind,list] of Object.entries({category:categories,specialty:specialties,warehouse:warehouses}))for(const definition of list){
-   assert.equal(catalogs['zh-CN'][`${kind}.${definition.id}.name`],definition.name);
-   assert.equal(localizeName(kind,definition),t(`${kind}.${definition.id}.name`));
+   const key=kind==='specialty'&&definition.style?`specialtyStyle.${definition.style}.name`:`${kind}.${definition.id}.name`;
+   assert.equal(catalogs['zh-CN'][key],definition.name);
+   assert.equal(localizeName(kind,definition),t(key));
    assert.equal(localizeName(kind,{...definition,name:'Custom name'}),'Custom name');
   }
   const rejected=actionDetail({...base,action:'loadout',status:'rejected',params:{cards:'invalid',round:'invalid',debug:'raw-payload'},result:{message:'POST /api/loadout failed'}},view);

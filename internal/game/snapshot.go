@@ -18,7 +18,7 @@ import (
 // Snapshots are private storage records, never public observations. They retain
 // randomness, pending bids, private hints and seat tokens so a restart cannot
 // reroll a box, repeat a skill or change an already settled tie.
-const SnapshotSchemaVersion = 11
+const SnapshotSchemaVersion = 12
 
 type gameSnapshot struct {
 	RoundDeadline  time.Time        `json:"round_deadline"`
@@ -42,26 +42,27 @@ type gameSnapshot struct {
 }
 
 type playerSnapshot struct {
-	WithdrawRound int              `json:"withdraw_round"`
-	TicketCost    int64            `json:"ticket_cost"`
-	Specialty     string           `json:"specialty"`
-	Category      string           `json:"category"`
-	Signals       []Hint           `json:"intelligence"`
-	Withdrawn     bool             `json:"withdrawn"`
-	CardCost      int64            `json:"card_cost"`
-	CardPrices    map[string]int64 `json:"card_prices"`
-	ID            string           `json:"id"`
-	Name          string           `json:"name"`
-	Token         string           `json:"token"`
-	Deck          []string         `json:"deck"`
-	Used          []string         `json:"used"`
-	Hints         []Hint           `json:"hints"`
-	Bid           *int64           `json:"bid"`
-	CardRound     int              `json:"card_round"`
-	Revision      int              `json:"revision"`
-	Avatar        *int             `json:"avatar"`
-	Inspection    []InspectionItem `json:"initial_inspection"`
-	Assets        int64            `json:"assets"`
+	SpecialtyState *specialtyProgress `json:"specialty_state,omitempty"`
+	WithdrawRound  int                `json:"withdraw_round"`
+	TicketCost     int64              `json:"ticket_cost"`
+	Specialty      string             `json:"specialty"`
+	Category       string             `json:"category"`
+	Signals        []Hint             `json:"intelligence"`
+	Withdrawn      bool               `json:"withdrawn"`
+	CardCost       int64              `json:"card_cost"`
+	CardPrices     map[string]int64   `json:"card_prices"`
+	ID             string             `json:"id"`
+	Name           string             `json:"name"`
+	Token          string             `json:"token"`
+	Deck           []string           `json:"deck"`
+	Used           []string           `json:"used"`
+	Hints          []Hint             `json:"hints"`
+	Bid            *int64             `json:"bid"`
+	CardRound      int                `json:"card_round"`
+	Revision       int                `json:"revision"`
+	Avatar         *int               `json:"avatar"`
+	Inspection     []InspectionItem   `json:"initial_inspection"`
+	Assets         int64              `json:"assets"`
 }
 
 func (g *Game) Snapshot() ([]byte, error) {
@@ -72,6 +73,7 @@ func (g *Game) Snapshot() ([]byte, error) {
 		Hints: g.hints, History: g.history, Decisions: g.decisions, Settlement: g.settlement}
 	for _, p := range g.players {
 		s.Players = append(s.Players, playerSnapshot{WithdrawRound: p.withdrawRound, TicketCost: p.ticketCost, ID: p.id, Name: p.name, Token: p.token, Deck: p.deck, Used: p.used, Hints: p.hints, Bid: p.bid, CardRound: p.cardRound, Revision: p.revision, Avatar: p.avatar, Inspection: p.inspection, Assets: p.assets, Specialty: p.specialty, Category: p.category, Signals: p.signals, Withdrawn: p.withdrawn, CardCost: p.cardCost, CardPrices: p.cardPrices})
+		s.Players[len(s.Players)-1].SpecialtyState = p.specialtyState
 	}
 	return json.Marshal(s)
 }
@@ -124,6 +126,7 @@ func Restore(data []byte) (*Game, error) {
 	g.decisions, g.settlement = s.Decisions, s.Settlement
 	for _, p := range s.Players {
 		g.players = append(g.players, &player{withdrawRound: p.WithdrawRound, ticketCost: p.TicketCost, id: p.ID, name: p.Name, token: p.Token, deck: p.Deck, used: p.Used, hints: p.Hints, bid: p.Bid, cardRound: p.CardRound, revision: p.Revision, avatar: p.Avatar, inspection: p.Inspection, assets: p.Assets, specialty: p.Specialty, category: p.Category, signals: p.Signals, withdrawn: p.Withdrawn, cardCost: p.CardCost, cardPrices: p.CardPrices})
+		g.players[len(g.players)-1].specialtyState = p.SpecialtyState
 	}
 	return g, nil
 }
@@ -195,8 +198,15 @@ func (s gameSnapshot) validate() error {
 		}
 		used := map[string]bool{}
 		lastRound := 0
-		if len(p.Hints) != len(p.Used) || p.Revision != len(p.Used) {
+		choices := 0
+		if p.SpecialtyState != nil {
+			choices = len(p.SpecialtyState.Choices)
+		}
+		if len(p.Hints) != len(p.Used) || p.Revision != len(p.Used)+choices {
 			return errors.New("inconsistent private card history")
+		}
+		if err := s.validateSpecialty(p); err != nil {
+			return err
 		}
 		for j, id := range p.Used {
 			h := p.Hints[j]
@@ -380,6 +390,11 @@ func (s gameSnapshot) validate() error {
 func (s gameSnapshot) validateDecisions() error {
 	expected := map[string]bool{}
 	for i, p := range s.Players {
+		if p.SpecialtyState != nil {
+			for _, c := range p.SpecialtyState.Choices {
+				expected[fmt.Sprintf("%d:%s:specialty", c.Round, p.ID)] = true
+			}
+		}
 		for _, h := range p.Hints {
 			expected[fmt.Sprintf("%d:%s:card", h.Round, p.ID)] = true
 		}
@@ -406,7 +421,7 @@ func (s gameSnapshot) validateDecisions() error {
 	lastRound := 0
 	for _, d := range s.Decisions {
 		key := fmt.Sprintf("%d:%s:%s", d.Round, d.PlayerID, d.Action)
-		if ValidateReason(d.Reason) != nil || d.Round < lastRound || d.Round > s.Round || !expected[key] || seen[key] || d.Action == "card" && (seen[fmt.Sprintf("%d:%s:bid", d.Round, d.PlayerID)] || seen[fmt.Sprintf("%d:%s:withdraw", d.Round, d.PlayerID)]) {
+		if ValidateReason(d.Reason) != nil || d.Round < lastRound || d.Round > s.Round || !expected[key] || seen[key] || (d.Action == "card" || d.Action == "specialty") && (seen[fmt.Sprintf("%d:%s:bid", d.Round, d.PlayerID)] || seen[fmt.Sprintf("%d:%s:withdraw", d.Round, d.PlayerID)] || seen[fmt.Sprintf("%d:%s:timeout", d.Round, d.PlayerID)]) {
 			return errors.New("invalid decision history")
 		}
 		lastRound, seen[key] = d.Round, true

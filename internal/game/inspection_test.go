@@ -106,6 +106,7 @@ func TestEggOnlyBoxStaysHiddenUntilSettlementAndSurvivesRestore(t *testing.T) {
 	g.hints = g.plannedHints[:1]
 	for _, p := range g.players {
 		p.inspection, p.signals = nil, nil
+		p.specialtyState = nil
 		g.giveIntelligence(p)
 	}
 	encoded, _ := g.Snapshot()

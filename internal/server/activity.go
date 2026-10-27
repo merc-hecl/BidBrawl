@@ -108,7 +108,7 @@ func (s *Server) auditRequest(next http.Handler, w http.ResponseWriter, r *http.
 		r.Body = io.NopCloser(bytes.NewReader(raw))
 		var input map[string]any
 		_ = json.Unmarshal(raw, &input)
-		for _, key := range []string{"round", "card", "target", "quantity", "amount", "specialty", "category", "cards", "ids", "all", "players", "ticket_fee", "topic", "lang"} {
+		for _, key := range []string{"round", "card", "target", "quantity", "amount", "specialty", "category", "cards", "ids", "all", "players", "ticket_fee", "topic", "lang", "action"} {
 			if value, ok := input[key]; ok {
 				switch v := value.(type) {
 				case string:
@@ -173,6 +173,9 @@ func (s *Server) auditRequest(next http.Handler, w http.ResponseWriter, r *http.
 		events := []activity{}
 		if a != nil {
 			action := strings.TrimPrefix(r.URL.Path, "/api/")
+			if action == "specialty" {
+				action = "specialty_action"
+			}
 			command := r.Header.Get("X-BidBrawl-Command")
 			if r.URL.Path == "/api/config" {
 				action = "catalog"
@@ -209,6 +212,9 @@ func (s *Server) auditRequest(next http.Handler, w http.ResponseWriter, r *http.
 						result["data"] = h.Data
 					}
 				}
+			}
+			if action == "specialty_action" && capture.code < 300 {
+				result["specialty_state"] = after.SpecialtyStates[seatForAccount(rm, a.ID)]
 			}
 			reason, _ := params["reason"].(string)
 			delete(params, "reason")
@@ -283,6 +289,13 @@ func (s *Server) appendActivities(rm *room, events []activity) bool {
 			duplicate := false
 			for _, prior := range copy.activities {
 				if prior.Source == "system" && prior.Action == e.Action && prior.Tool == e.Tool && prior.Round == e.Round && prior.PlayerID == e.PlayerID {
+					if e.Action == "specialty" {
+						a, _ := json.Marshal(prior.Result)
+						b, _ := json.Marshal(e.Result)
+						if !bytes.Equal(a, b) {
+							continue
+						}
+					}
 					duplicate = true
 					break
 				}

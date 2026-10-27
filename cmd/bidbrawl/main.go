@@ -51,12 +51,12 @@ func run(ctx context.Context, args []string) error {
 }
 func runWithBrowser(ctx context.Context, args []string, launchBrowser func(string) error) error {
 	if len(args) == 0 {
-		fmt.Println("BidBrawl — 外部 Agent 驱动的暗拍\n命令: host | ui | register | accounts | rotate-credential | login | logout | me | rooms | create | invite | join | start | state | watch | results | stats | leaderboard | agent | replay | observer-login | config | cards | hints | card | bid | withdraw | inventory | buy | sell | loadout | relief | catalog | handbook\n用法: bidbrawl <命令> -h")
+		fmt.Println("BidBrawl — 外部 Agent 驱动的暗拍\n命令: host | ui | register | accounts | rotate-credential | login | logout | me | rooms | create | invite | join | start | state | watch | results | stats | leaderboard | agent | replay | observer-login | config | cards | hints | card | specialty | bid | withdraw | inventory | buy | sell | loadout | relief | catalog | handbook\n用法: bidbrawl <命令> -h")
 		return nil
 	}
 	command := args[0]
 	switch command {
-	case "host", "ui", "register", "accounts", "rotate-credential", "login", "logout", "me", "rooms", "create", "invite", "join", "start", "state", "watch", "results", "stats", "leaderboard", "agent", "replay", "observer-login", "config", "cards", "hints", "card", "bid", "handbook", "inventory", "buy", "sell", "loadout", "relief", "catalog", "withdraw":
+	case "host", "ui", "register", "accounts", "rotate-credential", "login", "logout", "me", "rooms", "create", "invite", "join", "start", "state", "watch", "results", "stats", "leaderboard", "agent", "replay", "observer-login", "config", "cards", "hints", "card", "specialty", "bid", "handbook", "inventory", "buy", "sell", "loadout", "relief", "catalog", "withdraw":
 	default:
 		return fmt.Errorf("unknown command: %s", command)
 	}
@@ -95,7 +95,8 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	quality := f.String("quality", "", "catalog：品质 ID 或名称，如 rare；可与尺寸、名称、类别组合")
 	accountID := f.String("account", "", "agent / rotate-credential：永久账号 ID，必填")
 	deck := f.String("cards", "", "携带的卡 ID，最多 5 张不同卡，用逗号分隔；省略或空字符串表示不带卡")
-	specialty := f.String("specialty", "analysis", "鉴定专长 ID，用 catalog 查看专长及轮次效果")
+	specialty := f.String("specialty", "survey", "专长 ID：quick / survey / research / planner / adaptive；旧房间以 catalog 为准")
+	specialtyAction := f.String("action", "", "specialty：从 self.specialty_state.actions 选择本轮行动")
 	category := f.String("category", "", "专长允许的子品类；catalog：筛选品类 ID；region 可选 northwest/northeast/southwest/southeast")
 	ticket := f.Int64("ticket", 5000, "建房门票金额；开局扣除，退出不退，可设0")
 	quantity := f.Int("quantity", 1, "购买卡牌数量，1–99")
@@ -104,12 +105,12 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	round := f.Int("round", 0, "用卡 / 报价的当前轮次，必填，从 state 查看")
 	card := f.String("card", "", "技能卡 ID")
 	cardTarget := f.String("target", "", "card：卡牌要求的品类、品质、面积、象限或已观察物品 ID；以 cards 中 target 字段为准")
-	compact := f.Bool("compact", false, "state / card / bid / withdraw：省略重复目录、配置副本和行动流水，保留全部决策状态与情报")
+	compact := f.Bool("compact", false, "state / card / specialty / bid / withdraw：省略重复目录、配置副本和行动流水，保留全部决策状态与情报")
 	amount := f.Int64("amount", 0, "整数报价")
 	reason := f.String("reason", "", "报价 / 用卡的私有决策理由，必填，1–2000 字符")
 	defaults := f.Bool("defaults", false, "config / cards / hints 命令：离线导出内置默认配置")
 	live := f.Bool("live", false, "handbook -topic cards：读取宿主或指定房间的实际配置")
-	topic := f.String("topic", "", "handbook：start / play / rules / cards / reconnect / results；省略显示目录")
+	topic := f.String("topic", "", "handbook：手册章节；specialty：self.specialty_state.questions 中的课题 ID")
 	lang := f.String("lang", "zh-CN", "handbook：zh-CN / en；默认中文")
 	events := f.String("event", "", "watch：逗号分隔的事件名；省略接收当前房间全部事件")
 	once := f.Bool("once", false, "watch：收到首个匹配事件后退出")
@@ -128,8 +129,11 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	}
 	explicit := map[string]bool{}
 	f.Visit(func(v *flag.Flag) { explicit[v.Name] = true })
-	if explicit["compact"] && command != "state" && command != "card" && command != "bid" && command != "withdraw" {
-		return errors.New("-compact is only used by state, card, bid or withdraw")
+	if explicit["compact"] && command != "state" && command != "card" && command != "specialty" && command != "bid" && command != "withdraw" {
+		return errors.New("-compact is only used by state, card, specialty, bid or withdraw")
+	}
+	if explicit["action"] && command != "specialty" {
+		return errors.New("-action is only used by specialty")
 	}
 	if explicit["target"] && command != "card" {
 		return errors.New("-target is only used by card")
@@ -158,7 +162,7 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 	}
 	if *room == "" {
 		switch command {
-		case "join", "invite", "start", "state", "replay", "card", "loadout", "withdraw":
+		case "join", "invite", "start", "state", "replay", "card", "specialty", "loadout", "withdraw":
 			return errors.New("-room is required (join also accepts -invite)")
 		}
 	}
@@ -397,6 +401,12 @@ func runWithBrowser(ctx context.Context, args []string, launchBrowser func(strin
 		}
 	case "start":
 		path = client.RoomPath("/api/start", *room)
+	case "specialty":
+		if err := game.ValidateReason(*reason); err != nil {
+			return err
+		}
+		path = client.RoomPath("/api/specialty", *room)
+		input = map[string]any{"round": *round, "action": *specialtyAction, "topic": *topic, "reason": *reason}
 	case "card":
 		if err := game.ValidateReason(*reason); err != nil {
 			return err

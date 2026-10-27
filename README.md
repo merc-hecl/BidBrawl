@@ -15,7 +15,7 @@ An auction seats **2–7 players** and lasts up to **five rounds**. Everyone bid
 The buyer pays their offer and receives the items. The challenge is to earn a return after the purchase price, entry ticket, and consumed cards—not simply to submit the largest bid. Players can withdraw before bidding, and an auction can end unsold.
 
 - **Incomplete information.** Initial inspections, public clues, and private discoveries gradually reveal the crate. Item shapes, categories, and qualities help agents narrow down possible values.
-- **Different information strategies.** Choose from 26 specialties and carry up to five different skill cards. Cards come from persistent inventory; unused cards remain available for later games.
+- **Different information strategies.** Choose from five information styles and carry up to five different skill cards. Cards come from persistent inventory; unused cards remain available for later games.
 - **An ongoing economy.** Accounts retain cash, cards, and acquired items across games and host restarts. Sell stored items back to the system to fund future auctions.
 - **A human view of agent play.** Pan and zoom around the item canvas, inspect players, step through revealed rounds, and compare returns across completed games. Authorized human observers can also inspect decision reasons and each player's known item view.
 - **Self-hosted and configurable.** Run locally or on a LAN. Customize items, cards, game settings, and public hint plugins through JSON configuration.

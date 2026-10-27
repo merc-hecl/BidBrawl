@@ -23,6 +23,8 @@ export function intelligenceTitle(hint,view){
 }
 export function intelligenceSummary(data,view){
  if(!data)return '';
+ if(data.preparation_report)return [intelligenceSummary({...data,preparation_report:undefined},view),intelligenceSummary(data.preparation_report,view)].filter(Boolean).join(' · ');
+ if(data.type==='sample_report')return t('sampleReport',{draws:data.draws,topic:t('specialtyTopic.'+data.topic),band:t('sampleBand.'+data.band)});
  if(data.items)return t('intelSample',{count:data.items.length});
  if(data.average_area!==undefined)return t(data.sample_count!==undefined?'intelSampleAverageArea':'intelAverageArea',{count:data.sample_count,value:data.average_area===null?t('noCandidates'):money(data.average_area,2)});
  if(data.present!==undefined)return t(data.present?'intelPresent':'intelAbsent');
@@ -32,12 +34,21 @@ export function intelligenceSummary(data,view){
  if(data.item_id)return [localizeItemName(data,view.rules.catalog)||data.item_id,data.quality?t(data.quality):null,data.price!==undefined?money(data.price):null].filter(Boolean).join(' · ');
  return data.translations?.[getLocale()]?.message||data.message||'';
 }
+export function specialtyStatusSummary(status){
+ if(!status)return '';
+ const parts=[];
+ if(status.style==='planner')parts.push(t('specialtyPreparation',{count:status.preparation}));
+ if(status.boost_armed)parts.push(t('specialtyBoostArmed'));
+ if(status.reserved)parts.push(t('specialtyReserved'));
+ if(status.research)parts.push(t('specialtyResearch',{topic:t('specialtyTopic.'+status.research.topic),state:t(status.research.delivered?'specialtyDelivered':status.research.committed?'specialtyCommitted':'specialtyPreliminary')}));
+ return parts.join(' · ');
+}
 function grouped(events){
  const rows=[];for(const event of events){const last=rows.at(-1);if(last&&readActions.has(event.action)&&event.status==='success'&&last.event.action===event.action&&last.event.round===event.round&&last.event.status===event.status){last.events.push(event)}else rows.push({event,events:[event]})}return rows;
 }
 function summary(e,view){if(e.status==='rejected')return t('actionRejected');if(['specialty','public_hint'].includes(e.action))return intelligenceSummary(e.result,view);if(e.cost)return t('actionCost',{value:money(e.cost)});if(e.action==='card')return intelligenceSummary(e.result?.data,view);if(e.action==='bid')return t('activity_'+e.status);if(e.params?.amount!==undefined)return money(e.params.amount);return t('source_'+e.source);}
 const selectedActivityRound=(view,ui)=>Math.min(ui.actionRound??(ui.cursor===null||ui.cursor===undefined?view.round:ui.cursor),view.round);
-const matchesFilter=(e,filter)=>filter==='all'||filter==='decisions'&&['bid','card','withdraw'].includes(e.action)||filter==='intel'&&['card','specialty','public_hint'].includes(e.action)||filter==='tools'&&readActions.has(e.action);
+const matchesFilter=(e,filter)=>filter==='all'||filter==='decisions'&&['bid','card','withdraw','specialty_action'].includes(e.action)||filter==='intel'&&['card','specialty','public_hint'].includes(e.action)||filter==='tools'&&readActions.has(e.action);
 export function actionRows(view,id,round,filter='all',selected=null){
  const events=playerActivities(view,id).filter(e=>e.round===round&&matchesFilter(e,filter));
  return grouped(events).map(({event:e,events:all})=>{
@@ -79,7 +90,8 @@ function actionFacts(e,view,card){
  if(p.players!==undefined)add('players',money(p.players));
  if(p.warehouse)add('warehouseType',name('warehouse',p.warehouse,view.rules.warehouses));
  if(p.ticket_fee!==undefined)add('ticketFee',t('coinValue',{value:money(p.ticket_fee)}));
- if(p.topic)add('handbookTopic',catalogs[getLocale()]['topic_'+p.topic]?t('topic_'+p.topic):t('unknownSelection'));
+ if(e.action==='specialty_action'&&p.action)add('specialtyChoice',t('specialtyAction.'+p.action));
+ if(p.topic)add(e.action==='specialty_action'?'specialtyQuestion':'handbookTopic',e.action==='specialty_action'?t('specialtyTopic.'+p.topic):catalogs[getLocale()]['topic_'+p.topic]?t('topic_'+p.topic):t('unknownSelection'));
  if(p.lang)add('language',t(p.lang==='en'?'languageEnglish':p.lang==='zh-CN'?'languageChinese':'unknownSelection'));
  if(p.frame!==undefined&&Number.isInteger(Number(p.frame)))add('replayPosition',Number(p.frame)?t('round',{round:Number(p.frame)}):t('opening'));
  const effect=card?{...card.effect,...(card.target&&p.target?{[card.target==='item'?'item_id':card.target]:p.target}:{})}:null;
@@ -103,6 +115,7 @@ function actionFacts(e,view,card){
 }
 function actionOutcome(e,view){
  if(e.status==='rejected')return t('actionRejected');
+ if(e.action==='specialty_action')return [t('specialtyAction.'+e.params.action),e.params.topic?t('specialtyTopic.'+e.params.topic):''].filter(Boolean).join(' · ');
  if(['specialty','public_hint'].includes(e.action))return intelligenceSummary(e.result,view);
  if(e.action==='card')return intelligenceSummary(e.result?.data,view)||t('cardApplied');
  if(e.action==='catalog'&&e.result?.templates!==undefined)return t('catalogMatches',{count:e.result.templates});

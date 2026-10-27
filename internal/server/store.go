@@ -33,7 +33,7 @@ type identityRecord struct {
 
 var identityBucket = []byte("accounts")
 
-const identitySchemaVersion = "4"
+const identitySchemaVersion = "5"
 
 // Open restores identities and rooms from a local database, failing rather than silently
 // starting with an empty account set if it is locked, damaged or unsupported.

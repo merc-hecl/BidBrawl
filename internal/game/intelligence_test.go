@@ -25,8 +25,26 @@ func TestRandomCardsRespectLearnedLocationsAndPublicFacts(t *testing.T) {
 	}
 }
 
-func TestSpecialtiesSurviveRestartAndNeverReachPublicView(t *testing.T) {
-	g, _ := New(4)
+func releasedSpecialtyConfig(t *testing.T) Config {
+	t.Helper()
+	cfg := DefaultConfig()
+	cfg.Specialties = nil
+	raw, err := os.ReadFile("testdata/released-specialties.json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(raw, &cfg.Specialties); err != nil {
+		t.Fatal(err)
+	}
+	return cfg
+}
+
+func TestReleasedSpecialtiesSurviveRestartAndNeverReachPublicView(t *testing.T) {
+	cfg := releasedSpecialtyConfig(t)
+	g, err := NewWithConfig(4, cfg, cards.Default())
+	if err != nil {
+		t.Fatal(err)
+	}
 	tokens := []string{}
 	for i, id := range []string{"survey", "category", "analysis", "late"} {
 		_, token, _ := g.Join(id, nil)
@@ -51,7 +69,7 @@ func TestSpecialtiesSurviveRestartAndNeverReachPublicView(t *testing.T) {
 		for _, token := range tokens {
 			v := view(t, g, token)
 			expected := 0
-			for _, step := range findSpecialty(Specialties, v.Self.Specialty).Steps {
+			for _, step := range findSpecialty(cfg.Specialties, v.Self.Specialty).Steps {
 				if step.Round <= round {
 					expected++
 				}
@@ -152,13 +170,11 @@ func TestCatalogIsDataDrivenAndInvalidFilesFail(t *testing.T) {
 	}
 }
 
-func TestAllSpecialtiesSchedulesAndPersistedScopes(t *testing.T) {
-	if len(Specialties) != 26 {
-		t.Fatal("specialty pool incomplete")
-	}
-	for _, spec := range Specialties {
+func TestReleasedScriptedSpecialtySchedulesAndPersistedScopes(t *testing.T) {
+	cfg := releasedSpecialtyConfig(t)
+	for _, spec := range cfg.Specialties {
 		t.Run(spec.ID, func(t *testing.T) {
-			g, _ := New(2)
+			g, _ := NewWithConfig(2, cfg, cards.Default())
 			_, a, _ := g.Join("A", nil)
 			_, b, _ := g.Join("B", nil)
 			if err := g.Configure(a, spec.ID, "", nil); err != nil {
@@ -256,16 +272,16 @@ func TestScoutingResultsAreUnaffectedByEggs(t *testing.T) {
 				t.Fatalf("card %s exposed egg: before=%v after=%v", card.ID, before, after)
 			}
 		}
-		for _, spec := range g.gameConfig.Specialties {
-			before, after := &player{specialty: spec.ID}, &player{specialty: spec.ID}
-			for g.round = 1; g.round <= Rounds; g.round++ {
-				g.items = lot
-				g.giveIntelligence(before)
-				g.items = withEgg
-				g.giveIntelligence(after)
-			}
-			if !reflect.DeepEqual(before.signals, after.signals) {
-				t.Fatalf("specialty %s exposed egg: before=%v after=%v", spec.ID, before.signals, after.signals)
+		g.items, g.round = lot, 1
+		p := &player{specialty: "survey"}
+		g.giveIntelligence(p)
+		plan := p.specialtyState.plan(1)
+		for _, topic := range plan.Topics {
+			g.items = lot
+			before := g.sampleReport(plan, topic, 12)
+			g.items = withEgg
+			if after := g.sampleReport(plan, topic, 12); !reflect.DeepEqual(before, after) {
+				t.Fatal("anonymous report exposed an egg", before, after)
 			}
 		}
 	}
@@ -305,7 +321,7 @@ func TestSpecialtiesDoNotRevealPriceOrIdentity(t *testing.T) {
 }
 
 func TestBidConditionedIntelUsesOnlyRevealedHistory(t *testing.T) {
-	g, _ := New(2)
+	g, _ := NewWithConfig(2, releasedSpecialtyConfig(t), cards.Default())
 	_, a, _ := g.Join("A", nil)
 	_, b, _ := g.Join("B", nil)
 	if err := g.Configure(a, "momentum", "", nil); err != nil {

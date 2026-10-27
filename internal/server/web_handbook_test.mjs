@@ -7,6 +7,7 @@ import {setLocale,t} from './web/i18n.js';
 const json=async path=>JSON.parse(await readFile(new URL(path,import.meta.url),'utf8'));
 const game=await json('../game/default.json'),catalog=await json('../game/items.json');
 const cardConfig=await json('../cards/default.json'),specialties=await json('../game/specialties.json');
+const releasedSpecialties=await json('../game/testdata/released-specialties.json');
 const hintConfig=await json('../hints/default.json');
 const rules=hostReference({game,qualities:[...game.qualities,{id:'easter_egg',name:'彩蛋',min_price:17500000,max_price:17500000,weight:0}],catalog:catalog.items.map(i=>({...i,price:i.fixed_price??1234,quality_appearance_probability:i.category==='easter_egg'?2/100002:game.qualities.find(q=>q.id===i.quality).weight/100,appearance_probability:i.category==='easter_egg'?2/100002/8:0.001})),cards:cardConfig,specialties,categories:catalog.categories,warehouses:catalog.warehouses,public_hint_definitions:hintConfig.plugins});
 
@@ -18,8 +19,8 @@ test('new intelligence keeps scope, units, unlock rounds and bid conditions visi
   assert.ok(card('legendary_average_area').includes(t('book.result.average_area')));
   assert.ok(card('focused_appraisal').includes(t('book.availableRound',{round:2})));
   for(const id of ['momentum','contrarian']){
-   const condition=specialties.find(s=>s.id===id).steps[1].condition;
-   const html=renderHandbook(rules,{...newHandbookState('specialties'),entry:id});
+   const condition=releasedSpecialties.find(s=>s.id===id).steps[1].condition;
+   const html=renderHandbook({...rules,specialties:releasedSpecialties},{...newHandbookState('specialties'),entry:id});
    assert.ok(html.includes(t('book.condition.'+condition)));
   }
   for(const kind of ['category_count','category_quality_count','region_quality_count','quality_total_area','quality_average_area']){
@@ -103,13 +104,13 @@ test('public reference preserves custom text, aliases and translations without d
 });
 
 test('specialty summaries distinguish area statistics, remembered samples and non-price revelations',()=>{
-  const sampled=specialties.find(s=>s.id==='category').steps[1];
+  const sampled=releasedSpecialties.find(s=>s.id==='category').steps[1];
   assert.equal(effectText(sampled.effect,sampled),t('book.effect.averageArea'));
-  const earlyAppraisal=specialties.find(s=>s.id==='appraisal').steps[0];
+  const earlyAppraisal=releasedSpecialties.find(s=>s.id==='appraisal').steps[0];
   assert.ok(effectText(earlyAppraisal.effect,earlyAppraisal).includes(t('book.field.quality')));
-  const full=specialties.find(s=>s.id==='electronics').steps[2];
+  const full=releasedSpecialties.find(s=>s.id==='electronics').steps[2];
   assert.ok(effectText(full.effect,full).includes(t('book.field.category')));
-  const html=renderHandbook(rules,{...newHandbookState('specialties'),entry:'small'});
+  const html=renderHandbook({...rules,specialties:releasedSpecialties},{...newHandbookState('specialties'),entry:'small'});
   assert.ok(html.includes(t('book.remember'))&&html.includes(t('book.fromSample')));
   const filtered=renderHandbook(rules,{...newHandbookState('cards'),filter:'aggregate',search:'品质普查'});
   assert.ok(filtered.includes('book-entry:quality_counts')&&!filtered.includes('book-entry:focused_appraisal'));

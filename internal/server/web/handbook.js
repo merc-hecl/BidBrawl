@@ -52,7 +52,7 @@ function cardSummary(card,rules){
   if(effect.type==='reveal')return t('book.scopeEffect',{scope:[chosenScope,effect.category||effect.quality||effect.area||effect.region||effect.qualities?.length?scope(effect,rules):'',t('book.shortTarget.'+(card.target==='item'?'chosen':effect.selector||'random'),{count:effect.count||1})].filter(Boolean).join(' · '),effect:list(['shape',...(effect.fields||[]).filter(f=>f!=='shape')].map(f=>t('book.field.'+f)))});
   return t('book.scopeEffect',{scope:chosenScope||scope(effect,rules),effect:t('book.result.'+resultKey(effect))});
 }
-const specialtyGroup=spec=>spec.categories?.length||spec.tag?'category':spec.steps.some(s=>s.qualities?.length||s.effect.quality)?'quality':'geometry';
+const specialtyGroup=spec=>spec.style?'style':spec.categories?.length||spec.tag?'category':(spec.steps||[]).some(s=>s.qualities?.length||s.effect.quality)?'quality':'geometry';
 
 function items(rules,book){
   const all=rules.catalog||[];
@@ -97,11 +97,12 @@ function hints(rules,book){
 }
 function specialties(rules,book){
   const all=rules.specialties||[],filtered=all.filter(s=>book.filter==='all'||specialtyGroup(s)===book.filter),selected=filtered.find(s=>s.id===book.entry)||filtered[0];
-  const controls=`<div class="handbook-controls">${filterButtons(['all','category','quality','geometry'].map(id=>[id,t('book.specialtyFilter.'+id,{count:all.length})]),book.filter)}</div>`;
-  const left=`<section class="handbook-list panel" data-region="book-specialties"><header><strong>${tr('book.specialtiesCount',{count:filtered.length})}</strong></header><div class="handbook-specialty-grid">${filtered.map(s=>entry(s.id,localizeName('specialty',s),s.steps.map(step=>String(step.round).padStart(2,'0')).join(' · '),selected?.id===s.id)).join('')||noMatch()}</div></section>`;
+  const groups=['all',...new Set(all.map(specialtyGroup))];
+  const controls=groups.length>2?`<div class="handbook-controls">${filterButtons(groups.map(id=>[id,t('book.specialtyFilter.'+id,{count:all.length})]),book.filter)}</div>`:'';
+  const left=`<section class="handbook-list panel" data-region="book-specialties"><header><strong>${tr('book.specialtiesCount',{count:filtered.length})}</strong></header><div class="handbook-specialty-grid">${filtered.map(s=>entry(s.id,localizeName('specialty',s),s.style?s.id:(s.steps||[]).map(step=>String(step.round).padStart(2,'0')).join(' · '),selected?.id===s.id)).join('')||noMatch()}</div></section>`;
   let right='';
   if(selected){
-    const steps=selected.steps.map(step=>`<article class="handbook-step"><span aria-label="${tr('round',{round:step.round})}">${String(step.round).padStart(2,'0')}</span><div><strong>${esc(effectText(step.effect,step))}</strong><p>${esc(scope(step.effect,rules,selected,step))}</p>${step.effect.unknown_only?`<small>${tr('book.unknownOnly')}</small>`:''}${step.condition?`<small>${tr('book.condition.'+step.condition)}</small>`:''}${step.remember?`<small>${tr('book.remember')}</small>`:''}${step.from_sample?`<small>${tr('book.fromSample')}</small>`:''}</div></article>`).join('');
+    const steps=selected.style?`<p>${esc(catalogs['zh-CN'][`specialtyStyle.${selected.style}.description`]===selected.description?t(`specialtyStyle.${selected.style}.description`):selected.description)}</p><p>${tr('specialtySampling')}</p>`:(selected.steps||[]).map(step=>`<article class="handbook-step"><span aria-label="${tr('round',{round:step.round})}">${String(step.round).padStart(2,'0')}</span><div><strong>${esc(effectText(step.effect,step))}</strong><p>${esc(scope(step.effect,rules,selected,step))}</p>${step.effect.unknown_only?`<small>${tr('book.unknownOnly')}</small>`:''}${step.condition?`<small>${tr('book.condition.'+step.condition)}</small>`:''}${step.remember?`<small>${tr('book.remember')}</small>`:''}${step.from_sample?`<small>${tr('book.fromSample')}</small>`:''}</div></article>`).join('');
     right=detail(`<span class="eyebrow">${tr('book.specialtyDetails')}</span><h2 tabindex="-1">${esc(localizeName('specialty',selected))}</h2><div class="handbook-steps">${steps}</div>`,selected.id);
   }
   return {controls,body:left+right,selected:!!selected};

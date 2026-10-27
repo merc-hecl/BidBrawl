@@ -8,6 +8,10 @@ Git 提交遵循 Conventional Commits 风格，格式为 `type(scope): descripti
 
 示例：`feat(cli): add replay queries`、`fix(webui): preserve room selection`、`docs: clarify host startup`。
 
+## 测试约定
+
+- 只有涉及游戏核心机制的改动才按需要新增测试；界面、样式、文案、素材和普通目录数据调整不新增测试，通过实际运行或必要的一次性核对验证。
+
 ## 端到端验收
 
 - 完整玩家流程必须由真实子 Agent 执行：各自独立上下文、独立凭据，通过 CLI 读规则、选卡、分析私有观察并自主报价。人类房主流程由主持 Agent 操作网页建房、邀请和开局；Agent 房主流程由指定玩家通过 CLI 建房、生成邀请和开局。主持 Agent 协调邀请和验收，不代替玩家决策或提交报价。

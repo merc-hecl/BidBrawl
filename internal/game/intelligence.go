@@ -12,12 +12,15 @@ import (
 )
 
 type Specialty struct {
-	ID          string          `json:"id"`
-	Name        string          `json:"name"`
-	Description string          `json:"description"`
-	Categories  []string        `json:"categories,omitempty"`
-	Tag         string          `json:"tag,omitempty"`
-	Steps       []SpecialtyStep `json:"steps"`
+	ID           string          `json:"id"`
+	Name         string          `json:"name"`
+	Description  string          `json:"description"`
+	Categories   []string        `json:"categories,omitempty"`
+	Tag          string          `json:"tag,omitempty"`
+	Style        string          `json:"style,omitempty"`
+	ReserveDraws int             `json:"reserve_draws,omitempty"`
+	ReportDraws  int             `json:"report_draws,omitempty"`
+	Steps        []SpecialtyStep `json:"steps,omitempty"`
 }
 type SpecialtyStep struct {
 	Condition  string       `json:"condition,omitempty"`
@@ -77,10 +80,25 @@ func validateSpecialties(v []Specialty) error {
 	}
 	ids := map[string]bool{}
 	for _, s := range v {
-		if s.ID == "" || ids[s.ID] || s.Name == "" || len(s.Steps) == 0 {
+		if s.ID == "" || ids[s.ID] || s.Name == "" {
 			return errors.New("invalid specialty catalog")
 		}
 		ids[s.ID] = true
+		if s.ReserveDraws != 0 && (s.Style != "quick" || s.ReserveDraws != 6 && s.ReserveDraws != 12) {
+			return errors.New("reserve_draws must be 6 or 12 for quick style only")
+		}
+		if s.ReportDraws != 0 && (s.Style != "planner" || s.ReportDraws != 5 && s.ReportDraws != 6) {
+			return errors.New("report_draws must be 5 or 6 for planner style only")
+		}
+		if s.Style != "" {
+			if !slices.Contains(specialtyStyles, s.Style) || len(s.Steps) != 0 || len(s.Categories) != 0 || s.Tag != "" {
+				return errors.New("invalid specialty style")
+			}
+			continue
+		}
+		if len(s.Steps) == 0 {
+			return errors.New("specialty requires a style or scripted steps")
+		}
 		samples := map[string]bool{}
 		lastRound := 0
 		for _, c := range s.Categories {
@@ -390,6 +408,10 @@ func (g *Game) giveIntelligence(p *player) {
 	if spec == nil {
 		return
 	}
+	if spec.Style != "" {
+		g.beginSpecialtyRound(p, spec)
+		return
+	}
 	for _, step := range spec.Steps {
 		if step.Round != g.round || !g.specialtyCondition(p, step.Condition) {
 			continue
@@ -524,6 +546,12 @@ func (g *Game) addSignal(p *player, title string, d map[string]any) {
 	p.signals = append(p.signals, Hint{Round: g.round, Kind: p.specialty, Source: "specialty", Data: d})
 }
 func signalMessage(d map[string]any) string {
+	if d["type"] == "sample_report" {
+		topic, _ := d["topic"].(string)
+		band, _ := d["band"].(string)
+		label := map[string]string{"low": "低档（不足三分之一）", "mixed": "中档（三分之一至不足三分之二）", "high": "高档（至少三分之二）", "unavailable": "无可用结果"}[band]
+		return fmt.Sprintf("%v 次有放回抽样：%s为%s。样本可能重复，不代表整箱比例。", d["draws"], topicName(topic), label)
+	}
 	if v, ok := d["average_area"]; ok {
 		if v == nil {
 			return "该范围内没有藏品，平均占格无结果。"

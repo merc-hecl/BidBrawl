@@ -138,6 +138,7 @@ func NewWithHints(geometry game.Config, cfg cards.Config, hintConfig hints.Confi
 	mux.HandleFunc("POST /api/join", s.join)
 	mux.HandleFunc("POST /api/start", s.start)
 	mux.HandleFunc("POST /api/card", s.card)
+	mux.HandleFunc("POST /api/specialty", s.specialty)
 	mux.HandleFunc("POST /api/bid", s.bid)
 	mux.HandleFunc("POST /api/withdraw", s.withdraw)
 	mux.HandleFunc("POST /api/activity", s.reportActivity)
@@ -575,6 +576,25 @@ func (s *Server) playerAction(w http.ResponseWriter, r *http.Request, apply func
 	}
 	return s.mutateRoom(w, rm, func(next *room) error { return apply(next.game, t) })
 }
+func (s *Server) specialty(w http.ResponseWriter, r *http.Request) {
+	var v struct {
+		Round  int    `json:"round"`
+		Action string `json:"action"`
+		Topic  string `json:"topic"`
+		Reason string `json:"reason"`
+	}
+	if !decode(w, r, &v) {
+		return
+	}
+	if err := game.ValidateReason(v.Reason); err != nil {
+		fail(w, 400, err)
+		return
+	}
+	if s.playerAction(w, r, func(g *game.Game, t string) error { return g.SpecialtyAction(t, v.Round, v.Action, v.Topic, v.Reason) }) {
+		s.state(w, r)
+	}
+}
+
 func (s *Server) card(w http.ResponseWriter, r *http.Request) {
 	var v struct {
 		Round  int    `json:"round"`

@@ -2,7 +2,7 @@
 export function normalizeView(raw,observer=false) {
   return {room_id:raw.room_id, room_name:raw.room_name, version:raw.version, phase:raw.phase, round:raw.round,round_deadline:raw.round_deadline,
     activities:observer?(raw.activities||[]):[],player_costs:observer?raw.player_costs:undefined,context:raw.context,intelligence:observer?raw.intelligence:undefined,rules:raw.rules, players:raw.players || [], public_hints:raw.public_hints || [], history:raw.history || [],
-    decisions:observer?(raw.decisions || []):[], initial_inspections:observer?raw.initial_inspections:undefined,
+    decisions:observer?(raw.decisions || []):[], initial_inspections:observer?raw.initial_inspections:undefined,specialty_states:observer?raw.specialty_states:undefined,
     item_reveals:observer?raw.item_reveals:undefined,items:observer?raw.items:undefined,total_value:observer?raw.total_value:undefined,
     settlement:raw.settlement,can_manage:observer&&raw.can_manage===true,frames:(raw.frames||[]).map(frame=>normalizeView(frame,observer))};
 }

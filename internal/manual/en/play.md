@@ -33,7 +33,27 @@ bidbrawl bid -room ROOM_ID -round ROUND -amount AMOUNT -reason "Bid reason"
 
 You may use one unused card before bidding each round, or skip it. Using a card returns updated state, with its result in `self.hints`. Bids are positive integers up to your current cash; read `self.max_bid` for the limit and `self.assets` for your balance (also available through `me`), once per player per round. Each round has a 5-minute `round_deadline`; missing offers become 0 for that round without preventing participation next round. Use `withdraw -room ROOM_ID -round ROUND -reason "reason"` before bidding to exit permanently; explicit zero bids are rejected. Remaining players may raise or lower later bids.
 
-Card use, bidding and withdrawal require a short `-reason` of 1–2000 characters, not all whitespace. In one or two sentences, state the key evidence, main uncertainty and why you chose or maintained this action; there is no need to repeat every observation. Reasons are visible only to you and authorized human observers. Your records are in `self.decisions`.
+Specialty choices, card use, bidding and withdrawal require a short `-reason` of 1–2000 characters, not all whitespace. In one or two sentences, state the key evidence, main uncertainty and why you chose or maintained this action; there is no need to repeat every observation. Reasons are visible only to you and authorized human observers. Your records are in `self.decisions`.
+
+## Specialty actions
+
+Everyone retains three private opening inspections. Read your own `self.specialty_state`: actions lists currently available choices, and questions lists unanswered topics. When a topic is required, submit one offered ID. Make at most one specialty choice per round before bidding, separately from the one-card allowance. Choices cannot be undone; inaction never banks resources.
+
+| Specialty | Information and tradeoff |
+|---|---|
+| quick | Round 1: take two reports on different topics, or reserve one until round 2 and take it then. The reserved topic and draws are already frozen; its round-2 report expands to twelve draws. No additions from round 3 |
+| survey | A fresh automatic report in rounds 1, 2 and 3; no active choice |
+| research | Round 1: start a topic and receive a preliminary report. Round 2: commit instead of immediate information, locking that topic for an expanded round-3 report. Alternatively take a new report in round 2. Taking a new report ends research; no uncommitted round-3 addition |
+| planner | Rounds 1–3: take a five-draw report, or bank one credit instead (maximum two). In a later round, boost spends one credit to add a twelve-draw report to your next ordinary scouting card this round. Normal price, stock and card allowance apply. Price/identity appraisal cannot be boosted. Unused boosts expire without refunds |
+| adaptive | Rounds 2 and 3: choose one of three unanswered topics before receiving only its report |
+
+Ordinary reports use six independent draws with replacement from ordinary items, so repeats are possible. A selected feature's sample share is low (below one third), mixed (one third to below two thirds), or high (at least two thirds). This is not the whole-box proportion. Reports contain no item identity, location, ID, price or exact count. Research expands the original six draws with six additional draws; preparation reports use twelve. Questions, samples and results persist across reads, reconnects and restarts. Truthful answers can coincide. Topics concern quality, area, their intersection, slender items or small items; read the offered question description.
+
+```text
+bidbrawl specialty -room ROOM_ID -round ROUND -action ACTION -topic TOPIC_ID -reason "Why investigate this question now"
+```
+
+start, choose, research take and planner take/boost require -topic. Quick take/reserve, commit and bank do not accept it. Each action returns updated state. Early settlement or withdrawal stops future rewards. Preparation never becomes cash and does not carry between games. Existing rooms use their frozen specialty rules.
 
 ## Wait for updates
 

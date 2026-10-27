@@ -74,6 +74,7 @@ type PlayerInfo struct {
 	Withdrawn     bool   `json:"withdrawn"`
 }
 type Self struct {
+	SpecialtyState    *SpecialtyStatus `json:"specialty_state,omitempty"`
 	TicketCost        int64            `json:"ticket_cost"`
 	Intelligence      []Hint           `json:"intelligence"`
 	Specialty         string           `json:"specialty"`
@@ -168,6 +169,7 @@ type Rules struct {
 	InitialInspectionCount int                `json:"initial_inspection_count"`
 }
 type View struct {
+	SpecialtyStates    map[string]*SpecialtyStatus `json:"specialty_states,omitempty"`
 	TotalValue         *int64                      `json:"total_value,omitempty"`
 	RoundDeadline      time.Time                   `json:"round_deadline,omitzero"`
 	PlayerCosts        map[string]PlayerCosts      `json:"player_costs,omitempty"`
@@ -192,6 +194,7 @@ type PlayerCosts struct {
 	TicketCost int64 `json:"ticket_cost"`
 }
 type player struct {
+	specialtyState      *specialtyProgress
 	cardPrices          map[string]int64
 	specialty, category string
 	signals             []Hint
@@ -330,7 +333,7 @@ func (g *Game) Join(name string, deck []string) (string, string, error) {
 		}
 	}
 	avatar := available[random(len(available))]
-	p := &player{specialty: "analysis", signals: []Hint{}, id: fmt.Sprintf("p%d", len(g.players)+1), name: name, token: secret(), deck: append([]string{}, deck...), used: []string{}, hints: []Hint{}, avatar: &avatar, assets: g.gameConfig.InitialAssets}
+	p := &player{specialty: "survey", signals: []Hint{}, id: fmt.Sprintf("p%d", len(g.players)+1), name: name, token: secret(), deck: append([]string{}, deck...), used: []string{}, hints: []Hint{}, avatar: &avatar, assets: g.gameConfig.InitialAssets}
 	if findSpecialty(g.gameConfig.Specialties, p.specialty) == nil {
 		p.specialty = g.gameConfig.Specialties[0].ID
 	}
@@ -560,7 +563,16 @@ func (g *Game) UseCard(token string, round int, card, target, reason string) err
 	if !found {
 		return errors.New("unknown card")
 	}
+	boost := p.specialtyState != nil && p.specialtyState.ArmedRound == round
+	if boost && effect.RevealsPrice() {
+		return errors.New("preparation cannot enhance price or identity appraisal; use an ordinary scouting card")
+	}
 	data := g.effect(effect, p)
+	if boost {
+		s := p.specialtyState
+		data["preparation_report"] = g.sampleReport(s.plan(round), s.ArmedTopic, 12)
+		s.ArmedRound, s.ArmedTopic = 0, ""
+	}
 	if target != "" {
 		data["target"] = target
 	}
@@ -796,10 +808,14 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 		}
 		v.PlayerCosts = map[string]PlayerCosts{}
 		v.Intelligence = map[string][]Hint{}
+		v.SpecialtyStates = map[string]*SpecialtyStatus{}
 		v.Decisions = g.observerDecisions()
 		v.InitialInspections = make(map[string][]InspectionItem, len(g.players))
 		v.ItemReveals = make(map[string][]ItemReveal, len(g.players))
 		for _, p := range g.players {
+			if status := g.specialtyStatus(p); status != nil {
+				v.SpecialtyStates[p.id] = status
+			}
 			v.PlayerCosts[p.id] = PlayerCosts{CardCost: p.cardCost, TicketCost: p.ticketCost}
 			v.Version += p.revision
 			v.InitialInspections[p.id] = p.inspection
@@ -839,6 +855,7 @@ func (g *Game) observe(token string, observer bool) ([]byte, error) {
 			balance += g.settlement.CashChanges[p.id]
 		}
 		v.Self = &Self{TicketCost: p.ticketCost, Intelligence: p.signals, Specialty: p.specialty, Category: p.category, CardCost: p.cardCost, Withdrawn: p.withdrawn, ID: p.id, Deck: p.deck, Used: p.used, Hints: p.hints, Bid: p.bid, CardUsedThisRound: g.phase == "bidding" && p.cardRound == g.round, MaxBid: balance, Assets: balance, Decisions: own, InitialInspection: p.inspection, ItemReveals: reveals}
+		v.Self.SpecialtyState = g.specialtyStatus(p)
 	}
 	return json.Marshal(v)
 }

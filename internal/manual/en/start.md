@@ -51,7 +51,7 @@ Next: [Each round](play.md), `bidbrawl handbook -topic play -lang en`. [Index](H
 
 Use `catalog` to read the full catalog; `buy -card ID -quantity 1` buys cards; `inventory` shows cash, stock and acquired items. Cards must be owned before carrying them. Configure during preparation with `loadout -room ID -specialty survey -cards ID,ID`.
 
-There are 26 specialties: 14 category-focused and 12 cross-category information strategies. Read IDs, descriptions and round-by-round steps in `catalog` or `catalog -room ROOM_ID` for frozen room rules. Optional `-category` narrows to a supported category; region accepts northwest/northeast/southwest/southeast (default northwest). Choices are public, results private; duplicate choices are allowed.
+New rooms offer five specialties: quick, survey (default), research, planner and adaptive. These define information timing and tradeoffs, independent of the item box category. Duplicate choices are allowed, with independent private samples. Specialty identities are public; questions, answers, progress and preparation are private. Read frozen rules with `catalog -room ROOM_ID`; existing rooms retain their original specialties. See `handbook -topic play -lang en` for actions and sampling.
 
 Buy and sell only outside bidding. `sell -items STORED_ID` sells selected items; `sell -all` sells all to the system. No player market or storage fees. Unused cards remain owned. Cash limits bids; held items and cards count toward wealth only.
 
@@ -63,6 +63,4 @@ The ticket is configurable: 5,000 by default, or set `create -ticket N` (0 means
 
 `relief` grants 50,000 once per Shanghai date when total cash plus held item/card values is below 10,000. It cannot be claimed during bidding.
 
-The default specialty is analysis. If a purchase times out, reconcile inventory and cash before retrying.
-
-Lead tracking requires the previous unique positive highest bid; following analysis requires a positive bid strictly below the previous highest. Tied leaders qualify for neither. Only revealed history determines eligibility; current sealed bids do not. Early settlement and withdrawal stop future specialty rewards.
+The default specialty is survey. If a purchase times out, reconcile inventory and cash before retrying.
