@@ -157,12 +157,12 @@ go test -race ./...
 go vet ./...
 ```
 
-规则、权限和持久化使用 Go 测试验证；项目不负责运行模型。
+没有极端必要不新增测试。保留的 Go 回归检查聚焦核心结算、隐私权限、数据持久化与版本升级；项目不负责运行模型。
 
-前端的词典键 / 插值一致性、英文单复数、内置与自定义卡牌翻译边界、公共回看隔离、成交轮原子揭晓、跨房间统计，以及 SSE 空闲停止请求、重连全量同步、切房取消旧请求和同步中通知不丢失可在开发时检查（Node.js 仅用于测试，不是宿主运行依赖）：
+前端仅保留公共复盘隔离、观察会话失效后的私有信息清除、凭据处理与注入防护检查。界面、文案、素材、手册、普通目录和交互效果通过实际运行或核对验证（Node.js 不是宿主运行依赖）：
 
 ```powershell
-node --test internal/server/web_test.mjs internal/server/web_live_test.mjs
+node --test internal/server/web_test.mjs internal/server/web_live_test.mjs internal/server/web_session_test.mjs
 ```
 
 可以在同一宿主上创建多局，无需重启；每房间一局，结算后长期保留。支持跨重启恢复和跨房间成绩统计；当前启动时加载全部历史，尚未加入历史分页、自动判负、跨宿主排名、卡牌平衡评测或账号平台。外部 harness 的技能加载、命令执行和自主游戏策略由它自己负责。

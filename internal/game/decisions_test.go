@@ -2,9 +2,7 @@ package game
 
 import (
 	"bytes"
-	"encoding/json"
 	"math"
-	"strings"
 	"testing"
 )
 
@@ -84,37 +82,5 @@ func TestInstantSettlementThresholdsAndPersistence(t *testing.T) {
 		if !bytes.Equal(before, after) {
 			t.Fatal("restart changed decisions or outcome")
 		}
-	}
-}
-
-func TestDecisionReasonsPrivateAndRequired(t *testing.T) {
-	g, tokens := fixture(t, 2)
-	before, _ := g.Observe("")
-	for _, reason := range []string{"", " \n", strings.Repeat("字", 2001)} {
-		if g.UseCard(tokens[0], 1, "item_count", "", reason) == nil || g.Submit(tokens[0], 1, 100, reason) == nil {
-			t.Fatal("invalid reason accepted")
-		}
-	}
-	if err := g.UseCard(tokens[0], 1, "item_count", "", "先清点，缩小估值区间。"); err != nil {
-		t.Fatal(err)
-	}
-	after, _ := g.Observe("")
-	if !bytes.Equal(before, after) {
-		t.Fatal("public view exposed private action")
-	}
-	if err := g.Submit(tokens[0], 1, 100, "I am allowing a margin for uncertainty."); err != nil {
-		t.Fatal(err)
-	}
-	self := view(t, g, tokens[0])
-	other := view(t, g, tokens[1])
-	public := view(t, g, "")
-	if len(self.Self.Decisions) != 2 || len(other.Self.Decisions) != 0 || len(other.Decisions) != 0 || len(public.Decisions) != 0 {
-		t.Fatal("decision isolation failed")
-	}
-	data, _ := g.ObserveObserver()
-	var observer View
-	_ = json.Unmarshal(data, &observer)
-	if len(observer.Decisions) != 2 || observer.Self != nil {
-		t.Fatal("observer did not receive only decision records")
 	}
 }

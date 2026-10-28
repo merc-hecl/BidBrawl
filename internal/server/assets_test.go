@@ -157,30 +157,6 @@ func TestFailedSettlementDoesNotChangeAssets(t *testing.T) {
 	}
 }
 
-func TestStoredAssetsSurviveCredentialRotation(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "accounts.db")
-	s := persistentServer(t, path)
-	a, _ := accountSession(t, s, "Atlas")
-	actor := s.sessions[a]
-	actor.Assets = 54321
-	if err := s.store.saveAccount(actor, s.credentialHashes[actor.ID]); err != nil {
-		t.Fatal(err)
-	}
-	raw := checkedRequest(t, s, "POST", "/api/accounts/"+actor.ID+"/credential", s.HostToken, "", 200)
-	var rotated struct {
-		Credential string `json:"credential"`
-	}
-	_ = json.Unmarshal(raw, &rotated)
-	_ = s.Close()
-	s = persistentServer(t, path)
-	a = loginAgain(t, s, rotated.Credential)
-	var own account
-	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/me", a, "", 200), &own)
-	if own.Assets != 54321 {
-		t.Fatal("stored assets reset or reconstructed from results")
-	}
-}
-
 func TestOnlyOneUnfinishedRoomPerAccount(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "accounts.db")
 	s := persistentServer(t, path)

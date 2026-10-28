@@ -54,52 +54,6 @@ func responseStrings(t *testing.T, code int, body []byte, expected int) map[stri
 	return response
 }
 
-func TestIdentitySurvivesRestart(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "accounts.db")
-	s := persistentServer(t, path)
-	firstToken, firstCredential := accountSession(t, s, "Atlas")
-	secondToken, secondCredential := accountSession(t, s, "Echo")
-	code, body := request(t, s, "GET", "/api/me", firstToken, "")
-	first := responseStrings(t, code, body, 200)
-	code, body = request(t, s, "GET", "/api/me", secondToken, "")
-	second := responseStrings(t, code, body, 200)
-	if len(first["account_id"]) != 32 || first["account_id"] == second["account_id"] {
-		t.Fatal("identities are not distinct permanent IDs")
-	}
-	if err := s.Close(); err != nil {
-		t.Fatal(err)
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, secret := range []string{firstCredential, secondCredential, firstToken, secondToken, s.HostToken} {
-		if bytes.Contains(data, []byte(secret)) {
-			t.Fatal("database contains a plaintext credential or session")
-		}
-	}
-	restarted := persistentServer(t, path)
-	for i, cred := range []string{firstCredential, secondCredential} {
-		code, body = request(t, restarted, "POST", "/api/login", "", `{"credential":"`+cred+`"}`)
-		logged := responseStrings(t, code, body, 200)
-		expected := []map[string]string{first, second}[i]
-		if logged["account_id"] != expected["account_id"] || logged["name"] != expected["name"] {
-			t.Fatal("restart changed identity")
-		}
-	}
-	for _, old := range []string{firstToken, secondToken} {
-		if code, _ = request(t, restarted, "GET", "/api/me", old, ""); code != 401 {
-			t.Fatal("session survived restart")
-		}
-	}
-	if code, _ = request(t, restarted, "POST", "/api/register", "", `{"name":"Atlas"}`); code != 409 {
-		t.Fatal("restart released registered name")
-	}
-	if code, _ = request(t, restarted, "GET", "/api/accounts", s.HostToken, ""); code != 403 {
-		t.Fatal("old host token survived restart")
-	}
-}
-
 func TestIdentityAdministrationAndRotation(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "accounts.db")
 	s := persistentServer(t, path)

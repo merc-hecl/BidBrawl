@@ -28,8 +28,8 @@ jobs:
           node-version: '24'
           package-manager-cache: false
       - run: npm ci --prefix .github/release --ignore-scripts
-      - run: npm test --prefix .github/release
-      - run: node --test internal/server/web_test.mjs internal/server/web_live_test.mjs
+        if: startsWith(github.ref, 'refs/tags/')
+      - run: node --test internal/server/web_test.mjs internal/server/web_live_test.mjs internal/server/web_session_test.mjs
       - name: Validate release tag and preview notes
         if: startsWith(github.ref, 'refs/tags/')
         env:

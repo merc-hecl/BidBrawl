@@ -110,10 +110,10 @@ Go 后端负责权威规则。CLI 与 MyGo 桌面端共用 `internal/host`；Web
 ```sh
 go test ./...
 go vet ./...
-node --test internal/server/web_test.mjs internal/server/web_live_test.mjs
+node --test internal/server/web_test.mjs internal/server/web_live_test.mjs internal/server/web_session_test.mjs
 ```
 
-Node.js 用于前端测试和发布工具。规则和协议测试使用确定性样本；完整 Agent 对战验收由独立 Agent 自主决策完成。版本标签、自动构建与 Release 说明见[发布指南](.github/RELEASING.md)。
+没有极端必要不新增测试；仅在具体严重风险无法由现有检查覆盖时补充最小回归。保留检查聚焦核心结算、隐私、持久化和升级；界面、文案、素材、手册及普通目录调整通过实际运行或核对验证。Node.js 用于少量前端隐私 / 会话检查和发布工具。确定性检查与独立 Agent 自主决策的完整对战验收分别报告。版本标签、自动构建与 Release 说明见[发布指南](.github/RELEASING.md)。
 
 项目处于持续开发阶段，只支持当前数据库格式。适合可信本机、局域网或受控私有部署；不内置 TLS 和请求限流。部署细节见[宿主指南](docs/hosting.zh-CN.md)。
 

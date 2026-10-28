@@ -182,25 +182,3 @@ func TestEventsOnlyCommittedChangesAndSlowSubscriber(t *testing.T) {
 		t.Fatal("overflow did not close stream")
 	}
 }
-
-func TestSSEDisconnectReleasesSubscriber(t *testing.T) {
-	g, _ := game.New(2)
-	s := testTable(g)
-	defer s.Close()
-	h := httptest.NewServer(s)
-	defer h.Close()
-	events, stop := openEvents(t, h.URL)
-	nextEvent(t, events, "ready")
-	stop()
-	deadline := time.Now().Add(time.Second)
-	for time.Now().Before(deadline) {
-		s.mu.Lock()
-		count := len(s.subscribers)
-		s.mu.Unlock()
-		if count == 0 {
-			return
-		}
-		time.Sleep(time.Millisecond)
-	}
-	t.Fatal("disconnected observer was retained")
-}

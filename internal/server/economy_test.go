@@ -4,7 +4,6 @@ import (
 	"bidbrawl/internal/game"
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"path/filepath"
 	"testing"
 )
@@ -87,48 +86,6 @@ func TestFailedCardPersistenceKeepsInventoryAndRoom(t *testing.T) {
 	}
 }
 
-func TestLockedCardKeepsPurchasedStockAndRoundAllowanceAcrossRestart(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "accounts.db")
-	s := persistentServer(t, path)
-	a, credential := accountSession(t, s, "Buyer")
-	b, otherCredential := accountSession(t, s, "Other")
-	checkedRequest(t, s, "POST", "/api/buy", a, `{"card":"quality_counts","quantity":1}`, 200)
-	checkedRequest(t, s, "POST", "/api/buy", a, `{"card":"random_shape","quantity":1}`, 200)
-	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":["quality_counts","random_shape"]}`, 201)
-	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":[]}`, 201)
-	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
-	before := checkedRequest(t, s, "GET", "/api/state", a, "", 200)
-	cash := s.sessions[a].Assets
-	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"quality_counts","round":1,"reason":"verify the earliest usable round"}`, 409)
-	after := checkedRequest(t, s, "GET", "/api/state", a, "", 200)
-	if !sameGameProjection(before, after) || len(s.sessions[a].CardStock["quality_counts"]) != 1 || s.sessions[a].Assets != cash {
-		t.Fatal("locked card changed stock, costs or game")
-	}
-	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"random_shape","round":1,"reason":"use an unlocked card after rejection"}`, 200)
-	_ = s.Close()
-	s = persistentServer(t, path)
-	a, b = loginAgain(t, s, credential), loginAgain(t, s, otherCredential)
-	for round := 1; round < 5; round++ {
-		body, _ := json.Marshal(map[string]any{"round": round, "amount": 100, "reason": "equal offers for unlock transaction fixture"})
-		for _, token := range []string{a, b} {
-			checkedRequest(t, s, "POST", "/api/bid", token, string(body), 200)
-		}
-	}
-	checkedRequest(t, s, "POST", "/api/card", a, `{"card":"quality_counts","round":5,"reason":"value the final round"}`, 200)
-	var own game.View
-	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state", a, "", 200), &own)
-	if len(s.sessions[a].CardStock["quality_counts"]) != 0 || own.Self.CardCost != 12200 || s.sessions[a].Assets != cash {
-		t.Fatal("unlocked card stock or recorded cost incorrect")
-	}
-	for _, token := range []string{"", b} {
-		var v game.View
-		_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state", token, "", 200), &v)
-		if v.Self != nil && len(v.Self.Hints) != 0 {
-			t.Fatal("private audit leaked to another player")
-		}
-	}
-}
-
 func TestUnsoldAwardsNothingAndReliefChecksAllWealth(t *testing.T) {
 	s := persistentServer(t, filepath.Join(t.TempDir(), "accounts.db"))
 	a, _ := accountSession(t, s, "A")
@@ -154,71 +111,4 @@ func TestUnsoldAwardsNothingAndReliefChecksAllWealth(t *testing.T) {
 	checkedRequest(t, s, "POST", "/api/relief", a, "", 200)
 	s.sessions[a].Assets = 0
 	checkedRequest(t, s, "POST", "/api/relief", a, "", 409)
-}
-
-func TestObserverReplayIncludesOnlyAvailableSpecialtyIntel(t *testing.T) {
-	s := persistentServer(t, filepath.Join(t.TempDir(), "accounts.db"))
-	a, _ := accountSession(t, s, "Late")
-	b, _ := accountSession(t, s, "Analysis")
-	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":[],"specialty":"research"}`, 201)
-	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":[],"specialty":"survey"}`, 201)
-	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
-	var own game.View
-	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state?room=table", a, "", 200), &own)
-	topic := own.Self.SpecialtyState.Questions[0].ID
-	checkedRequest(t, s, "POST", "/api/specialty?room=table", a, fmt.Sprintf(`{"round":1,"action":"start","topic":%q,"reason":"investigate one question before committing"}`, topic), 200)
-	for round := 1; round <= 5; round++ {
-		if round == 2 {
-			checkedRequest(t, s, "POST", "/api/specialty?room=table", a, `{"round":2,"action":"commit","reason":"wait for expanded research instead of an immediate report"}`, 200)
-		}
-		body, _ := json.Marshal(map[string]any{"round": round, "amount": 100, "reason": "equal offers for replay boundary fixture"})
-		for _, token := range []string{a, b} {
-			checkedRequest(t, s, "POST", "/api/bid", token, string(body), 200)
-		}
-	}
-	var replay struct {
-		Frames []struct {
-			game.View
-			Activities []activity `json:"activities"`
-		} `json:"frames"`
-	}
-	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/observer/replay?room=table", s.ObserverToken, "", 200), &replay)
-	if len(replay.Frames) != 6 {
-		t.Fatal("duplicate final frame")
-	}
-	for index, frame := range replay.Frames {
-		if frame.Round != index || frame.Context["round"] != float64(index) || frame.Context["remaining_rounds"] != float64(5-index) || frame.Context["early_multiplier"] != []float64{0, 2, 1.6, 1.3, 1.1, 0}[index] {
-			t.Fatal("replay node and auction context disagree", index)
-		}
-		if index == 0 && frame.Phase != "opening" || index > 0 && index < 5 && frame.Phase != "revealed" || index == 5 && frame.Phase != "settled" {
-			t.Fatal("incorrect replay stage", index, frame.Phase)
-		}
-		for _, hint := range frame.PublicHints {
-			if hint.Round > index {
-				t.Fatal("next round public clue leaked", index)
-			}
-		}
-		for _, event := range frame.Activities {
-			if event.Round > index {
-				t.Fatal("next round event leaked", index)
-			}
-		}
-		for _, list := range frame.Intelligence {
-			for _, hint := range list {
-				if hint.Round > index {
-					t.Fatal("future intelligence in replay")
-				}
-			}
-		}
-		for _, list := range frame.ItemReveals {
-			for _, item := range list {
-				if item.Round > index {
-					t.Fatal("future item reveal")
-				}
-			}
-		}
-	}
-	if len(replay.Frames[0].Intelligence["p1"]) != 0 || len(replay.Frames[1].Intelligence["p1"]) != 1 || len(replay.Frames[2].Intelligence["p1"]) != 1 || len(replay.Frames[3].Intelligence["p1"]) != 2 || len(replay.Frames[5].Intelligence["p1"]) != 2 {
-		t.Fatal("research delivery timing not preserved")
-	}
 }

@@ -110,10 +110,10 @@ The authoritative rules live in Go. The CLI and MyGo desktop app share `internal
 ```sh
 go test ./...
 go vet ./...
-node --test internal/server/web_test.mjs internal/server/web_live_test.mjs
+node --test internal/server/web_test.mjs internal/server/web_live_test.mjs internal/server/web_session_test.mjs
 ```
 
-Node.js is used for frontend tests and release tooling. Protocol and rule tests use deterministic inputs; full agent gameplay acceptance uses independent agents making their own decisions. See the [release guide (中文)](.github/RELEASING.md) for version tags, automated builds, and release notes.
+Tests are added only when strictly necessary to guard against a concrete, severe failure that existing checks do not cover. The retained checks focus on settlement, privacy, persistence, and migrations; UI, copy, artwork, handbook, and ordinary catalog changes are verified by running or inspecting the result. Node.js runs the few browser privacy/session checks and release tooling. Deterministic checks are separate from full gameplay acceptance by independent agents. See the [release guide (中文)](.github/RELEASING.md) for version tags, automated builds, and release notes.
 
 The project is under active development and supports only the current database format. It is intended for trusted local, LAN, or controlled private deployments; TLS and rate limiting are not built in. See the [host guide](docs/hosting.zh-CN.md) for deployment details.
 

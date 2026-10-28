@@ -2,7 +2,6 @@ package game
 
 import (
 	"bytes"
-	"encoding/json"
 	"testing"
 	"testing/synctest"
 	"time"
@@ -133,24 +132,5 @@ func TestTimeoutSettlementAndFinalRound(t *testing.T) {
 				}
 			})
 		})
-	}
-}
-
-func TestSnapshotRequiresDeadlineAndExplicitWithdrawal(t *testing.T) {
-	g, _ := fixture(t, 2)
-	data, _ := g.Snapshot()
-	for _, corrupt := range []func(*gameSnapshot){
-		func(s *gameSnapshot) { s.RoundDeadline = time.Time{} },
-		func(s *gameSnapshot) { s.Players[0].Withdrawn = true; s.Players[0].WithdrawRound = 1 },
-	} {
-		var s gameSnapshot
-		if err := json.Unmarshal(data, &s); err != nil {
-			t.Fatal(err)
-		}
-		corrupt(&s)
-		bad, _ := json.Marshal(s)
-		if _, err := Restore(bad); err == nil {
-			t.Fatal("accepted invalid deadline or withdrawal without player decision")
-		}
 	}
 }

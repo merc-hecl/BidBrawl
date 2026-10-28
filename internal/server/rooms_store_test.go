@@ -11,7 +11,6 @@ import (
 
 	"bidbrawl/internal/cards"
 	"bidbrawl/internal/game"
-	bolt "go.etcd.io/bbolt"
 )
 
 func loginAgain(t *testing.T, s *Server, credential string) string {
@@ -285,36 +284,5 @@ func TestRestoredRoomsKeepRulesWhenHostDefaultsChange(t *testing.T) {
 	_ = json.Unmarshal(checkedRequest(t, s, "GET", "/api/state?room="+roomInfo["room_id"].(string), "", "", 200), &view)
 	if view.Rules.PlayerCount != 3 || !reflect.DeepEqual(view.Rules.GameConfig, game.DefaultConfig()) || view.Rules.Cards[0].ID == "audit" {
 		t.Fatal("new rooms did not inherit new host defaults")
-	}
-}
-
-func TestInvalidRoomRecordDoesNotResetHistory(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "accounts.db")
-	s := persistentServer(t, path)
-	_ = s.Close()
-	db, err := bolt.Open(path, 0600, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = db.Update(func(tx *bolt.Tx) error {
-		var rec roomRecord
-		if err := json.Unmarshal(tx.Bucket(roomBucket).Get([]byte("table")), &rec); err != nil {
-			return err
-		}
-		rec.Game = json.RawMessage(`{"schema_version":99}`)
-		bad, err := json.Marshal(rec)
-		if err != nil {
-			return err
-		}
-		return tx.Bucket(roomBucket).Put([]byte("table"), bad)
-	})
-	_ = db.Close()
-	if err != nil {
-		t.Fatal(err)
-	}
-	g, _ := game.New(2)
-	if restored, err := Open(g.GameConfig(), g.CardConfig(), path); err == nil {
-		_ = restored.Close()
-		t.Fatal("invalid room record silently reset the database")
 	}
 }

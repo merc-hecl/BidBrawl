@@ -6,7 +6,7 @@
 
 1. 修改 `mygo.json` 中的版本。首次可使用当前的 `0.1.0`，以后每次发布递增版本。
 2. 提交版本与功能改动，确认工作区干净。提交遵循 Conventional Commits。
-3. 推送分支并等待 `Build and release` 的 `check` 通过。普通分支、PR 和手动运行均只执行 Go 测试、`go vet`、WebUI 测试和发布脚本测试；只有推送 `v*` 版本标签才执行多平台构建、打包、上传附件和发布。
+3. 推送分支并等待 `Build and release` 的 `check` 通过。普通分支、PR 和手动运行均只执行必要的 Go 回归检查、`go vet` 和少量 WebUI 隐私 / 会话检查；只有推送 `v*` 版本标签才执行多平台构建、打包、上传附件和发布。
 4. 在已验证的提交上创建标签，再推送该标签。例如首次发布：
 
    ```sh
@@ -26,7 +26,7 @@
 | Linux x64 / ARM64 | DEB | tar.gz |
 | macOS Intel / Apple Silicon | PKG | tar.gz |
 
-各平台在原生 GitHub runner 上执行 Go 测试、`go vet`、现有桌面构建器；WebUI 测试和发布脚本测试先执行。独立 CLI 不需要桌面运行时，Unix 压缩包保留可执行权限。安装包和 CLI 压缩包携带项目及第三方许可。二进制构建无需 Node.js；Node.js 和锁定的 changelogen 仅用于开发测试和发布工具。
+各平台在原生 GitHub runner 上执行 Go 测试、`go vet`、现有桌面构建器；少量 WebUI 隐私 / 会话检查先执行。发布脚本不另设测试套件，打包时直接校验附件完整性、校验和并运行 CLI 解包冒烟检查。独立 CLI 不需要桌面运行时，Unix 压缩包保留可执行权限。安装包和 CLI 压缩包携带项目及第三方许可。二进制构建无需 Node.js；Node.js 和锁定的 changelogen 仅用于开发测试和发布工具。
 
 当前 Windows 安装包没有 Authenticode 签名；macOS 只有 MyGo 的本地签名，没有 Developer ID 签名和公证，系统可能阻止安装。没有配置自动更新源。发布构建检查不等同于各平台真实安装验收或真实 Agent 对战验收。
 
@@ -38,7 +38,6 @@
 
 ```sh
 npm ci --prefix .github/release --ignore-scripts
-npm test --prefix .github/release
 node .github/release/notes.mjs v0.1.0 build/release-notes.md
 ```
 

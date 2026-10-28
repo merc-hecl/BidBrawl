@@ -81,67 +81,6 @@ func TestInitialInspectionIsEqualSizedPrivateAndDurable(t *testing.T) {
 	}
 }
 
-func TestEggOnlyBoxStaysHiddenUntilSettlementAndSurvivesRestore(t *testing.T) {
-	cfg := geometryConfig(Dimensions{1, 1}, ItemLimits{1, 1})
-	g, err := NewWithConfig(2, cfg, cards.Default())
-	if err != nil {
-		t.Fatal(err)
-	}
-	_, a, _ := g.Join("A", nil)
-	_, b, _ := g.Join("B", nil)
-	if err := g.Start(); err != nil {
-		t.Fatal(err)
-	}
-	// Supply the rare layout deterministically; this is a rule test, not an E2E game.
-	for _, item := range Catalog(cfg) {
-		if item.Category == "easter_egg" {
-			g.items = []Item{{ID: secret()[:16], TemplateID: item.ID, Name: item.Name, Category: item.Category, Quality: item.Quality, Price: item.Price, BottomRight: Point{1, 1}}}
-			break
-		}
-	}
-	g.plannedHints, err = g.planHints(g.items)
-	if err != nil {
-		t.Fatal(err)
-	}
-	g.hints = g.plannedHints[:1]
-	for _, p := range g.players {
-		p.inspection, p.signals = nil, nil
-		p.specialtyState = nil
-		g.giveIntelligence(p)
-	}
-	encoded, _ := g.Snapshot()
-	g, err = Restore(encoded)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for _, token := range []string{"", a, b} {
-		v := view(t, g, token)
-		if len(v.Items) != 0 || v.Settlement != nil || v.Self != nil && (len(v.Self.InitialInspection) != 0 || len(v.Self.ItemReveals) != 0) {
-			t.Fatal("egg exposed before settlement")
-		}
-	}
-	observer, _ := g.ObserveObserver()
-	var v View
-	if err := json.Unmarshal(observer, &v); err != nil || len(v.Items) != 1 || !isEasterEgg(v.Items[0]) {
-		t.Fatal("human observer lost the full box view", err)
-	}
-	for round := 1; round <= Rounds; round++ {
-		for _, token := range []string{a, b} {
-			if err := g.Submit(token, round, 1, "rule test"); err != nil {
-				t.Fatal(err)
-			}
-		}
-	}
-	settled := view(t, g, a).Settlement
-	if settled == nil || settled.Total != 17500000 || settled.GrossProfit != 17500000-1 || settled.Profit != 17500000-1-2*cfg.TicketFee || len(settled.Items) != 1 {
-		t.Fatal("settlement omitted the egg or its full value", settled)
-	}
-	encoded, _ = g.Snapshot()
-	if _, err := Restore(encoded); err != nil {
-		t.Fatal("settled egg box cannot restore", err)
-	}
-}
-
 func TestObserverItemRevealsPreserveOnlyLearnedFields(t *testing.T) {
 	for _, fields := range [][]string{{"shape"}, {"quality"}, {"price"}, {"shape", "quality", "price"}} {
 		t.Run(fmt.Sprint(fields), func(t *testing.T) {

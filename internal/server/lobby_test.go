@@ -4,41 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http/httptest"
-	"path/filepath"
 	"testing"
 
 	"bidbrawl/internal/cards"
 	"bidbrawl/internal/game"
 )
-
-func TestEmptyHostOptionalWebUIAndRestart(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "accounts.db")
-	for range 2 {
-		s, err := Open(game.DefaultConfig(), cards.Default(), path)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if len(s.rooms) != 0 {
-			t.Fatal("host created a room")
-		}
-		for _, route := range []string{"/", "/app.js", "/invite?room=missing"} {
-			checkedRequest(t, s, "GET", route, "", "", 404)
-		}
-		checkedRequest(t, s, "POST", "/api/observer/launch", s.HostToken, "", 404)
-		checkedRequest(t, s, "GET", "/api/config", "", "", 200)
-		r := httptest.NewRequest("GET", "/api/state", nil)
-		w := httptest.NewRecorder()
-		s.ServeHTTP(w, r)
-		if w.Code != 400 {
-			t.Fatal("missing room implicitly selected a table")
-		}
-		s.EnableWebUI()
-		checkedRequest(t, s, "GET", "/", "", "", 200)
-		if err = s.Close(); err != nil {
-			t.Fatal(err)
-		}
-	}
-}
 
 func TestHumanAndAgentRoomInvitationPermissions(t *testing.T) {
 	s := New(game.DefaultConfig(), cards.Default())

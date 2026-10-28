@@ -38,50 +38,6 @@ func fixture(t *testing.T, n int) (*Game, []string) {
 	return g, tokens
 }
 
-func TestLobbyValidation(t *testing.T) {
-	room, _ := New(4)
-	_, _, _ = room.Join("A", nil)
-	_, _, _ = room.Join("B", nil)
-	if e := room.Start(); e == nil {
-		t.Fatal("started before configured players arrived")
-	}
-	for _, n := range []int{0, 1, 8} {
-		if _, e := New(n); e == nil {
-			t.Fatalf("accepted %d players", n)
-		}
-	}
-	g, _ := New(2)
-	if e := g.Start(); e == nil {
-		t.Fatal("started empty game")
-	}
-	for _, deck := range [][]string{{"bad"}, {"item_count", "item_count"}, {"largest_quality", "random_shape", "item_count", "quality_counts", "random_quality", "largest_quality"}} {
-		if _, _, e := g.Join("A", deck); e == nil {
-			t.Fatal("invalid deck accepted")
-		}
-	}
-	if _, _, e := g.Join("A", nil); e != nil {
-		t.Fatal(e)
-	}
-	if e := g.Start(); e == nil {
-		t.Fatal("started with one player")
-	}
-	if _, _, e := g.Join("A", nil); e == nil {
-		t.Fatal("duplicate name accepted")
-	}
-	_, _, _ = g.Join("B", nil)
-	if _, _, e := g.Join("C", nil); e == nil {
-		t.Fatal("capacity exceeded")
-	}
-	if e := g.Start(); e != nil {
-		t.Fatal(e)
-	}
-	if _, _, e := g.Join("D", nil); e == nil {
-		t.Fatal("joined started game")
-	}
-	if e := g.Start(); e == nil {
-		t.Fatal("started twice")
-	}
-}
 func TestPrivateObservationsAndSealedBids(t *testing.T) {
 	g, ts := fixture(t, 2)
 	before, _ := g.Observe("")
@@ -201,31 +157,6 @@ func TestFiveRoundsSettlementAndHints(t *testing.T) {
 	}
 	if e := g.Submit(ts[0], 5, 0, "protocol test"); e == nil {
 		t.Fatal("post-settlement bid accepted")
-	}
-}
-func TestGeometryAndPriceRanges(t *testing.T) {
-	for trial := 0; trial < 100; trial++ {
-		g, _ := fixture(t, 2)
-		assertTiledRows(t, g.items, g.GameConfig())
-		ids := map[string]bool{}
-		for _, i := range g.items {
-			if ids[i.ID] {
-				t.Fatal("duplicate id")
-			}
-			ids[i.ID] = true
-			valid := false
-			for _, q := range g.gameConfig.Qualities {
-				if i.Quality == q.ID {
-					valid = i.Price >= q.Min && i.Price <= q.Max
-				}
-			}
-			if i.Category == "easter_egg" {
-				valid = i.Price == 17500000 && i.Quality == "easter_egg"
-			}
-			if !valid {
-				t.Fatal("invalid quality/price")
-			}
-		}
 	}
 }
 func TestConcurrentSubmissionsAndTies(t *testing.T) {

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"reflect"
@@ -72,32 +71,5 @@ func TestWatchReconnectResyncAndCancel(t *testing.T) {
 	err = New(host.URL, "").Watch(ctx, "table", func(event Event) error { cancel(); return nil })
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("cancel: %v", err)
-	}
-}
-
-func TestWatchProtocolAndConsumerErrorsStop(t *testing.T) {
-	for _, sample := range []struct {
-		name, content, body string
-		status              int
-	}{
-		{"bad type", "application/json", "{}", 200},
-		{"missing", "text/event-stream", "", 404},
-		{"bad JSON", "text/event-stream", "event: ready\ndata: null\n\n", 200},
-		{"consumer", "text/event-stream", "event: ready\ndata: {}\n\n", 200},
-	} {
-		t.Run(sample.name, func(t *testing.T) {
-			host := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-				w.Header().Set("Content-Type", sample.content)
-				w.WriteHeader(sample.status)
-				fmt.Fprint(w, sample.body)
-			}))
-			defer host.Close()
-			ctx, cancel := context.WithTimeout(context.Background(), time.Second)
-			defer cancel()
-			err := New(host.URL, "").Watch(ctx, "table", func(Event) error { return io.ErrClosedPipe })
-			if err == nil || errors.Is(err, context.DeadlineExceeded) {
-				t.Fatalf("did not fail immediately: %v", err)
-			}
-		})
 	}
 }

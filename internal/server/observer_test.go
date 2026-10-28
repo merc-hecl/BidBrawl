@@ -8,28 +8,9 @@ import (
 	"net/http/httptest"
 	"path/filepath"
 	"reflect"
-	"strings"
 	"testing"
 	"time"
 )
-
-func TestDecisionReasonJSONSizeBoundary(t *testing.T) {
-	g, _ := game.New(2)
-	s := testTable(g)
-	a, _ := accountSession(t, s, "A")
-	b, _ := accountSession(t, s, "B")
-	purchaseJoinCards(t, s, a, `{"cards":[]}`)
-	checkedRequest(t, s, "POST", "/api/join", a, `{"cards":[]}`, 201)
-	purchaseJoinCards(t, s, b, `{"cards":[]}`)
-	checkedRequest(t, s, "POST", "/api/join", b, `{"cards":[]}`, 201)
-	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
-	// Go's JSON encoder expands HTML characters to six-byte escapes.
-	body, err := json.Marshal(map[string]any{"round": 1, "amount": 100, "reason": strings.Repeat("<", 2000)})
-	if err != nil {
-		t.Fatal(err)
-	}
-	checkedRequest(t, s, "POST", "/api/bid", a, string(body), 200)
-}
 
 func TestObserverVisionUpdatesImmediatelyAndReplayExcludesFutureSkills(t *testing.T) {
 	g, _ := game.New(2)

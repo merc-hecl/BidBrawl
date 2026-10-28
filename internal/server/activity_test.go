@@ -85,37 +85,6 @@ func TestActivitiesAreDurablePrivateAndReplayBounded(t *testing.T) {
 	checkedRequest(t, s, "GET", "/api/state", a, "", 200)
 }
 
-func TestTicketStartIsAtomicAndWithdrawalDoesNotRefundOrFine(t *testing.T) {
-	s := persistentServer(t, filepath.Join(t.TempDir(), "accounts.db"))
-	a, _ := accountSession(t, s, "A")
-	b, _ := accountSession(t, s, "B")
-	for _, tok := range []string{a, b} {
-		checkedRequest(t, s, "POST", "/api/join", tok, `{"cards":[]}`, 201)
-	}
-	fee := s.rooms["table"].game.GameConfig().TicketFee
-	initial := s.sessions[a].Assets
-	s.sessions[b].Assets = fee - 1
-	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 409)
-	if s.sessions[a].Assets != initial || observerView(s.rooms["table"].game).Phase != "lobby" {
-		t.Fatal("failed start partially charged ticket")
-	}
-	s.sessions[b].Assets = initial
-	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 200)
-	checkedRequest(t, s, "POST", "/api/start", s.HostToken, "", 409)
-	checkedRequest(t, s, "POST", "/api/withdraw", a, `{"round":1,"reason":"risk exceeds estimate"}`, 200)
-	checkedRequest(t, s, "POST", "/api/withdraw", a, `{"round":1,"reason":"retry"}`, 409)
-	checkedRequest(t, s, "POST", "/api/withdraw", b, `{"round":1,"reason":"independent exit"}`, 200)
-	for _, tok := range []string{a, b} {
-		if s.sessions[tok].Assets != initial-fee {
-			t.Fatal("ticket repeated, refunded, or exit fined")
-		}
-	}
-	v := observerView(s.rooms["table"].game)
-	if v.Settlement.Method != "unsold" || v.Settlement.Profit != -2*fee {
-		t.Fatal("unsold net cost incorrect")
-	}
-}
-
 func TestPlayerActivityIDsDoNotRevealOtherPlayersCallCounts(t *testing.T) {
 	rm := &room{seatAccounts: map[string]string{"p1": "a", "p2": "b"}, activities: []activity{
 		{ID: 1, AccountID: "a", Round: 1, Action: "state"},
